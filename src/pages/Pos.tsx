@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,112 +26,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-
-// Sample product categories
-const categories = [
-  { id: 1, name: "All" },
-  { id: 2, name: "Nuts" },
-  { id: 3, name: "Dried Fruits" },
-  { id: 4, name: "Assorted" },
-  { id: 5, name: "Gift Packs" },
-  { id: 6, name: "Spices" },
-];
-
-// Sample products
-const products = [
-  { 
-    id: 1, 
-    name: "Premium Cashews", 
-    sku: "CF-001", 
-    price: 850, 
-    category: "Nuts", 
-    image: "https://placehold.co/100x100?text=Cashews",
-    unit: "kg"
-  },
-  { 
-    id: 2, 
-    name: "California Almonds", 
-    sku: "AM-002", 
-    price: 980, 
-    category: "Nuts", 
-    image: "https://placehold.co/100x100?text=Almonds",
-    unit: "kg"
-  },
-  { 
-    id: 3, 
-    name: "Iranian Pistachios", 
-    sku: "PS-003", 
-    price: 1250, 
-    category: "Nuts", 
-    image: "https://placehold.co/100x100?text=Pistachios",
-    unit: "kg"
-  },
-  { 
-    id: 4, 
-    name: "Chilean Walnuts", 
-    sku: "WN-004", 
-    price: 1100, 
-    category: "Nuts", 
-    image: "https://placehold.co/100x100?text=Walnuts",
-    unit: "kg"
-  },
-  { 
-    id: 5, 
-    name: "Dried Apricots", 
-    sku: "DA-005", 
-    price: 750, 
-    category: "Dried Fruits", 
-    image: "https://placehold.co/100x100?text=Apricots",
-    unit: "kg"
-  },
-  { 
-    id: 6, 
-    name: "Mixed Dry Fruits", 
-    sku: "MD-006", 
-    price: 650, 
-    category: "Assorted", 
-    image: "https://placehold.co/100x100?text=Mixed",
-    unit: "kg"
-  },
-  { 
-    id: 7, 
-    name: "Raisins Golden", 
-    sku: "RG-007", 
-    price: 320, 
-    category: "Dried Fruits", 
-    image: "https://placehold.co/100x100?text=Raisins",
-    unit: "kg"
-  },
-  { 
-    id: 8, 
-    name: "Brazil Nuts", 
-    sku: "BN-008", 
-    price: 1300, 
-    category: "Nuts", 
-    image: "https://placehold.co/100x100?text=Brazil+Nuts",
-    unit: "kg"
-  },
-  { 
-    id: 9, 
-    name: "Dry Fruit Gift Box", 
-    sku: "GF-009", 
-    price: 1500, 
-    category: "Gift Packs", 
-    image: "https://placehold.co/100x100?text=Gift+Box",
-    unit: "box"
-  },
-];
-
-interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-  unit: string;
-}
+import { products, categories } from "@/data/products";
+import { CartItem } from "@/types/pos";
 
 const Pos = () => {
   const [activeCategory, setActiveCategory] = useState<number>(1);
@@ -140,7 +37,6 @@ const Pos = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentModalOpen, setPaymentModalOpen] = useState<boolean>(false);
 
-  // Filter products based on category and search
   const filteredProducts = products.filter(product => {
     const matchesCategory = activeCategory === 1 || product.category === categories.find(c => c.id === activeCategory)?.name;
     const matchesSearch = searchQuery === "" || 
@@ -149,7 +45,6 @@ const Pos = () => {
     return matchesCategory && matchesSearch;
   });
 
-  // Add product to cart
   const addToCart = (product: any) => {
     const existingItemIndex = cart.findIndex(item => item.id === product.id);
     
@@ -168,7 +63,6 @@ const Pos = () => {
     }
   };
 
-  // Update cart item quantity
   const updateQuantity = (itemId: number, action: 'increase' | 'decrease' | 'remove') => {
     if (action === 'remove') {
       setCart(cart.filter(item => item.id !== itemId));
@@ -186,7 +80,6 @@ const Pos = () => {
     setCart(updatedCart);
   };
 
-  // Calculate totals
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const gst = subtotal * 0.18; // 18% GST
   const total = subtotal + gst;
@@ -208,7 +101,6 @@ const Pos = () => {
       </div>
 
       <div className="flex flex-1 gap-4 overflow-hidden">
-        {/* Left side - Product selection */}
         <div className="w-2/3 flex flex-col overflow-hidden bg-white rounded-lg shadow dark:bg-gray-800">
           <div className="p-4 border-b">
             <div className="flex items-center gap-4 mb-4">
@@ -273,7 +165,6 @@ const Pos = () => {
           </div>
         </div>
 
-        {/* Right side - Cart */}
         <div className="w-1/3 flex flex-col bg-white rounded-lg shadow dark:bg-gray-800">
           <div className="p-4 border-b">
             <div className="flex items-center justify-between">
