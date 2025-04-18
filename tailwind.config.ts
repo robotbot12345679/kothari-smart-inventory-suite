@@ -52,6 +52,18 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				kothari: {
+					50: '#FFF8ED',
+					100: '#FFEED2',
+					200: '#F5DDB1',
+					300: '#E9C38C',
+					400: '#D2AA6D',
+					500: '#BD8C4C',
+					600: '#8B5A2B',
+					700: '#704625',
+					800: '#3E2723',
+					900: '#2D1C1A',
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
