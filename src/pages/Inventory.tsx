@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +20,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 
 const Inventory = () => {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+
   // Sample inventory data
   const inventoryItems = [
     {
@@ -130,20 +148,63 @@ const Inventory = () => {
     }
   };
 
+  // Filter inventory items based on search and filters
+  const filteredItems = inventoryItems.filter(item => {
+    const matchesSearch = searchQuery === "" || 
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.sku.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCategory = categoryFilter === "all" || 
+      item.category.toLowerCase() === categoryFilter.toLowerCase();
+    
+    const matchesStatus = statusFilter === "all" || 
+      item.status.toLowerCase() === statusFilter.toLowerCase().replace('-', ' ');
+    
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  const handleExport = () => {
+    toast({
+      title: "Export Started",
+      description: "Your inventory data is being exported.",
+    });
+    setIsExportDialogOpen(false);
+  };
+
+  const handleImport = () => {
+    toast({
+      title: "Import Completed",
+      description: "Your inventory data has been imported successfully.",
+    });
+    setIsImportDialogOpen(false);
+  };
+
+  const handleAddProduct = () => {
+    navigate("/products");
+    toast({
+      title: "Add Product",
+      description: "Redirected to product management page.",
+    });
+  };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
         <div className="flex items-center gap-2">
-          <Button className="gap-1" variant="outline">
+          <Button className="gap-1" variant="outline" onClick={() => setIsExportDialogOpen(true)}>
             <FileDown className="h-4 w-4" />
             Export
           </Button>
-          <Button className="gap-1" variant="outline">
+          <Button className="gap-1" variant="outline" onClick={() => setIsImportDialogOpen(true)}>
             <FilePlus className="h-4 w-4" />
             Import
           </Button>
-          <Button className="gap-1">
+          <Button className="gap-1" onClick={handleAddProduct}>
             <PlusCircle className="h-4 w-4" />
             Add Product
           </Button>
@@ -199,6 +260,8 @@ const Inventory = () => {
               type="search"
               placeholder="Search products..."
               className="w-full bg-background pl-8 md:w-96"
+              value={searchQuery}
+              onChange={handleSearch}
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -206,18 +269,24 @@ const Inventory = () => {
               <Filter className="h-4 w-4" />
               Filter
             </Button>
-            <Select defaultValue="all">
+            <Select 
+              value={categoryFilter} 
+              onValueChange={setCategoryFilter}
+            >
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 <SelectItem value="nuts">Nuts</SelectItem>
-                <SelectItem value="dried-fruits">Dried Fruits</SelectItem>
+                <SelectItem value="dried fruits">Dried Fruits</SelectItem>
                 <SelectItem value="assorted">Assorted</SelectItem>
               </SelectContent>
             </Select>
-            <Select defaultValue="all">
+            <Select 
+              value={statusFilter} 
+              onValueChange={setStatusFilter}
+            >
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -225,7 +294,7 @@ const Inventory = () => {
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="in-stock">In Stock</SelectItem>
                 <SelectItem value="low-stock">Low Stock</SelectItem>
-                <SelectItem value="critical">Critical Stock</SelectItem>
+                <SelectItem value="critical-stock">Critical Stock</SelectItem>
                 <SelectItem value="out-of-stock">Out of Stock</SelectItem>
               </SelectContent>
             </Select>
@@ -246,7 +315,7 @@ const Inventory = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {inventoryItems.map((item) => (
+              {filteredItems.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>{item.sku}</TableCell>
@@ -271,7 +340,7 @@ const Inventory = () => {
         
         <div className="p-4 border-t flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing <span className="font-medium">1</span> to <span className="font-medium">8</span> of{" "}
+            Showing <span className="font-medium">1</span> to <span className="font-medium">{filteredItems.length}</span> of{" "}
             <span className="font-medium">384</span> products
           </p>
           <div className="flex items-center gap-2">
@@ -284,6 +353,56 @@ const Inventory = () => {
           </div>
         </div>
       </div>
+
+      {/* Export Dialog */}
+      <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Export Inventory Data</DialogTitle>
+            <DialogDescription>
+              Select the format and options for exporting your inventory data.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Select defaultValue="csv">
+              <SelectTrigger>
+                <SelectValue placeholder="Select export format" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="csv">CSV</SelectItem>
+                <SelectItem value="excel">Excel</SelectItem>
+                <SelectItem value="pdf">PDF</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsExportDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleExport}>Export</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Import Inventory Data</DialogTitle>
+            <DialogDescription>
+              Upload a file to import inventory data.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Input type="file" />
+            <p className="text-sm text-muted-foreground">
+              Supported formats: CSV, Excel
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleImport}>Import</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
