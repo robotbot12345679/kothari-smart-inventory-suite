@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Search, 
   ShoppingCart, 
@@ -32,10 +34,19 @@ import { products, categories } from "@/data/products";
 import { CartItem } from "@/types/pos";
 
 const Pos = () => {
+  const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentModalOpen, setPaymentModalOpen] = useState<boolean>(false);
+  const [saveOrderModalOpen, setSaveOrderModalOpen] = useState<boolean>(false);
+  const [scanBarcodeModalOpen, setScanBarcodeModalOpen] = useState<boolean>(false);
+  const [cashAmount, setCashAmount] = useState<string>("");
+  const [orderName, setOrderName] = useState<string>("");
+
+  // Calculate change amount for cash payments
+  const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 1.18; // with 18% GST
+  const change = parseFloat(cashAmount) > 0 ? parseFloat(cashAmount) - total : 0;
 
   const filteredProducts = products.filter(product => {
     const matchesCategory = activeCategory === 1 || product.category === categories.find(c => c.id === activeCategory)?.name;
@@ -47,6 +58,15 @@ const Pos = () => {
 
   const addToCart = (product: any) => {
     const variant = product.variants[0];
+    
+    if (!variant) {
+      toast({
+        title: "Error",
+        description: "This product has no variants.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     const existingItemIndex = cart.findIndex(item => item.variantId === variant.id);
     
@@ -64,6 +84,11 @@ const Pos = () => {
         unit: variant.unit
       }]);
     }
+    
+    toast({
+      title: "Added to Cart",
+      description: `${product.name} added to cart.`
+    });
   };
 
   const updateQuantity = (itemId: number, action: 'increase' | 'decrease' | 'remove') => {
@@ -83,20 +108,72 @@ const Pos = () => {
     setCart(updatedCart);
   };
 
+  const handleScanBarcode = () => {
+    toast({
+      title: "Barcode Scanner",
+      description: "Barcode scanning functionality would be implemented here."
+    });
+    setScanBarcodeModalOpen(false);
+  };
+
+  const handleSaveOrder = () => {
+    if (!orderName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a name for this order.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    toast({
+      title: "Order Saved",
+      description: `Order "${orderName}" has been saved successfully.`
+    });
+    setSaveOrderModalOpen(false);
+  };
+
+  const handleCompletePayment = (method: string) => {
+    toast({
+      title: "Payment Successful",
+      description: `Payment of ₹${total.toFixed(2)} completed via ${method}.`
+    });
+    setPaymentModalOpen(false);
+    setCart([]);
+  };
+
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const gst = subtotal * 0.18; // 18% GST
-  const total = subtotal + gst;
+  const totalAmount = subtotal + gst;
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold tracking-tight">Point of Sale</h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-1">
+          <Button 
+            variant="outline" 
+            className="gap-1"
+            onClick={() => setScanBarcodeModalOpen(true)}
+          >
             <Scan className="h-4 w-4" />
             Scan Barcode
           </Button>
-          <Button variant="outline" className="gap-1">
+          <Button 
+            variant="outline" 
+            className="gap-1"
+            onClick={() => {
+              if (cart.length === 0) {
+                toast({
+                  title: "Empty Cart",
+                  description: "Add items to the cart before saving an order.",
+                  variant: "destructive"
+                });
+                return;
+              }
+              setSaveOrderModalOpen(true);
+            }}
+          >
             <Save className="h-4 w-4" />
             Save Order
           </Button>
@@ -104,6 +181,7 @@ const Pos = () => {
       </div>
 
       <div className="flex flex-1 gap-4 overflow-hidden">
+        {/* Left side - Product listings */}
         <div className="w-2/3 flex flex-col overflow-hidden bg-white rounded-lg shadow dark:bg-gray-800">
           <div className="p-4 border-b">
             <div className="flex items-center gap-4 mb-4">
@@ -144,7 +222,7 @@ const Pos = () => {
               >
                 <div className="aspect-square w-full overflow-hidden">
                   <img 
-                    src={product.image} 
+                    src={product.image || "/placeholder.svg"} 
                     alt={product.name} 
                     className="h-full w-full object-cover transition-all hover:scale-105"
                   />
@@ -153,7 +231,9 @@ const Pos = () => {
                   <h3 className="font-semibold truncate">{product.name}</h3>
                   <div className="flex justify-between items-center mt-1">
                     <span className="text-sm text-muted-foreground">{product.sku}</span>
-                    <span className="font-semibold">₹{product.variants[0].price}/{product.variants[0].unit}</span>
+                    {product.variants && product.variants[0] && (
+                      <span className="font-semibold">₹{product.variants[0].price}/{product.variants[0].unit}</span>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -168,6 +248,7 @@ const Pos = () => {
           </div>
         </div>
 
+        {/* Right side - Cart */}
         <div className="w-1/3 flex flex-col bg-white rounded-lg shadow dark:bg-gray-800">
           <div className="p-4 border-b">
             <div className="flex items-center justify-between">
@@ -180,7 +261,13 @@ const Pos = () => {
                   variant="outline" 
                   size="sm" 
                   className="text-destructive hover:text-destructive"
-                  onClick={() => setCart([])}
+                  onClick={() => {
+                    setCart([]);
+                    toast({
+                      title: "Cart Cleared",
+                      description: "All items have been removed from your cart."
+                    });
+                  }}
                 >
                   Clear
                 </Button>
@@ -213,7 +300,10 @@ const Pos = () => {
                         variant="outline" 
                         size="icon" 
                         className="h-8 w-8"
-                        onClick={() => updateQuantity(item.id, 'decrease')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateQuantity(item.id, 'decrease');
+                        }}
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
@@ -222,7 +312,10 @@ const Pos = () => {
                         variant="outline" 
                         size="icon" 
                         className="h-8 w-8"
-                        onClick={() => updateQuantity(item.id, 'increase')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateQuantity(item.id, 'increase');
+                        }}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
@@ -230,7 +323,10 @@ const Pos = () => {
                         variant="ghost" 
                         size="icon" 
                         className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => updateQuantity(item.id, 'remove')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateQuantity(item.id, 'remove');
+                        }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -254,7 +350,7 @@ const Pos = () => {
               <Separator />
               <div className="flex justify-between font-semibold text-lg">
                 <span>Total</span>
-                <span>₹{total.toFixed(2)}</span>
+                <span>₹{totalAmount.toFixed(2)}</span>
               </div>
 
               <div className="pt-4">
@@ -272,6 +368,7 @@ const Pos = () => {
         </div>
       </div>
 
+      {/* Payment Dialog */}
       <Dialog open={paymentModalOpen} onOpenChange={setPaymentModalOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -294,7 +391,10 @@ const Pos = () => {
                 </div>
                 <p className="text-center">Scan with any UPI app</p>
                 <p className="font-medium text-center">ashokkothari738@oksbi</p>
-                <Button className="w-full gap-2">
+                <Button 
+                  className="w-full gap-2"
+                  onClick={() => handleCompletePayment('UPI')}
+                >
                   <Wallet className="h-4 w-4" />
                   Complete Payment
                 </Button>
@@ -303,17 +403,29 @@ const Pos = () => {
             <TabsContent value="cash" className="p-4 space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="amount-tendered">Amount Tendered</Label>
-                <Input id="amount-tendered" type="number" placeholder="Enter amount" />
+                <Input 
+                  id="amount-tendered" 
+                  type="number" 
+                  placeholder="Enter amount" 
+                  value={cashAmount}
+                  onChange={(e) => setCashAmount(e.target.value)}
+                />
               </div>
               <div className="flex justify-between">
                 <span>Total Amount:</span>
-                <span className="font-semibold">₹{total.toFixed(2)}</span>
+                <span className="font-semibold">₹{totalAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Change:</span>
-                <span className="font-semibold">₹0.00</span>
+                <span className="font-semibold">₹{change > 0 ? change.toFixed(2) : '0.00'}</span>
               </div>
-              <Button className="w-full">Complete Cash Payment</Button>
+              <Button 
+                className="w-full"
+                onClick={() => handleCompletePayment('Cash')}
+                disabled={parseFloat(cashAmount) < totalAmount}
+              >
+                Complete Cash Payment
+              </Button>
             </TabsContent>
             <TabsContent value="card" className="p-4 space-y-4">
               <div className="grid gap-4">
@@ -332,7 +444,10 @@ const Pos = () => {
                   </div>
                 </div>
               </div>
-              <Button className="w-full gap-2">
+              <Button 
+                className="w-full gap-2"
+                onClick={() => handleCompletePayment('Card')}
+              >
                 <CreditCard className="h-4 w-4" />
                 Process Card Payment
               </Button>
@@ -340,13 +455,77 @@ const Pos = () => {
           </Tabs>
 
           <DialogFooter className="flex items-center justify-between">
-            <Button variant="outline" className="gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => {
+                toast({
+                  title: "Receipt Printed",
+                  description: "Receipt has been sent to the printer."
+                });
+              }}
+            >
               <Printer className="h-4 w-4" />
               Print Receipt
             </Button>
             <Button variant="outline" onClick={() => setPaymentModalOpen(false)}>
               Cancel
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save Order Dialog */}
+      <Dialog open={saveOrderModalOpen} onOpenChange={setSaveOrderModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Save Order</DialogTitle>
+            <DialogDescription>
+              Save this order for later processing.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="order-name">Order Name</Label>
+              <Input 
+                id="order-name" 
+                placeholder="Enter order name" 
+                value={orderName}
+                onChange={(e) => setOrderName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveOrderModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveOrder}>Save Order</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Scan Barcode Dialog */}
+      <Dialog open={scanBarcodeModalOpen} onOpenChange={setScanBarcodeModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Scan Barcode</DialogTitle>
+            <DialogDescription>
+              Scan a product barcode to quickly add it to the cart.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center p-6 gap-4">
+            <div className="h-32 w-32 flex items-center justify-center border-2 border-dashed rounded-lg">
+              <Scan className="h-16 w-16 text-muted-foreground" />
+            </div>
+            <p className="text-center text-sm text-muted-foreground">
+              Point your device's camera at a barcode
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setScanBarcodeModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleScanBarcode}>Scan Manually</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
