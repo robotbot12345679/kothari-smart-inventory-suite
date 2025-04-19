@@ -46,7 +46,9 @@ const Pos = () => {
   });
 
   const addToCart = (product: any) => {
-    const existingItemIndex = cart.findIndex(item => item.id === product.id);
+    const variant = product.variants[0];
+    
+    const existingItemIndex = cart.findIndex(item => item.variantId === variant.id);
     
     if (existingItemIndex >= 0) {
       const updatedCart = [...cart];
@@ -56,9 +58,10 @@ const Pos = () => {
       setCart([...cart, {
         id: product.id,
         name: product.name,
-        price: product.price,
+        variantId: variant.id,
+        price: variant.price,
         quantity: 1,
-        unit: product.unit
+        unit: variant.unit
       }]);
     }
   };
@@ -150,7 +153,7 @@ const Pos = () => {
                   <h3 className="font-semibold truncate">{product.name}</h3>
                   <div className="flex justify-between items-center mt-1">
                     <span className="text-sm text-muted-foreground">{product.sku}</span>
-                    <span className="font-semibold">₹{product.price}/{product.unit}</span>
+                    <span className="font-semibold">₹{product.variants[0].price}/{product.variants[0].unit}</span>
                   </div>
                 </CardContent>
               </Card>
