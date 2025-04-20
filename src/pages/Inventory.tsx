@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -29,17 +29,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
 
 const Inventory = () => {
@@ -50,8 +39,9 @@ const Inventory = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-  const [isClearAllOpen, setIsClearAllOpen] = useState(false);
-  const [inventoryItems, setInventoryItems] = useState([
+
+  // Sample inventory data
+  const inventoryItems = [
     {
       id: 1,
       name: "Premium Cashews",
@@ -140,7 +130,7 @@ const Inventory = () => {
       expiryDate: "2024-07-30",
       status: "Critical Stock",
     },
-  ]);
+  ];
 
   // Function to determine badge color based on status
   const getStatusColor = (status: string) => {
@@ -174,64 +164,31 @@ const Inventory = () => {
   });
 
   const handleExport = () => {
-    const data = JSON.stringify(inventoryItems, null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "inventory.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    
     toast({
-      title: "Export Completed",
-      description: "Your inventory data has been exported."
+      title: "Export Started",
+      description: "Your inventory data is being exported.",
     });
     setIsExportDialogOpen(false);
   };
 
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const importedItems = JSON.parse(e.target?.result as string);
-        setInventoryItems(importedItems);
-        toast({
-          title: "Import Successful",
-          description: `${importedItems.length} inventory items imported.`
-        });
-      } catch (error) {
-        toast({
-          title: "Import Failed",
-          description: "There was an error importing the inventory data.",
-          variant: "destructive"
-        });
-      }
-    };
-    reader.readAsText(file);
-    setIsImportDialogOpen(false);
-  };
-
-  const handleClearAllItems = () => {
-    setInventoryItems([]);
-    setIsClearAllOpen(false);
+  const handleImport = () => {
     toast({
-      title: "Inventory Cleared",
-      description: "All inventory items have been removed."
+      title: "Import Completed",
+      description: "Your inventory data has been imported successfully.",
     });
+    setIsImportDialogOpen(false);
   };
 
   const handleAddProduct = () => {
     navigate("/products");
     toast({
       title: "Add Product",
-      description: "Redirected to product management page."
+      description: "Redirected to product management page.",
     });
+  };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
   };
 
   return (
@@ -247,28 +204,6 @@ const Inventory = () => {
             <FilePlus className="h-4 w-4" />
             Import
           </Button>
-          <AlertDialog open={isClearAllOpen} onOpenChange={setIsClearAllOpen}>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" className="gap-1 border-red-200 text-red-500 hover:text-red-500 hover:bg-red-50">
-                <AlertTriangle className="h-4 w-4" />
-                Clear All
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action will permanently delete all inventory items. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleClearAllItems} className="bg-red-500 hover:bg-red-600">
-                  Delete All
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
           <Button className="gap-1" onClick={handleAddProduct}>
             <PlusCircle className="h-4 w-4" />
             Add Product
@@ -282,8 +217,8 @@ const Inventory = () => {
             <CardTitle className="text-sm font-medium">Total Products</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{inventoryItems.length}</div>
-            <p className="text-xs text-muted-foreground">Across {Array.from(new Set(inventoryItems.map(item => item.category))).length} categories</p>
+            <div className="text-2xl font-bold">384</div>
+            <p className="text-xs text-muted-foreground">Across 8 categories</p>
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -292,7 +227,7 @@ const Inventory = () => {
             <AlertTriangle className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{inventoryItems.filter(item => item.status === "Low Stock" || item.status === "Critical Stock").length}</div>
+            <div className="text-2xl font-bold">12</div>
             <p className="text-xs text-muted-foreground">Products below threshold</p>
           </CardContent>
         </Card>
@@ -302,15 +237,7 @@ const Inventory = () => {
             <Clock className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {inventoryItems.filter(item => {
-                const expiryDate = new Date(item.expiryDate);
-                const today = new Date();
-                const diffTime = expiryDate.getTime() - today.getTime();
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays <= 30 && diffDays > 0;
-              }).length}
-            </div>
+            <div className="text-2xl font-bold">5</div>
             <p className="text-xs text-muted-foreground">Within 30 days</p>
           </CardContent>
         </Card>
@@ -319,9 +246,7 @@ const Inventory = () => {
             <CardTitle className="text-sm font-medium">Inventory Value</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ₹{inventoryItems.reduce((total, item) => total + (item.quantity * item.unitPrice), 0).toLocaleString('en-IN')}
-            </div>
+            <div className="text-2xl font-bold">₹48,52,750</div>
             <p className="text-xs text-muted-foreground">At current cost price</p>
           </CardContent>
         </Card>
@@ -336,7 +261,7 @@ const Inventory = () => {
               placeholder="Search products..."
               className="w-full bg-background pl-8 md:w-96"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearch}
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -376,61 +301,47 @@ const Inventory = () => {
           </div>
         </div>
 
-        {filteredItems.length === 0 ? (
-          <div className="text-center py-10">
-            <div className="flex flex-col items-center justify-center">
-              <AlertTriangle className="h-10 w-10 text-muted-foreground mb-2" />
-              <h3 className="font-semibold text-lg">No inventory items found</h3>
-              <p className="text-muted-foreground mt-2 max-w-sm">
-                {inventoryItems.length === 0 
-                  ? "You haven't added any inventory items yet."
-                  : "Try changing your search or filter criteria."}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product Name</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Quantity</TableHead>
-                  <TableHead className="text-right">Unit Price</TableHead>
-                  <TableHead>Expiry Date</TableHead>
-                  <TableHead>Status</TableHead>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Product Name</TableHead>
+                <TableHead>SKU</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead className="text-right">Quantity</TableHead>
+                <TableHead className="text-right">Unit Price</TableHead>
+                <TableHead>Expiry Date</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredItems.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium">{item.name}</TableCell>
+                  <TableCell>{item.sku}</TableCell>
+                  <TableCell>{item.category}</TableCell>
+                  <TableCell className="text-right">
+                    {item.quantity} {item.unit}
+                  </TableCell>
+                  <TableCell className="text-right">₹{item.unitPrice}</TableCell>
+                  <TableCell>
+                    {new Date(item.expiryDate).toLocaleDateString('en-IN')}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={getStatusColor(item.status)}>
+                      {item.status}
+                    </Badge>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredItems.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>{item.sku}</TableCell>
-                    <TableCell>{item.category}</TableCell>
-                    <TableCell className="text-right">
-                      {item.quantity} {item.unit}
-                    </TableCell>
-                    <TableCell className="text-right">₹{item.unitPrice}</TableCell>
-                    <TableCell>
-                      {new Date(item.expiryDate).toLocaleDateString('en-IN')}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getStatusColor(item.status)}>
-                        {item.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+              ))}
+            </TableBody>
+          </Table>
+        </div>
         
         <div className="p-4 border-t flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
             Showing <span className="font-medium">1</span> to <span className="font-medium">{filteredItems.length}</span> of{" "}
-            <span className="font-medium">{inventoryItems.length}</span> products
+            <span className="font-medium">384</span> products
           </p>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" disabled>
@@ -449,9 +360,21 @@ const Inventory = () => {
           <DialogHeader>
             <DialogTitle>Export Inventory Data</DialogTitle>
             <DialogDescription>
-              Export your inventory data as a JSON file.
+              Select the format and options for exporting your inventory data.
             </DialogDescription>
           </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Select defaultValue="csv">
+              <SelectTrigger>
+                <SelectValue placeholder="Select export format" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="csv">CSV</SelectItem>
+                <SelectItem value="excel">Excel</SelectItem>
+                <SelectItem value="pdf">PDF</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsExportDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleExport}>Export</Button>
@@ -469,17 +392,14 @@ const Inventory = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <Input 
-              type="file" 
-              accept=".json"
-              onChange={handleImport}
-            />
+            <Input type="file" />
             <p className="text-sm text-muted-foreground">
-              Supported format: JSON
+              Supported formats: CSV, Excel
             </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleImport}>Import</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

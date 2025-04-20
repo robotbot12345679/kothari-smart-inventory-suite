@@ -1,6 +1,6 @@
 
 import React from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
@@ -24,7 +24,6 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   const isMobile = useIsMobile();
-  const navigate = useNavigate();
 
   const navItems = [
     { title: "Dashboard", path: "/", icon: <Home className="w-5 h-5" /> },
