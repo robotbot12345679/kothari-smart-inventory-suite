@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, UserPlus, Users, Phone, Mail } from "lucide-react";
+import { Search, Filter, UserPlus, Users, Phone, Mail, FileDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -55,12 +55,12 @@ const Customers = () => {
   });
 
   const activeCustomers = customers.filter(c => c.status === 'Active').length;
-  const totalCustomers = customers.length;
+  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
   const averageOrderValue = orders.length > 0 
-    ? orders.reduce((sum, order) => sum + order.total, 0) / orders.length 
+    ? totalRevenue / orders.length 
     : 0;
-  const customerLifetimeValue = totalCustomers > 0
-    ? orders.reduce((sum, order) => sum + order.total, 0) / totalCustomers
+  const customerLifetimeValue = customers.length > 0
+    ? totalRevenue / customers.length
     : 0;
 
   const handleAddCustomer = () => {
@@ -118,8 +118,8 @@ const Customers = () => {
             <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">182</div>
-            <p className="text-xs text-muted-foreground">↑ 12% from last month</p>
+            <div className="text-2xl font-bold">{customers.length}</div>
+            <p className="text-xs text-muted-foreground">Active: {activeCustomers}</p>
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -128,8 +128,10 @@ const Customers = () => {
             <UserPlus className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">168</div>
-            <p className="text-xs text-muted-foreground">92% active rate</p>
+            <div className="text-2xl font-bold">{activeCustomers}</div>
+            <p className="text-xs text-muted-foreground">
+              {((activeCustomers / customers.length) * 100).toFixed(1)}% active rate
+            </p>
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -137,8 +139,8 @@ const Customers = () => {
             <CardTitle className="text-sm font-medium">Average Order Value</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹3,120</div>
-            <p className="text-xs text-muted-foreground">Per customer</p>
+            <div className="text-2xl font-bold">₹{averageOrderValue.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">Per order</p>
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -146,7 +148,7 @@ const Customers = () => {
             <CardTitle className="text-sm font-medium">Customer Lifetime Value</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹18,750</div>
+            <div className="text-2xl font-bold">₹{customerLifetimeValue.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">Average per customer</p>
           </CardContent>
         </Card>
