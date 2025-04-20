@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -13,10 +13,15 @@ import {
   FileText,
   Settings,
   Package2,
+  Menu,
+  X
 } from "lucide-react";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const menuItems = [
     { title: "POS", icon: <ShoppingCart className="w-5 h-5" />, path: "/pos" },
@@ -31,8 +36,37 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+    <div className="space-y-6 relative">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        
+        <Drawer>
+          <DrawerTrigger asChild>
+            <Button variant="outline" size="icon" className="md:hidden">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Open Menu</span>
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent>
+            <div className="p-4 space-y-2">
+              <h2 className="text-xl font-bold">Menu</h2>
+              <div className="space-y-2">
+                {menuItems.map((item) => (
+                  <Button 
+                    key={item.path}
+                    variant="ghost" 
+                    className="w-full justify-start"
+                    onClick={() => navigate(item.path)}
+                  >
+                    {item.icon}
+                    <span className="ml-2">{item.title}</span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {menuItems.map((item) => (
