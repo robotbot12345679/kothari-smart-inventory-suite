@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Edit, Package, Trash2 } from "lucide-react";
 import type { Product } from "@/types/pos";
 
@@ -18,25 +19,37 @@ interface ProductCardProps {
 
 const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => {
   return (
-    <Card>
+    <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{product.name}</CardTitle>
-        <Package className="h-4 w-4 text-muted-foreground" />
+        <CardTitle className="text-sm font-medium line-clamp-1" title={product.name}>
+          {product.name}
+        </CardTitle>
+        {product.isActive ? (
+          <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
+        ) : (
+          <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Inactive</Badge>
+        )}
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">SKU:</span>
-            <span>{product.sku}</span>
+            <span className="text-sm">{product.sku}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Category:</span>
-            <span>{product.category}</span>
+            <span className="text-sm">{product.category}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Variants:</span>
-            <span>{product.variants.length}</span>
+            <span className="text-sm">{product.variants.length}</span>
           </div>
+          {product.minimumStock && (
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Min Stock:</span>
+              <span className="text-sm">{product.minimumStock}</span>
+            </div>
+          )}
           <div className="flex gap-2 justify-end mt-4">
             {onEdit && (
               <Button variant="outline" size="sm" onClick={() => onEdit(product)}>
@@ -47,7 +60,7 @@ const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="text-destructive"
+                className="text-destructive hover:bg-destructive/10"
                 onClick={() => onDelete(product)}
               >
                 <Trash2 className="h-4 w-4" />
