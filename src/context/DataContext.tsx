@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Product, Category, Order, ProductVariant } from "@/types/pos";
 import { useToast } from "@/components/ui/use-toast";
@@ -69,15 +70,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       // If there are no variants, create a default one
-      if ((!product.variants || product.variants.length === 0) && product.price) {
+      if ((!product.variants || product.variants.length === 0) && product.variants && product.variants[0]) {
+        const variant = product.variants[0];
         product.variants = [{
           id: 1,
           productId: product.id,
           name: 'Default',
           weight: 1,
           unit: 'kg',
-          price: parseFloat(product.price.toString()),
-          stock: product.stock ? parseFloat(product.stock.toString()) : 0,
+          price: variant.price,
+          stock: variant.stock || 0,
+          sku: product.sku + '-1'
+        }];
+      } else if (!product.variants || product.variants.length === 0) {
+        // Create a default variant if none exists
+        product.variants = [{
+          id: 1,
+          productId: product.id,
+          name: 'Default',
+          weight: 1,
+          unit: 'kg',
+          price: 0,
+          stock: 0,
           sku: product.sku + '-1'
         }];
       }

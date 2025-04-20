@@ -20,6 +20,7 @@ import {
   ArrowRight,
   Save,
   Barcode,
+  Package
 } from "lucide-react";
 import {
   Dialog,
@@ -198,7 +199,7 @@ const Pos = () => {
       paymentMethod: currentTab,
       paymentStatus: 'Paid',
       orderDate: new Date().toISOString(),
-      orderStatus: 'Completed',
+      orderStatus: 'Delivered', // Changed from 'Completed' to 'Delivered' to match the type
       customerName: customerInfo.name || "Guest Customer",
       customerPhone: customerInfo.phone,
       customerEmail: customerInfo.email
