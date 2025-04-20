@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +36,7 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
   const isEditing = !!product;
 
   // Form state
-  const [formData, setFormData] = useState<Partial<Product>>({
+  const [formData, setFormData] = useState<Partial<Product & {expiryMonth?: string, price?: number, stock?: number}>>({
     name: "",
     sku: "",
     category: "",
@@ -46,13 +45,28 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
     image: "",
     variants: [],
     isActive: true,
+    price: 0,
+    stock: 0
   });
 
   // Initialize form when editing
   useEffect(() => {
     if (product) {
+      // Extract expiry month if available
+      let expiryMonth = "";
+      if (product.expiryDate) {
+        const date = new Date(product.expiryDate);
+        expiryMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+      }
+      
+      // Add price and stock from first variant if available
+      const defaultVariant = product.variants && product.variants.length > 0 ? product.variants[0] : null;
+      
       setFormData({
-        ...product
+        ...product,
+        expiryMonth,
+        price: defaultVariant?.price || 0,
+        stock: defaultVariant?.stock || 0
       });
     } else {
       // Reset form for new product
@@ -65,13 +79,17 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
         image: "",
         variants: [],
         isActive: true,
+        price: 0,
+        stock: 0,
+        expiryMonth: ""
       });
     }
   }, [product, open]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target;
-    setFormData(prev => ({ ...prev, [id]: value }));
+    const { id, value, type } = e.target as HTMLInputElement;
+    const parsedValue = type === 'number' ? parseFloat(value) : value;
+    setFormData(prev => ({ ...prev, [id]: parsedValue }));
   };
 
   const handleSwitchChange = (checked: boolean, id: string) => {
@@ -96,35 +114,57 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
     }
 
     try {
+      // Calculate expiry date from month picker (set to last day of month)
+      let expiryDate: string | undefined = undefined;
+      if (formData.expiryMonth) {
+        const [year, month] = formData.expiryMonth.split('-').map(Number);
+        // Get last day of the month (By going to first day of next month, then subtracting 1 day)
+        const lastDay = new Date(year, month, 0).getDate();
+        expiryDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
+      }
+      
+      // Prepare the product object
+      const productData: Product = {
+        id: isEditing && product ? product.id : Date.now(),
+        name: formData.name!,
+        sku: formData.sku!,
+        category: formData.category!,
+        description: formData.description || "",
+        barcode: formData.barcode || "",
+        image: formData.image || "",
+        variants: [],
+        expiryDate,
+        minimumStock: formData.minimumStock,
+        isActive: formData.isActive !== undefined ? formData.isActive : true
+      };
+      
+      // If it's a new product or the product has no variants, create a default variant
+      if (!isEditing || (product && product.variants.length === 0)) {
+        productData.variants = [{
+          id: 1,
+          productId: productData.id,
+          name: 'Default',
+          weight: 1,
+          unit: 'kg',
+          price: formData.price || 0,
+          stock: formData.stock || 0,
+          sku: `${formData.sku}-1`
+        }];
+      } else if (product) {
+        // Keep existing variants
+        productData.variants = product.variants;
+      }
+      
       if (isEditing && product) {
         // Update existing product
-        updateProduct(product.id, {
-          ...product,
-          ...formData as Product
-        });
+        updateProduct(product.id, productData);
         toast({
           title: "Product Updated",
           description: `${formData.name} has been updated successfully.`
         });
       } else {
         // Add new product
-        const newProduct: Product = {
-          id: Date.now(),
-          name: formData.name!,
-          sku: formData.sku!,
-          category: formData.category!,
-          description: formData.description || "",
-          barcode: formData.barcode || "",
-          image: formData.image || "",
-          variants: [],
-          isActive: formData.isActive !== undefined ? formData.isActive : true
-        };
-        
-        addProduct(newProduct);
-        toast({
-          title: "Product Added",
-          description: `${formData.name} has been added successfully.`
-        });
+        addProduct(productData);
       }
       
       // Close dialog
@@ -220,6 +260,30 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
                   onChange={handleChange}
                 />
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="price">Price</Label>
+                  <Input 
+                    id="price" 
+                    type="number" 
+                    step="0.01"
+                    placeholder="0.00" 
+                    value={formData.price || ""} 
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="stock">Stock Quantity</Label>
+                  <Input 
+                    id="stock" 
+                    type="number" 
+                    placeholder="0" 
+                    value={formData.stock || ""} 
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="inventory" className="space-y-4 py-4">
@@ -235,13 +299,14 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="expiryDate">Expiry Date</Label>
+                <Label htmlFor="expiryMonth">Expiry Month</Label>
                 <Input 
-                  id="expiryDate" 
-                  type="date" 
-                  value={formData.expiryDate || ""} 
+                  id="expiryMonth" 
+                  type="month" 
+                  value={formData.expiryMonth || ""} 
                   onChange={handleChange}
                 />
+                <p className="text-xs text-muted-foreground">Expiry will be set to the last day of selected month</p>
               </div>
             </TabsContent>
 

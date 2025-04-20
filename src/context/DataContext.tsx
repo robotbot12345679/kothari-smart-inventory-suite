@@ -1,6 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Product, Category, Order, ProductVariant } from "@/types/pos";
+import { useToast } from "@/components/ui/use-toast";
 
 interface DataContextType {
   products: Product[];
@@ -18,22 +18,15 @@ interface DataContextType {
   addVariant: (productId: number, variant: ProductVariant) => void;
   updateVariant: (productId: number, variantId: number, updatedVariant: ProductVariant) => void;
   deleteVariant: (productId: number, variantId: number) => void;
+  findProductByBarcode: (barcode: string) => Product | undefined;
 }
-
-const defaultCategories: Category[] = [
-  { id: 1, name: "All", isActive: true },
-  { id: 2, name: "Nuts", isActive: true },
-  { id: 3, name: "Dried Fruits", isActive: true },
-  { id: 4, name: "Assorted", isActive: true },
-  { id: 5, name: "Gift Packs", isActive: true },
-  { id: 6, name: "Spices", isActive: true },
-];
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>(defaultCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
 
   // Load data from localStorage on initial render
@@ -45,6 +38,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (savedProducts) setProducts(JSON.parse(savedProducts));
     if (savedCategories) setCategories(JSON.parse(savedCategories));
     if (savedOrders) setOrders(JSON.parse(savedOrders));
+    
+    // If no categories exist, create the default "All" category
+    if (!savedCategories || JSON.parse(savedCategories).length === 0) {
+      setCategories([
+        { id: 1, name: "All", isActive: true },
+      ]);
+    }
   }, []);
 
   // Save data to localStorage whenever it changes
@@ -54,14 +54,47 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem("orders", JSON.stringify(orders));
   }, [products, categories, orders]);
 
+  // Find product by barcode
+  const findProductByBarcode = (barcode: string): Product | undefined => {
+    return products.find(product => product.barcode === barcode);
+  };
+
   // Product CRUD operations
   const addProduct = (product: Product) => {
-    // Generate new id if not provided
-    if (!product.id) {
-      const maxId = products.length > 0 ? Math.max(...products.map(p => p.id)) : 0;
-      product.id = maxId + 1;
+    try {
+      // Generate new id if not provided
+      if (!product.id) {
+        const maxId = products.length > 0 ? Math.max(...products.map(p => p.id)) : 0;
+        product.id = maxId + 1;
+      }
+      
+      // If there are no variants, create a default one
+      if ((!product.variants || product.variants.length === 0) && product.price) {
+        product.variants = [{
+          id: 1,
+          productId: product.id,
+          name: 'Default',
+          weight: 1,
+          unit: 'kg',
+          price: parseFloat(product.price.toString()),
+          stock: product.stock ? parseFloat(product.stock.toString()) : 0,
+          sku: product.sku + '-1'
+        }];
+      }
+      
+      setProducts(prev => [...prev, product]);
+      toast({
+        title: "Success",
+        description: `Product "${product.name}" has been added.`,
+      });
+    } catch (error) {
+      console.error("Error adding product:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add product. Please try again.",
+        variant: "destructive"
+      });
     }
-    setProducts(prev => [...prev, product]);
   };
 
   const updateProduct = (id: number, updatedProduct: Product) => {
@@ -157,7 +190,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       deleteOrder,
       addVariant,
       updateVariant,
-      deleteVariant
+      deleteVariant,
+      findProductByBarcode
     }}>
       {children}
     </DataContext.Provider>

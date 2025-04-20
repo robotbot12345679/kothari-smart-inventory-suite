@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,8 @@ import {
   QrCode,
   Wallet,
   ArrowRight,
-  Save
+  Save,
+  Barcode,
 } from "lucide-react";
 import {
   Dialog,
@@ -28,16 +30,42 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { products, categories } from "@/data/products";
-import { CartItem } from "@/types/pos";
+import { CartItem, Order } from "@/types/pos";
+import { useData } from "@/context/DataContext";
+import { useToast } from "@/components/ui/use-toast";
+import { useUniqueId } from "@/hooks/useUniqueId";
 
 const Pos = () => {
+  const { products, categories, addOrder, findProductByBarcode } = useData();
+  const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentModalOpen, setPaymentModalOpen] = useState<boolean>(false);
+  const [barcodeModalOpen, setBarcodeModalOpen] = useState<boolean>(false);
+  const [barcodeInput, setBarcodeInput] = useState<string>("");
+  const [amountTendered, setAmountTendered] = useState<string>("");
+  const [currentTab, setCurrentTab] = useState<string>("upi");
+  const [customerInfo, setCustomerInfo] = useState({
+    name: "",
+    phone: "",
+    email: ""
+  });
+  
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
+  const orderIdPrefix = useUniqueId("ORD");
+  
+  // Focus on barcode input when modal opens
+  useEffect(() => {
+    if (barcodeModalOpen && barcodeInputRef.current) {
+      barcodeInputRef.current.focus();
+    }
+  }, [barcodeModalOpen]);
 
   const filteredProducts = products.filter(product => {
+    // Only show active products
+    if (!product.isActive) return false;
+    
     const matchesCategory = activeCategory === 1 || product.category === categories.find(c => c.id === activeCategory)?.name;
     const matchesSearch = searchQuery === "" || 
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -48,9 +76,29 @@ const Pos = () => {
   const addToCart = (product: any) => {
     const variant = product.variants[0];
     
+    // Skip if no variant or no stock
+    if (!variant || variant.stock <= 0) {
+      toast({
+        title: "Cannot add product",
+        description: "This product is out of stock",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const existingItemIndex = cart.findIndex(item => item.variantId === variant.id);
     
     if (existingItemIndex >= 0) {
+      // Check if adding one more would exceed available stock
+      if (cart[existingItemIndex].quantity >= variant.stock) {
+        toast({
+          title: "Stock limit reached",
+          description: `Only ${variant.stock} units available in stock`,
+          variant: "destructive"
+        });
+        return;
+      }
+      
       const updatedCart = [...cart];
       updatedCart[existingItemIndex].quantity += 1;
       setCart(updatedCart);
@@ -74,6 +122,19 @@ const Pos = () => {
 
     const updatedCart = cart.map(item => {
       if (item.id === itemId) {
+        // Find the product and variant to check stock
+        const product = products.find(p => p.id === item.id);
+        const variant = product?.variants.find(v => v.id === item.variantId);
+        
+        if (action === 'increase' && variant && item.quantity >= variant.stock) {
+          toast({
+            title: "Stock limit reached",
+            description: `Only ${variant.stock} units available in stock`,
+            variant: "destructive"
+          });
+          return item;
+        }
+        
         const newQuantity = action === 'increase' ? item.quantity + 1 : item.quantity - 1;
         return { ...item, quantity: Math.max(newQuantity, 0) };
       }
@@ -83,20 +144,311 @@ const Pos = () => {
     setCart(updatedCart);
   };
 
+  const handleBarcodeSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!barcodeInput) return;
+    
+    const product = findProductByBarcode(barcodeInput);
+    if (product) {
+      addToCart(product);
+      toast({
+        title: "Product added",
+        description: `${product.name} has been added to the cart`
+      });
+    } else {
+      toast({
+        title: "Product not found",
+        description: "No product with this barcode was found",
+        variant: "destructive"
+      });
+    }
+    
+    setBarcodeInput("");
+    setBarcodeModalOpen(false);
+  };
+
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const gst = subtotal * 0.18; // 18% GST
   const total = subtotal + gst;
+  
+  // Calculate change for cash payment
+  const getChange = () => {
+    const tendered = parseFloat(amountTendered || "0");
+    return Math.max(0, tendered - total).toFixed(2);
+  };
+
+  const handleCompletePayment = () => {
+    // Validate payment based on method
+    if (currentTab === "cash" && parseFloat(amountTendered || "0") < total) {
+      toast({
+        title: "Invalid Payment",
+        description: "Amount tendered is less than the total amount",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Create order
+    const newOrder: Order = {
+      id: orderIdPrefix,
+      items: [...cart],
+      subtotal,
+      gst,
+      total,
+      paymentMethod: currentTab,
+      paymentStatus: 'Paid',
+      orderDate: new Date().toISOString(),
+      orderStatus: 'Completed',
+      customerName: customerInfo.name || "Guest Customer",
+      customerPhone: customerInfo.phone,
+      customerEmail: customerInfo.email
+    };
+    
+    try {
+      addOrder(newOrder);
+      
+      toast({
+        title: "Order Completed",
+        description: `Order #${orderIdPrefix} has been created successfully.`
+      });
+      
+      // Reset cart and other states
+      setCart([]);
+      setAmountTendered("");
+      setPaymentModalOpen(false);
+      setCustomerInfo({ name: "", phone: "", email: "" });
+      
+      // Print receipt
+      printReceipt(newOrder);
+    } catch (error) {
+      console.error("Error creating order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to complete the order. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const printReceipt = (order: Order) => {
+    const receiptWindow = window.open('', '_blank', 'width=400,height=600');
+    
+    if (!receiptWindow) {
+      toast({
+        title: "Print Error",
+        description: "Could not open print window. Please check your popup blocker settings.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Format date
+    const orderDate = new Date(order.orderDate);
+    const formattedDate = orderDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+    const formattedTime = orderDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    // Create receipt content
+    receiptWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Receipt - Order #${order.id}</title>
+        <style>
+          body {
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            max-width: 380px;
+          }
+          .receipt {
+            border: 1px solid #ddd;
+            padding: 20px;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+          }
+          .logo {
+            max-width: 100px;
+            margin: 0 auto;
+            display: block;
+          }
+          .title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+          }
+          .info {
+            margin: 5px 0;
+            font-size: 14px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          th, td {
+            text-align: left;
+            padding: 8px 4px;
+            border-bottom: 1px solid #ddd;
+            font-size: 14px;
+          }
+          th {
+            font-weight: bold;
+          }
+          .item-price {
+            text-align: right;
+          }
+          .subtotal-row td {
+            border-top: 1px solid #000;
+            border-bottom: none;
+            padding-top: 10px;
+          }
+          .total-row td {
+            font-weight: bold;
+            border-bottom: none;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+          }
+          .divider {
+            border-top: 1px dashed #ddd;
+            margin: 15px 0;
+          }
+          @media print {
+            body {
+              padding: 0;
+              margin: 0;
+            }
+            .receipt {
+              border: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt">
+          <div class="header">
+            <img src="/lovable-uploads/00972147-e824-453d-8b6d-dc558e1cb95e.png" alt="Kothari's" class="logo">
+            <div class="title">Kothari's Dry Fruits</div>
+            <div class="info">123 Market Street, Mumbai, India</div>
+            <div class="info">Phone: +91 9876543210</div>
+            <div class="info">GST No: 27AAAAA0000A1Z5</div>
+          </div>
+          
+          <div class="order-info">
+            <div class="info">Order #: ${order.id}</div>
+            <div class="info">Date: ${formattedDate} ${formattedTime}</div>
+            <div class="info">Customer: ${order.customerName}</div>
+            ${order.customerPhone ? `<div class="info">Phone: ${order.customerPhone}</div>` : ''}
+          </div>
+          
+          <div class="divider"></div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th class="item-price">Price</th>
+                <th class="item-price">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${order.items.map(item => `
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${item.quantity} ${item.unit}</td>
+                  <td class="item-price">₹${item.price.toFixed(2)}</td>
+                  <td class="item-price">₹${(item.price * item.quantity).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+              
+              <tr class="subtotal-row">
+                <td colspan="3">Subtotal</td>
+                <td class="item-price">₹${order.subtotal.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td colspan="3">GST (18%)</td>
+                <td class="item-price">₹${order.gst.toFixed(2)}</td>
+              </tr>
+              <tr class="total-row">
+                <td colspan="3">Total</td>
+                <td class="item-price">₹${order.total.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td colspan="3">Payment Method</td>
+                <td class="item-price">${order.paymentMethod.toUpperCase()}</td>
+              </tr>
+              ${order.paymentMethod === 'cash' ? `
+                <tr>
+                  <td colspan="3">Amount Tendered</td>
+                  <td class="item-price">₹${parseFloat(amountTendered).toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td colspan="3">Change</td>
+                  <td class="item-price">₹${getChange()}</td>
+                </tr>
+              ` : ''}
+            </tbody>
+          </table>
+          
+          <div class="divider"></div>
+          
+          <div class="footer">
+            <p>Thank you for shopping with us!</p>
+            <p>Visit us again soon.</p>
+          </div>
+        </div>
+        <script>
+          window.onload = function() {
+            window.print();
+            // Close window after print dialog is closed (works in most modern browsers)
+            setTimeout(function() {
+              window.close();
+            }, 500);
+          }
+        </script>
+      </body>
+      </html>
+    `);
+    
+    receiptWindow.document.close();
+  };
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold tracking-tight">Point of Sale</h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-1">
+          <Button 
+            variant="outline" 
+            className="gap-1"
+            onClick={() => setBarcodeModalOpen(true)}
+          >
             <Scan className="h-4 w-4" />
             Scan Barcode
           </Button>
-          <Button variant="outline" className="gap-1">
+          <Button 
+            variant="outline" 
+            className="gap-1"
+            onClick={() => {
+              // Save cart as draft order functionality would go here
+              toast({
+                title: "Order Saved",
+                description: "Your current order has been saved as a draft."
+              });
+            }}
+          >
             <Save className="h-4 w-4" />
             Save Order
           </Button>
@@ -136,29 +488,45 @@ const Pos = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {filteredProducts.map(product => (
-              <Card
-                key={product.id}
-                className="card-hover cursor-pointer overflow-hidden"
-                onClick={() => addToCart(product)}
-              >
-                <div className="aspect-square w-full overflow-hidden">
-                  <img 
-                    src={product.image} 
-                    alt={product.name} 
-                    className="h-full w-full object-cover transition-all hover:scale-105"
-                  />
-                </div>
-                <CardContent className="p-3">
-                  <h3 className="font-semibold truncate">{product.name}</h3>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-sm text-muted-foreground">{product.sku}</span>
-                    <span className="font-semibold">₹{product.variants[0].price}/{product.variants[0].unit}</span>
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map(product => (
+                <Card
+                  key={product.id}
+                  className={`card-hover cursor-pointer overflow-hidden ${
+                    product.variants[0]?.stock <= 0 ? "opacity-50" : ""
+                  }`}
+                  onClick={() => addToCart(product)}
+                >
+                  <div className="aspect-square w-full overflow-hidden">
+                    {product.image ? (
+                      <img 
+                        src={product.image} 
+                        alt={product.name} 
+                        className="h-full w-full object-cover transition-all hover:scale-105"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-muted">
+                        <Package className="h-10 w-10 text-muted-foreground" />
+                      </div>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-            {filteredProducts.length === 0 && (
+                  <CardContent className="p-3">
+                    <h3 className="font-semibold truncate">{product.name}</h3>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-sm text-muted-foreground">{product.sku}</span>
+                      <span className="font-semibold">₹{product.variants[0]?.price}/{product.variants[0]?.unit}</span>
+                    </div>
+                    <div className="text-xs mt-1">
+                      {product.variants[0]?.stock > 0 ? (
+                        <span className="text-green-600">In Stock: {product.variants[0]?.stock}</span>
+                      ) : (
+                        <span className="text-red-600">Out of Stock</span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
               <div className="col-span-full flex flex-col items-center justify-center py-8 text-center">
                 <Tag className="h-10 w-10 text-muted-foreground mb-2" />
                 <h3 className="font-semibold text-lg">No products found</h3>
@@ -272,8 +640,45 @@ const Pos = () => {
         </div>
       </div>
 
+      {/* Barcode Scanner Modal */}
+      <Dialog open={barcodeModalOpen} onOpenChange={setBarcodeModalOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Scan Barcode</DialogTitle>
+            <DialogDescription>
+              Enter or scan product barcode to quickly add to cart
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleBarcodeSearch} className="space-y-4">
+            <div className="flex flex-col items-center space-y-4">
+              <Barcode className="h-16 w-16 text-primary mb-2" />
+              <div className="w-full space-y-2">
+                <Label htmlFor="barcode-input">Barcode</Label>
+                <Input
+                  id="barcode-input"
+                  placeholder="Enter barcode number"
+                  value={barcodeInput}
+                  onChange={(e) => setBarcodeInput(e.target.value)}
+                  ref={barcodeInputRef}
+                  autoFocus
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setBarcodeModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Find Product</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Modal */}
       <Dialog open={paymentModalOpen} onOpenChange={setPaymentModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Payment</DialogTitle>
             <DialogDescription>
@@ -281,68 +686,125 @@ const Pos = () => {
             </DialogDescription>
           </DialogHeader>
           
-          <Tabs defaultValue="upi" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="upi">UPI</TabsTrigger>
-              <TabsTrigger value="cash">Cash</TabsTrigger>
-              <TabsTrigger value="card">Card</TabsTrigger>
-            </TabsList>
-            <TabsContent value="upi" className="p-4">
-              <div className="flex flex-col items-center space-y-4">
-                <div className="flex items-center justify-center w-48 h-48 bg-gray-100 rounded-lg">
-                  <QrCode className="h-24 w-24 text-primary" />
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="customer-name">Customer Name</Label>
+                <Input 
+                  id="customer-name" 
+                  placeholder="Optional" 
+                  value={customerInfo.name}
+                  onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="customer-phone">Phone Number</Label>
+                <Input 
+                  id="customer-phone" 
+                  placeholder="Optional" 
+                  value={customerInfo.phone}
+                  onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <Tabs defaultValue="upi" className="w-full" value={currentTab} onValueChange={setCurrentTab}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="upi">UPI</TabsTrigger>
+                <TabsTrigger value="cash">Cash</TabsTrigger>
+                <TabsTrigger value="card">Card</TabsTrigger>
+              </TabsList>
+              <TabsContent value="upi" className="p-4">
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="flex items-center justify-center w-48 h-48 bg-gray-100 rounded-lg">
+                    <QrCode className="h-24 w-24 text-primary" />
+                  </div>
+                  <p className="text-center">Scan with any UPI app</p>
+                  <p className="font-medium text-center">yourmerchant@upi</p>
+                  <Button className="w-full gap-2" onClick={handleCompletePayment}>
+                    <Wallet className="h-4 w-4" />
+                    Complete Payment
+                  </Button>
                 </div>
-                <p className="text-center">Scan with any UPI app</p>
-                <p className="font-medium text-center">ashokkothari738@oksbi</p>
-                <Button className="w-full gap-2">
-                  <Wallet className="h-4 w-4" />
-                  Complete Payment
-                </Button>
-              </div>
-            </TabsContent>
-            <TabsContent value="cash" className="p-4 space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="amount-tendered">Amount Tendered</Label>
-                <Input id="amount-tendered" type="number" placeholder="Enter amount" />
-              </div>
-              <div className="flex justify-between">
-                <span>Total Amount:</span>
-                <span className="font-semibold">₹{total.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Change:</span>
-                <span className="font-semibold">₹0.00</span>
-              </div>
-              <Button className="w-full">Complete Cash Payment</Button>
-            </TabsContent>
-            <TabsContent value="card" className="p-4 space-y-4">
-              <div className="grid gap-4">
+              </TabsContent>
+              <TabsContent value="cash" className="p-4 space-y-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="card-number">Card Number</Label>
-                  <Input id="card-number" placeholder="•••• •••• •••• ••••" />
+                  <Label htmlFor="amount-tendered">Amount Tendered</Label>
+                  <Input 
+                    id="amount-tendered" 
+                    type="number" 
+                    step="0.01"
+                    placeholder="Enter amount" 
+                    value={amountTendered}
+                    onChange={(e) => setAmountTendered(e.target.value)}
+                  />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="flex justify-between">
+                  <span>Total Amount:</span>
+                  <span className="font-semibold">₹{total.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Change:</span>
+                  <span className="font-semibold">₹{getChange()}</span>
+                </div>
+                <Button 
+                  className="w-full"
+                  onClick={handleCompletePayment}
+                  disabled={parseFloat(amountTendered || "0") < total}
+                >
+                  Complete Cash Payment
+                </Button>
+              </TabsContent>
+              <TabsContent value="card" className="p-4 space-y-4">
+                <div className="grid gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="expiry">Expiry Date</Label>
-                    <Input id="expiry" placeholder="MM/YY" />
+                    <Label htmlFor="card-number">Card Number</Label>
+                    <Input id="card-number" placeholder="•••• •••• •••• ••••" />
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="cvc">CVC</Label>
-                    <Input id="cvc" placeholder="•••" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="expiry">Expiry Date</Label>
+                      <Input id="expiry" placeholder="MM/YY" />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="cvc">CVC</Label>
+                      <Input id="cvc" placeholder="•••" />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <Button className="w-full gap-2">
-                <CreditCard className="h-4 w-4" />
-                Process Card Payment
-              </Button>
-            </TabsContent>
-          </Tabs>
+                <Button className="w-full gap-2" onClick={handleCompletePayment}>
+                  <CreditCard className="h-4 w-4" />
+                  Process Card Payment
+                </Button>
+              </TabsContent>
+            </Tabs>
+          </div>
 
           <DialogFooter className="flex items-center justify-between">
-            <Button variant="outline" className="gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2" 
+              onClick={() => {
+                // Only print receipt if cart is not empty
+                if (cart.length > 0) {
+                  const draftOrder: Order = {
+                    id: orderIdPrefix + "-DRAFT",
+                    items: [...cart],
+                    subtotal,
+                    gst,
+                    total,
+                    paymentMethod: 'not paid',
+                    paymentStatus: 'Pending',
+                    orderDate: new Date().toISOString(),
+                    orderStatus: 'Pending',
+                    customerName: customerInfo.name || "Guest Customer"
+                  };
+                  printReceipt(draftOrder);
+                }
+              }}
+            >
               <Printer className="h-4 w-4" />
-              Print Receipt
+              Print Quote
             </Button>
             <Button variant="outline" onClick={() => setPaymentModalOpen(false)}>
               Cancel
