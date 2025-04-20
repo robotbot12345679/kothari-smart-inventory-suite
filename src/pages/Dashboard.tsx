@@ -1,4 +1,3 @@
-
 import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -8,7 +7,8 @@ import {
   AlertTriangle, 
   BarChart3, 
   ArrowUpRight, 
-  ArrowDownRight
+  ArrowDownRight,
+  Plus
 } from "lucide-react";
 import { useData } from "@/context/DataContext";
 import { useNavigate } from "react-router-dom";
