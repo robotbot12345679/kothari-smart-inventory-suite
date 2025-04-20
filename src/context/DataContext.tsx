@@ -1,12 +1,12 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Product, Category, Order, ProductVariant } from "@/types/pos";
+import { Product, Category, Order, ProductVariant, Customer } from "@/types/pos";
 import { useToast } from "@/components/ui/use-toast";
 
 interface DataContextType {
   products: Product[];
   categories: Category[];
   orders: Order[];
+  customers: Customer[];
   addProduct: (product: Product) => void;
   updateProduct: (id: number, updatedProduct: Product) => void;
   deleteProduct: (id: number) => void;
@@ -20,6 +20,9 @@ interface DataContextType {
   updateVariant: (productId: number, variantId: number, updatedVariant: ProductVariant) => void;
   deleteVariant: (productId: number, variantId: number) => void;
   findProductByBarcode: (barcode: string) => Product | undefined;
+  addCustomer: (customer: Customer) => void;
+  updateCustomer: (id: number, updatedCustomer: Customer) => void;
+  deleteCustomer: (id: number) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -29,18 +32,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
 
-  // Load data from localStorage on initial render
   useEffect(() => {
     const savedProducts = localStorage.getItem("products");
     const savedCategories = localStorage.getItem("categories");
     const savedOrders = localStorage.getItem("orders");
+    const savedCustomers = localStorage.getItem("customers");
 
     if (savedProducts) setProducts(JSON.parse(savedProducts));
     if (savedCategories) setCategories(JSON.parse(savedCategories));
     if (savedOrders) setOrders(JSON.parse(savedOrders));
-    
-    // If no categories exist, create the default "All" category
+    if (savedCustomers) setCustomers(JSON.parse(savedCustomers));
+
     if (!savedCategories || JSON.parse(savedCategories).length === 0) {
       setCategories([
         { id: 1, name: "All", isActive: true },
@@ -48,28 +52,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Save data to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem("products", JSON.stringify(products));
     localStorage.setItem("categories", JSON.stringify(categories));
     localStorage.setItem("orders", JSON.stringify(orders));
-  }, [products, categories, orders]);
+    localStorage.setItem("customers", JSON.stringify(customers));
+  }, [products, categories, orders, customers]);
 
-  // Find product by barcode
   const findProductByBarcode = (barcode: string): Product | undefined => {
     return products.find(product => product.barcode === barcode);
   };
 
-  // Product CRUD operations
   const addProduct = (product: Product) => {
     try {
-      // Generate new id if not provided
       if (!product.id) {
         const maxId = products.length > 0 ? Math.max(...products.map(p => p.id)) : 0;
         product.id = maxId + 1;
       }
       
-      // If there are no variants, create a default one
       if ((!product.variants || product.variants.length === 0) && product.variants && product.variants[0]) {
         const variant = product.variants[0];
         product.variants = [{
@@ -83,7 +83,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           sku: product.sku + '-1'
         }];
       } else if (!product.variants || product.variants.length === 0) {
-        // Create a default variant if none exists
         product.variants = [{
           id: 1,
           productId: product.id,
@@ -119,7 +118,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProducts(prev => prev.filter(product => product.id !== id));
   };
 
-  // Category CRUD operations
   const addCategory = (category: Category) => {
     const maxId = categories.length > 0 ? Math.max(...categories.map(c => c.id)) : 0;
     setCategories(prev => [...prev, { ...category, id: maxId + 1 }]);
@@ -133,7 +131,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCategories(prev => prev.filter(category => category.id !== id));
   };
 
-  // Order CRUD operations
   const addOrder = (order: Order) => {
     setOrders(prev => [...prev, order]);
   };
@@ -146,7 +143,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setOrders(prev => prev.filter(order => order.id !== id));
   };
 
-  // Variant CRUD operations
   const addVariant = (productId: number, variant: ProductVariant) => {
     setProducts(prev => prev.map(product => {
       if (product.id === productId) {
@@ -188,11 +184,49 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
   };
 
+  const addCustomer = (customer: Customer) => {
+    try {
+      if (!customer.id) {
+        const maxId = customers.length > 0 ? Math.max(...customers.map(c => c.id)) : 0;
+        customer.id = maxId + 1;
+      }
+      setCustomers(prev => [...prev, customer]);
+      toast({
+        title: "Success",
+        description: `Customer "${customer.name}" has been added.`,
+      });
+    } catch (error) {
+      console.error("Error adding customer:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add customer. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateCustomer = (id: number, updatedCustomer: Customer) => {
+    setCustomers(prev => prev.map(customer => customer.id === id ? updatedCustomer : customer));
+    toast({
+      title: "Success",
+      description: `Customer "${updatedCustomer.name}" has been updated.`,
+    });
+  };
+
+  const deleteCustomer = (id: number) => {
+    setCustomers(prev => prev.filter(customer => customer.id !== id));
+    toast({
+      title: "Success",
+      description: "Customer has been deleted.",
+    });
+  };
+
   return (
     <DataContext.Provider value={{
       products,
       categories,
       orders,
+      customers,
       addProduct,
       updateProduct,
       deleteProduct,
@@ -205,7 +239,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addVariant,
       updateVariant,
       deleteVariant,
-      findProductByBarcode
+      findProductByBarcode,
+      addCustomer,
+      updateCustomer,
+      deleteCustomer
     }}>
       {children}
     </DataContext.Provider>

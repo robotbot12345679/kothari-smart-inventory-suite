@@ -1,9 +1,17 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, PlusCircle, Users, UserPlus, FileDown, Phone, Mail } from "lucide-react";
+import { Search, Filter, UserPlus, Users, Phone, Mail } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -20,119 +28,59 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useData } from "@/context/DataContext";
+import { Label } from "@/components/ui/label";
+import { Customer } from "@/types/pos";
 
 const Customers = () => {
-  // Sample customer data
-  const customers = [
-    {
-      id: 1,
-      name: "Rajesh Kumar",
-      email: "rajesh.kumar@example.com",
-      phone: "+91 98765 43210",
-      totalOrders: 8,
-      totalSpent: 24500,
-      lastOrderDate: "2023-04-15",
-      status: "Active",
-      city: "Mumbai",
-      state: "Maharashtra",
-    },
-    {
-      id: 2,
-      name: "Priya Sharma",
-      email: "priya.sharma@example.com",
-      phone: "+91 98765 12345",
-      totalOrders: 5,
-      totalSpent: 15750,
-      lastOrderDate: "2023-04-16",
-      status: "Active",
-      city: "Delhi",
-      state: "Delhi",
-    },
-    {
-      id: 3,
-      name: "Amit Patel",
-      email: "amit.patel@example.com",
-      phone: "+91 87654 32109",
-      totalOrders: 3,
-      totalSpent: 8200,
-      lastOrderDate: "2023-04-16",
-      status: "Active",
-      city: "Ahmedabad",
-      state: "Gujarat",
-    },
-    {
-      id: 4,
-      name: "Sunita Desai",
-      email: "sunita.desai@example.com",
-      phone: "+91 76543 21098",
-      totalOrders: 12,
-      totalSpent: 35400,
-      lastOrderDate: "2023-04-17",
-      status: "Active",
-      city: "Hyderabad",
-      state: "Telangana",
-    },
-    {
-      id: 5,
-      name: "Vikram Singh",
-      email: "vikram.singh@example.com",
-      phone: "+91 65432 10987",
-      totalOrders: 2,
-      totalSpent: 6500,
-      lastOrderDate: "2023-04-17",
-      status: "Active",
-      city: "Jaipur",
-      state: "Rajasthan",
-    },
-    {
-      id: 6,
-      name: "Ananya Roy",
-      email: "ananya.roy@example.com",
-      phone: "+91 54321 09876",
-      totalOrders: 7,
-      totalSpent: 19800,
-      lastOrderDate: "2023-04-17",
-      status: "Inactive",
-      city: "Kolkata",
-      state: "West Bengal",
-    },
-    {
-      id: 7,
-      name: "Kiran Joshi",
-      email: "kiran.joshi@example.com",
-      phone: "+91 43210 98765",
-      totalOrders: 4,
-      totalSpent: 12600,
-      lastOrderDate: "2023-04-18",
-      status: "Active",
-      city: "Pune",
-      state: "Maharashtra",
-    },
-    {
-      id: 8,
-      name: "Neha Gupta",
-      email: "neha.gupta@example.com",
-      phone: "+91 32109 87654",
-      totalOrders: 9,
-      totalSpent: 27300,
-      lastOrderDate: "2023-04-18",
-      status: "Active",
-      city: "Chennai",
-      state: "Tamil Nadu",
-    },
-  ];
+  const { customers, addCustomer, updateCustomer, deleteCustomer, orders } = useData();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [locationFilter, setLocationFilter] = useState("all");
+  const [newCustomer, setNewCustomer] = useState<Partial<Customer>>({});
+  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
 
-  // Get initials from name
+  const filteredCustomers = customers.filter(customer => {
+    const matchesSearch = searchQuery === "" || 
+      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.phone.includes(searchQuery);
+    
+    const matchesStatus = statusFilter === "all" || customer.status === statusFilter;
+    const matchesLocation = locationFilter === "all" || 
+      customer.city.toLowerCase() === locationFilter.toLowerCase();
+    
+    return matchesSearch && matchesStatus && matchesLocation;
+  });
+
+  const activeCustomers = customers.filter(c => c.status === 'Active').length;
+  const totalCustomers = customers.length;
+  const averageOrderValue = orders.length > 0 
+    ? orders.reduce((sum, order) => sum + order.total, 0) / orders.length 
+    : 0;
+  const customerLifetimeValue = totalCustomers > 0
+    ? orders.reduce((sum, order) => sum + order.total, 0) / totalCustomers
+    : 0;
+
+  const handleAddCustomer = () => {
+    if (newCustomer.name && newCustomer.email && newCustomer.phone) {
+      addCustomer({
+        id: 0, // Will be set by addCustomer function
+        name: newCustomer.name,
+        email: newCustomer.email,
+        phone: newCustomer.phone,
+        city: newCustomer.city || '',
+        state: newCustomer.state || '',
+        totalOrders: 0,
+        totalSpent: 0,
+        status: 'Active'
+      });
+      setNewCustomer({});
+      setIsAddCustomerOpen(false);
+    }
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -141,16 +89,10 @@ const Customers = () => {
       .toUpperCase();
   };
 
-  // Function to determine status badge color
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active":
-        return "bg-green-100 text-green-800 hover:bg-green-100";
-      case "Inactive":
-        return "bg-gray-100 text-gray-800 hover:bg-gray-100";
-      default:
-        return "bg-blue-100 text-blue-800 hover:bg-blue-100";
-    }
+    return status === 'Active' 
+      ? "bg-green-100 text-green-800 hover:bg-green-100"
+      : "bg-gray-100 text-gray-800 hover:bg-gray-100";
   };
 
   return (
@@ -210,6 +152,66 @@ const Customers = () => {
         </Card>
       </div>
 
+      <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Customer</DialogTitle>
+            <DialogDescription>
+              Enter customer details below
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={newCustomer.name || ''}
+                onChange={e => setNewCustomer(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={newCustomer.email || ''}
+                onChange={e => setNewCustomer(prev => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                value={newCustomer.phone || ''}
+                onChange={e => setNewCustomer(prev => ({ ...prev, phone: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="city">City</Label>
+              <Input
+                id="city"
+                value={newCustomer.city || ''}
+                onChange={e => setNewCustomer(prev => ({ ...prev, city: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="state">State</Label>
+              <Input
+                id="state"
+                value={newCustomer.state || ''}
+                onChange={e => setNewCustomer(prev => ({ ...prev, state: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddCustomerOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddCustomer}>Add Customer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="bg-white rounded-lg shadow dark:bg-gray-800">
         <div className="p-4 border-b flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="relative w-full md:w-96">
@@ -218,6 +220,8 @@ const Customers = () => {
               type="search"
               placeholder="Search customers..."
               className="w-full bg-background pl-8 md:w-96"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -266,7 +270,7 @@ const Customers = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {customers.map((customer) => (
+              {filteredCustomers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">

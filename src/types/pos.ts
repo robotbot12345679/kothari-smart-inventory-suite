@@ -1,4 +1,3 @@
-
 export interface ProductVariant {
   id: number;
   productId: number;
@@ -38,6 +37,19 @@ export interface CartItem {
   price: number;
   quantity: number;
   unit: string;
+}
+
+export interface Customer {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  city: string;
+  state: string;
+  totalOrders: number;
+  totalSpent: number;
+  lastOrderDate?: string;
+  status: 'Active' | 'Inactive';
 }
 
 export interface Order {
