@@ -20,13 +20,13 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, Edit, Tag } from "lucide-react";
-import { categories } from "@/data/products";
+import { Plus, Trash2, Tag } from "lucide-react";
+import { useData } from "@/context/DataContext";
 import type { Category } from "@/types/pos";
 
 const CategoryManager = () => {
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
-  const [managedCategories, setManagedCategories] = useState<Category[]>(categories);
+  const { categories, addCategory, deleteCategory } = useData();
   const { toast } = useToast();
   const [newCategory, setNewCategory] = useState({
     name: '',
@@ -44,16 +44,12 @@ const CategoryManager = () => {
       return;
     }
 
-    const newId = managedCategories.length > 0 
-      ? Math.max(...managedCategories.map(c => c.id)) + 1 
-      : 1;
-
-    setManagedCategories([...managedCategories, {
-      id: newId,
+    addCategory({
+      id: 0, // Will be assigned by DataContext
       name: newCategory.name,
       description: newCategory.description,
       isActive: newCategory.isActive
-    }]);
+    });
 
     setNewCategory({ name: '', description: '', isActive: true });
     setIsAddCategoryOpen(false);
@@ -65,18 +61,10 @@ const CategoryManager = () => {
   };
 
   const handleDeleteCategory = (id: number) => {
-    setManagedCategories(managedCategories.filter(category => category.id !== id));
+    deleteCategory(id);
     toast({
       title: "Success",
       description: "Category deleted successfully"
-    });
-  };
-
-  const handleClearAll = () => {
-    setManagedCategories([]);
-    toast({
-      title: "Success",
-      description: "All categories have been cleared"
     });
   };
 
@@ -85,9 +73,6 @@ const CategoryManager = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Category Management</h1>
         <div className="flex gap-2">
-          <Button variant="destructive" onClick={handleClearAll}>
-            Clear All
-          </Button>
           <Button onClick={() => setIsAddCategoryOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> Add Category
           </Button>
@@ -142,7 +127,7 @@ const CategoryManager = () => {
       </Dialog>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {managedCategories.map((category) => (
+        {categories.map((category) => (
           <Card key={category.id}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{category.name}</CardTitle>

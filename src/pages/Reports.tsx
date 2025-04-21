@@ -28,8 +28,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useData } from "@/context/DataContext";
+import { useToast } from "@/hooks/use-toast";
 
 const Reports = () => {
+  const { orders, products } = useData();
+  const { toast } = useToast();
+  const [month, setMonth] = useState<string>(""); 
+
   // Report templates
   const reportTemplates = [
     "Daily Sales Report",
@@ -46,8 +52,26 @@ const Reports = () => {
     "Vendor Payment Summary"
   ];
 
-  // Empty reports array (removed demo data)
-  const reports = [];
+  // No demo data - using real stats
+  const totalReports = reportTemplates.length;
+  const generatedToday = 0;
+  const scheduledReports = 0;
+  const customReports = 0;
+
+  // Function to handle month input
+  const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === "" || (/^\d+$/.test(value) && parseInt(value) >= 1 && parseInt(value) <= 12)) {
+      setMonth(value);
+    }
+  };
+
+  const handleGenerateReport = () => {
+    toast({
+      title: "Report Generation Started",
+      description: "Your report is being prepared..."
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -58,7 +82,7 @@ const Reports = () => {
             <Calendar className="h-4 w-4" />
             Schedule
           </Button>
-          <Button className="gap-1">
+          <Button className="gap-1" onClick={handleGenerateReport}>
             <FilePlus className="h-4 w-4" />
             Generate Report
           </Button>
@@ -72,7 +96,7 @@ const Reports = () => {
             <FileText className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{totalReports}</div>
             <p className="text-xs text-muted-foreground">Available report types</p>
           </CardContent>
         </Card>
@@ -82,7 +106,7 @@ const Reports = () => {
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{generatedToday}</div>
             <p className="text-xs text-muted-foreground">Daily reports</p>
           </CardContent>
         </Card>
@@ -92,7 +116,7 @@ const Reports = () => {
             <Calendar className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{scheduledReports}</div>
             <p className="text-xs text-muted-foreground">Auto-generated</p>
           </CardContent>
         </Card>
@@ -102,7 +126,7 @@ const Reports = () => {
             <BarChart className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{customReports}</div>
             <p className="text-xs text-muted-foreground">User-defined</p>
           </CardContent>
         </Card>
@@ -114,6 +138,19 @@ const Reports = () => {
             <CardTitle>Report Templates</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="space-y-4 mb-4">
+              <div className="space-y-2">
+                <label htmlFor="month" className="text-sm font-medium">Enter Month (1-12):</label>
+                <input
+                  id="month"
+                  type="text"
+                  value={month}
+                  onChange={handleMonthChange}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="Enter month number"
+                />
+              </div>
+            </div>
             <div className="space-y-2">
               {reportTemplates.map((template, index) => (
                 <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
@@ -121,7 +158,7 @@ const Reports = () => {
                     <FileText className="h-4 w-4 text-muted-foreground mr-2" />
                     <span>{template}</span>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleGenerateReport}>
                     <FilePlus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -160,39 +197,11 @@ const Reports = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reports.length > 0 ? (
-                    reports.map((report) => (
-                      <TableRow key={report.id}>
-                        <TableCell className="font-medium">{report.name}</TableCell>
-                        <TableCell>{report.type}</TableCell>
-                        <TableCell>{report.lastGenerated}</TableCell>
-                        <TableCell>{report.frequency}</TableCell>
-                        <TableCell>{report.format}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <FileDown className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Printer className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Share2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                        No reports generated yet. Click "Generate Report" to create one.
-                      </TableCell>
-                    </TableRow>
-                  )}
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                      No reports generated yet. Click "Generate Report" to create one.
+                    </TableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
             </div>

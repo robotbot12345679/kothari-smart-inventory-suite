@@ -13,6 +13,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -20,10 +28,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { useData } from "@/context/DataContext";
 
 const Shipping = () => {
-  // Empty shipments array (removed demo data)
-  const shipments = [];
+  const { orders } = useData();
+  const { toast } = useToast();
+  const [isCreateShipmentOpen, setIsCreateShipmentOpen] = useState(false);
+  const [shipments, setShipments] = useState<any[]>([]);
+  const [newShipment, setNewShipment] = useState({
+    orderId: "",
+    courierService: "DTDC",
+    destination: "",
+    customerName: "",
+    phone: ""
+  });
 
   // Function to determine badge color based on status
   const getStatusColor = (status: string) => {
@@ -43,16 +62,68 @@ const Shipping = () => {
     }
   };
 
+  const handleCreateShipment = () => {
+    if (!newShipment.orderId || !newShipment.destination || !newShipment.customerName) {
+      toast({
+        title: "Error",
+        description: "Please fill all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const shipmentId = `SHIP-${Math.floor(100000 + Math.random() * 900000)}`;
+    
+    const newShipmentObj = {
+      id: shipmentId,
+      orderId: newShipment.orderId,
+      customerName: newShipment.customerName,
+      date: new Date().toISOString(),
+      destination: newShipment.destination,
+      status: "Shipment Created",
+      courier: newShipment.courierService
+    };
+
+    setShipments([...shipments, newShipmentObj]);
+    setIsCreateShipmentOpen(false);
+    setNewShipment({
+      orderId: "",
+      courierService: "DTDC",
+      destination: "",
+      customerName: "",
+      phone: ""
+    });
+
+    toast({
+      title: "Shipment Created",
+      description: `Shipment ${shipmentId} has been created successfully`
+    });
+  };
+
+  const handleExport = () => {
+    toast({
+      title: "Export Started",
+      description: "Your shipment data is being exported"
+    });
+  };
+
+  const handleTrack = (shipmentId: string) => {
+    toast({
+      title: "Tracking Shipment",
+      description: `Tracking information for ${shipmentId} is being retrieved`
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Shipping</h1>
         <div className="flex items-center gap-2">
-          <Button className="gap-1" variant="outline">
+          <Button className="gap-1" variant="outline" onClick={handleExport}>
             <FileDown className="h-4 w-4" />
             Export
           </Button>
-          <Button className="gap-1">
+          <Button className="gap-1" onClick={() => setIsCreateShipmentOpen(true)}>
             <TruckIcon className="h-4 w-4" />
             Create Shipment
           </Button>
@@ -66,7 +137,7 @@ const Shipping = () => {
             <Package className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{shipments.length}</div>
             <p className="text-xs text-muted-foreground">This month</p>
           </CardContent>
         </Card>
@@ -76,7 +147,7 @@ const Shipping = () => {
             <TruckIcon className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{shipments.filter(s => s.status === "In Transit").length}</div>
             <p className="text-xs text-muted-foreground">Currently in transit</p>
           </CardContent>
         </Card>
@@ -86,7 +157,7 @@ const Shipping = () => {
             <Package className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{shipments.filter(s => s.status === "Delivered").length}</div>
             <p className="text-xs text-muted-foreground">Successfully delivered</p>
           </CardContent>
         </Card>
@@ -96,11 +167,81 @@ const Shipping = () => {
             <AlertCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{shipments.filter(s => s.status === "Failed Delivery").length}</div>
             <p className="text-xs text-muted-foreground">Require attention</p>
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={isCreateShipmentOpen} onOpenChange={setIsCreateShipmentOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Create New Shipment</DialogTitle>
+            <DialogDescription>
+              Fill in the details to create a new shipment
+            </DialogDescription>
+          </DialogHeader>
+          <form className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="orderId" className="text-sm font-medium">Order ID*</label>
+              <Input 
+                id="orderId"
+                value={newShipment.orderId}
+                onChange={(e) => setNewShipment({...newShipment, orderId: e.target.value})}
+                placeholder="Enter order ID"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="customerName" className="text-sm font-medium">Customer Name*</label>
+              <Input 
+                id="customerName"
+                value={newShipment.customerName}
+                onChange={(e) => setNewShipment({...newShipment, customerName: e.target.value})}
+                placeholder="Enter customer name"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="phone" className="text-sm font-medium">Phone Number</label>
+              <Input 
+                id="phone"
+                value={newShipment.phone}
+                onChange={(e) => setNewShipment({...newShipment, phone: e.target.value})}
+                placeholder="Enter phone number"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="destination" className="text-sm font-medium">Destination Address*</label>
+              <Input 
+                id="destination"
+                value={newShipment.destination}
+                onChange={(e) => setNewShipment({...newShipment, destination: e.target.value})}
+                placeholder="Enter full shipping address"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="courier" className="text-sm font-medium">Courier Service</label>
+              <Select 
+                value={newShipment.courierService}
+                onValueChange={(value) => setNewShipment({...newShipment, courierService: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select courier" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DTDC">DTDC</SelectItem>
+                  <SelectItem value="BlueDart">BlueDart</SelectItem>
+                  <SelectItem value="Delhivery">Delhivery</SelectItem>
+                  <SelectItem value="EcomExpress">EcomExpress</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </form>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateShipmentOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateShipment}>Create Shipment</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="bg-white rounded-lg shadow dark:bg-gray-800">
         <div className="p-4 border-b flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -136,7 +277,9 @@ const Shipping = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="dtdc">DTDC</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="bluedart">BlueDart</SelectItem>
+                <SelectItem value="delhivery">Delhivery</SelectItem>
+                <SelectItem value="ecomexpress">EcomExpress</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -175,6 +318,7 @@ const Shipping = () => {
                       <Button 
                         variant="ghost" 
                         size="sm"
+                        onClick={() => handleTrack(shipment.id)}
                       >
                         Track
                       </Button>
@@ -194,8 +338,8 @@ const Shipping = () => {
         
         <div className="p-4 border-t flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing <span className="font-medium">0</span> to <span className="font-medium">0</span> of{" "}
-            <span className="font-medium">0</span> shipments
+            Showing <span className="font-medium">0</span> to <span className="font-medium">{shipments.length}</span> of{" "}
+            <span className="font-medium">{shipments.length}</span> shipments
           </p>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" disabled>

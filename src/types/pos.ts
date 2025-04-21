@@ -1,16 +1,4 @@
 
-export interface ProductVariant {
-  id: number;
-  productId: number;
-  name: string;
-  weight: number;
-  unit: 'g' | 'kg' | 'box' | 'pcs';
-  price: number;
-  stock: number;
-  sku: string;
-  profitMargin?: number;
-}
-
 export interface Product {
   id: number;
   name: string;
@@ -19,7 +7,11 @@ export interface Product {
   image: string;
   barcode?: string;
   description?: string;
-  variants: ProductVariant[];
+  price: number;
+  stock: number;
+  weight: number;
+  unit: 'g' | 'kg' | 'box' | 'pcs';
+  priceIncludesGST: boolean;
   expiryDate?: string;
   minimumStock?: number;
   isActive: boolean;
@@ -35,10 +27,10 @@ export interface Category {
 export interface CartItem {
   id: number;
   name: string;
-  variantId: number;
   price: number;
   quantity: number;
   unit: string;
+  weight: number;
 }
 
 export interface Customer {

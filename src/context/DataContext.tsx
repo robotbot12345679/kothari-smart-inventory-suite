@@ -1,5 +1,6 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Product, Category, Order, ProductVariant, Customer } from "@/types/pos";
+import { Product, Category, Order, Customer } from "@/types/pos";
 import { useToast } from "@/components/ui/use-toast";
 
 interface DataContextType {
@@ -16,9 +17,6 @@ interface DataContextType {
   addOrder: (order: Order) => void;
   updateOrder: (id: string, updatedOrder: Order) => void;
   deleteOrder: (id: string) => void;
-  addVariant: (productId: number, variant: ProductVariant) => void;
-  updateVariant: (productId: number, variantId: number, updatedVariant: ProductVariant) => void;
-  deleteVariant: (productId: number, variantId: number) => void;
   findProductByBarcode: (barcode: string) => Product | undefined;
   addCustomer: (customer: Customer) => void;
   updateCustomer: (id: number, updatedCustomer: Customer) => void;
@@ -48,6 +46,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!savedCategories || JSON.parse(savedCategories).length === 0) {
       setCategories([
         { id: 1, name: "All", isActive: true },
+        { id: 2, name: "Dry Fruits", isActive: true },
+        { id: 3, name: "Nuts", isActive: true },
+        { id: 4, name: "Seeds", isActive: true },
+        { id: 5, name: "Spices", isActive: true }
       ]);
     }
   }, []);
@@ -70,30 +72,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         product.id = maxId + 1;
       }
       
-      if ((!product.variants || product.variants.length === 0) && product.variants && product.variants[0]) {
-        const variant = product.variants[0];
-        product.variants = [{
-          id: 1,
-          productId: product.id,
-          name: 'Default',
-          weight: 1,
-          unit: 'kg',
-          price: variant.price,
-          stock: variant.stock || 0,
-          sku: product.sku + '-1'
-        }];
-      } else if (!product.variants || product.variants.length === 0) {
-        product.variants = [{
-          id: 1,
-          productId: product.id,
-          name: 'Default',
-          weight: 1,
-          unit: 'kg',
-          price: 0,
-          stock: 0,
-          sku: product.sku + '-1'
-        }];
+      // Simplified product model - no variants
+      if (!product.weight) {
+        product.weight = 1;
       }
+      
+      if (!product.unit) {
+        product.unit = 'kg';
+      }
+      
+      // Ensure price includes GST
+      product.priceIncludesGST = true;
       
       setProducts(prev => [...prev, product]);
       toast({
@@ -111,6 +100,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateProduct = (id: number, updatedProduct: Product) => {
+    // Ensure price includes GST flag is preserved
+    updatedProduct.priceIncludesGST = true;
     setProducts(prev => prev.map(product => product.id === id ? updatedProduct : product));
   };
 
@@ -141,47 +132,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteOrder = (id: string) => {
     setOrders(prev => prev.filter(order => order.id !== id));
-  };
-
-  const addVariant = (productId: number, variant: ProductVariant) => {
-    setProducts(prev => prev.map(product => {
-      if (product.id === productId) {
-        const maxVariantId = product.variants.length > 0 
-          ? Math.max(...product.variants.map(v => v.id)) 
-          : 0;
-        return {
-          ...product,
-          variants: [...product.variants, { ...variant, id: maxVariantId + 1, productId }]
-        };
-      }
-      return product;
-    }));
-  };
-
-  const updateVariant = (productId: number, variantId: number, updatedVariant: ProductVariant) => {
-    setProducts(prev => prev.map(product => {
-      if (product.id === productId) {
-        return {
-          ...product,
-          variants: product.variants.map(variant => 
-            variant.id === variantId ? updatedVariant : variant
-          )
-        };
-      }
-      return product;
-    }));
-  };
-
-  const deleteVariant = (productId: number, variantId: number) => {
-    setProducts(prev => prev.map(product => {
-      if (product.id === productId) {
-        return {
-          ...product,
-          variants: product.variants.filter(variant => variant.id !== variantId)
-        };
-      }
-      return product;
-    }));
   };
 
   const addCustomer = (customer: Customer) => {
@@ -236,9 +186,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addOrder,
       updateOrder,
       deleteOrder,
-      addVariant,
-      updateVariant,
-      deleteVariant,
       findProductByBarcode,
       addCustomer,
       updateCustomer,

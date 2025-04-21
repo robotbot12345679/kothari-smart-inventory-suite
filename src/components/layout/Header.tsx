@@ -3,6 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { UserCircle, Bell, Menu } from "lucide-react";
 import { MobileNav } from "@/components/layout/MobileNav";
+import { Link } from "react-router-dom";
 
 interface HeaderProps {
   setSidebarOpen: (open: boolean) => void;
@@ -26,7 +27,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
           variant="ghost" 
           size="icon" 
           onClick={() => setSidebarOpen(true)}
-          className="md:flex"
+          className="flex"
         >
           <Menu className="h-5 w-5" />
         </Button>
