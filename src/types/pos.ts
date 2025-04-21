@@ -15,19 +15,6 @@ export interface Product {
   expiryDate?: string;
   minimumStock?: number;
   isActive: boolean;
-  variants?: ProductVariant[]; // Add variants array
-}
-
-export interface ProductVariant {
-  id: number;
-  productId: number;
-  name: string;
-  weight: number;
-  unit: 'g' | 'kg' | 'box' | 'pcs';
-  price: number;
-  stock: number;
-  profitMargin?: number;
-  sku: string;
 }
 
 export interface Category {
@@ -44,7 +31,6 @@ export interface CartItem {
   quantity: number;
   unit: string;
   weight: number;
-  variantId?: number; // Add variantId field
 }
 
 export interface Customer {
