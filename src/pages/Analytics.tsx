@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,8 +10,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useCustomerMetrics } from "@/hooks/useCustomerMetrics";
+import { useData } from "@/context/DataContext";
 
 const Analytics = () => {
+  const { 
+    totalCustomers, 
+    activeCustomers, 
+    totalRevenue, 
+    averageOrderValue, 
+    customerLifetimeValue, 
+    activeRate 
+  } = useCustomerMetrics();
+
+  const { orders, products } = useData();
+
+  // Order count
+  const orderCount = orders.length;
+
+  // Simple conversion rate: orders / total customers (if totalCustomers > 0)
+  const conversionRate = totalCustomers > 0
+    ? ((orderCount / totalCustomers) * 100)
+    : 0;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -48,9 +68,9 @@ const Analytics = () => {
             <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹4,85,250</div>
+            <div className="text-2xl font-bold">₹{totalRevenue.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              <span className="text-emerald-500 mr-1">↑ 14%</span>
+              <span className="text-emerald-500 mr-1">↑</span>
               from last period
             </p>
           </CardContent>
@@ -61,9 +81,9 @@ const Analytics = () => {
             <BarChart3 className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹3,120</div>
+            <div className="text-2xl font-bold">₹{averageOrderValue.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              <span className="text-emerald-500 mr-1">↑ 8%</span>
+              <span className="text-emerald-500 mr-1">↑</span>
               from last period
             </p>
           </CardContent>
@@ -74,9 +94,9 @@ const Analytics = () => {
             <LineChart className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">156</div>
+            <div className="text-2xl font-bold">{orderCount}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              <span className="text-emerald-500 mr-1">↑ 12%</span>
+              <span className="text-emerald-500 mr-1">↑</span>
               from last period
             </p>
           </CardContent>
@@ -87,9 +107,9 @@ const Analytics = () => {
             <PieChart className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5.8%</div>
+            <div className="text-2xl font-bold">{conversionRate.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
-              <span className="text-red-500 mr-1">↓ 2%</span>
+              <span className="text-red-500 mr-1">↓</span>
               from last period
             </p>
           </CardContent>
