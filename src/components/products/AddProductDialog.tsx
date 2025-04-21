@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,7 +47,6 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
   const { toast } = useToast();
   const isEditing = !!product;
 
-  // Form state
   const [formData, setFormData] = useState<Partial<Product & {expiryMonth?: string}>>({
     name: "",
     sku: "",
@@ -60,14 +58,11 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
     isActive: true,
   });
 
-  // Variants state
   const [variants, setVariants] = useState<VariantFormData[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // Initialize form when editing
   useEffect(() => {
     if (product) {
-      // Extract expiry month if available
       let expiryMonth = "";
       if (product.expiryDate) {
         const date = new Date(product.expiryDate);
@@ -79,7 +74,6 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
         expiryMonth,
       });
       
-      // Initialize variants
       if (product.variants && product.variants.length > 0) {
         setVariants(product.variants.map(v => ({
           ...v,
@@ -89,7 +83,6 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
         setVariants([createDefaultVariant(product.id)]);
       }
     } else {
-      // Reset form for new product
       setFormData({
         name: "",
         sku: "",
@@ -102,7 +95,6 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
         expiryMonth: ""
       });
       
-      // Initialize with one default variant
       setVariants([createDefaultVariant(Date.now())]);
     }
   }, [product, open]);
@@ -114,7 +106,7 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
     unit: 'kg',
     price: 0,
     stock: 0,
-    profitMargin: 20, // Default 20% profit margin
+    profitMargin: 20,
     sku: formData.sku ? `${formData.sku}-1` : ''
   });
 
@@ -123,7 +115,6 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
     const parsedValue = type === 'number' ? parseFloat(value) : value;
     
     if (id === 'sku') {
-      // Update all variant SKUs when base SKU changes
       setVariants(prevVariants => 
         prevVariants.map((v, idx) => ({
           ...v,
@@ -189,7 +180,6 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate required fields
     if (!formData.name || !formData.sku || !formData.category) {
       toast({
         title: "Validation Error",
@@ -200,16 +190,15 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
     }
 
     try {
-      // Calculate expiry date from month picker (set to last day of month)
       let expiryDate: string | undefined = undefined;
       if (formData.expiryMonth) {
         const [year, month] = formData.expiryMonth.split('-').map(Number);
-        // Get last day of the month (By going to first day of next month, then subtracting 1 day)
         const lastDay = new Date(year, month, 0).getDate();
         expiryDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
       }
       
-      // Prepare the product object
+      const firstVariant = variants[0] || { price: 0, stock: 0, weight: 1, unit: 'kg' as const };
+      
       const productData: Product = {
         id: isEditing && product ? product.id : Date.now(),
         name: formData.name!,
@@ -218,6 +207,11 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
         description: formData.description || "",
         barcode: formData.barcode || "",
         image: selectedFile ? URL.createObjectURL(selectedFile) : (formData.image || ""),
+        price: firstVariant.price,
+        stock: firstVariant.stock,
+        weight: firstVariant.weight,
+        unit: firstVariant.unit,
+        priceIncludesGST: true,
         variants: variants.map(v => ({
           id: v.id,
           productId: isEditing && product ? product.id : Date.now(),
@@ -235,14 +229,12 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
       };
       
       if (isEditing && product) {
-        // Update existing product
         updateProduct(product.id, productData);
         toast({
           title: "Product Updated",
           description: `${formData.name} has been updated successfully.`
         });
       } else {
-        // Add new product
         addProduct(productData);
         toast({
           title: "Product Added",
@@ -250,7 +242,6 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
         });
       }
       
-      // Close dialog
       onOpenChange(false);
     } catch (error) {
       console.error("Error saving product:", error);

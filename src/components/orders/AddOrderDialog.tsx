@@ -43,7 +43,7 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
   const [orderStatus, setOrderStatus] = useState("Delivered");
   
   const selectedProductObj = products.find(p => p.id.toString() === selectedProduct);
-  const selectedVariantObj = selectedProductObj?.variants.find(v => v.id.toString() === selectedVariant);
+  const selectedVariantObj = selectedProductObj?.variants?.find(v => v.id.toString() === selectedVariant);
   
   const handleAddToCart = () => {
     if (!selectedProductObj || !selectedVariantObj) {
@@ -74,14 +74,15 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
       updatedCart[existingItemIndex].quantity += quantity;
       setCart(updatedCart);
     } else {
-      // Add new item
+      // Add new item with weight property
       setCart([...cart, {
         id: selectedProductObj.id,
         name: selectedProductObj.name,
         variantId: selectedVariantObj.id,
         price: selectedVariantObj.price,
         quantity: quantity,
-        unit: selectedVariantObj.unit
+        unit: selectedVariantObj.unit,
+        weight: selectedVariantObj.weight // Add the weight property
       }]);
     }
     
@@ -120,7 +121,7 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
       });
       return;
     }
-    
+
     const newOrder: Order = {
       id: orderId,
       customerName: customerInfo.name || "Guest Customer",

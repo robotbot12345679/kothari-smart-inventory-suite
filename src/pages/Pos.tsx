@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -105,7 +106,8 @@ const Pos = () => {
         variantId: variant.id,
         price: variant.price,
         quantity: 1,
-        unit: variant.unit
+        unit: variant.unit,
+        weight: variant.weight // Add weight property
       }]);
     }
   };
