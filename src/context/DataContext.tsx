@@ -72,7 +72,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         product.id = maxId + 1;
       }
       
-      // Simplified product model - no variants
+      // Ensure product has all required fields
       if (!product.weight) {
         product.weight = 1;
       }
