@@ -1,3 +1,4 @@
+
 export interface ProductVariant {
   id: number;
   productId: number;
@@ -7,6 +8,7 @@ export interface ProductVariant {
   price: number;
   stock: number;
   sku: string;
+  profitMargin?: number;
 }
 
 export interface Product {

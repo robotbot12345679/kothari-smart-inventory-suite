@@ -1,9 +1,9 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Plus, Calendar, Package, FileDown, Printer } from "lucide-react";
+import { Search, Filter, Plus, Calendar, Package, FileDown, Printer, Trash } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -20,16 +20,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useData } from "@/context/DataContext";
 import { Order } from "@/types/pos";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+import AddOrderDialog from "@/components/orders/AddOrderDialog";
 
 const Orders = () => {
-  const { orders } = useData();
+  const { orders, deleteOrder } = useData();
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
+  const [isAddOrderOpen, setIsAddOrderOpen] = useState(false);
 
   // Filter orders based on search and status
   const filteredOrders = orders.filter((order) => {
@@ -52,6 +66,13 @@ const Orders = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
+    // Check if UPI method is selected
+    const isUpiPayment = order.paymentMethod === 'upi';
+    
+    // Generate UPI QR data URI - in a real app, this would be an actual QR code
+    const upiQrCode = isUpiPayment ? 
+      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ashokkothari738@oksbi%26pn=KothariDryFruits%26am=${order.total}%26cu=INR` : '';
+
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -64,11 +85,17 @@ const Orders = () => {
           .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
           .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
           .total { text-align: right; margin-top: 20px; }
+          .qr-code { text-align: center; margin: 20px 0; }
+          .qr-code img { max-width: 150px; }
         </style>
       </head>
       <body>
         <div class="header">
-          <h2>Order Receipt</h2>
+          <h2>Kothari's Dry Fruits & More</h2>
+          <p>123 Market Street, Mumbai, Maharashtra</p>
+          <p>Phone: +91 9876543210 | Email: info@kotharidryfruits.com</p>
+          <hr />
+          <p>Order Receipt</p>
           <p>Order ID: ${order.id}</p>
           <p>Date: ${format(new Date(order.orderDate), 'PPP')}</p>
         </div>
@@ -99,10 +126,22 @@ const Orders = () => {
         </table>
         <div class="total">
           <p><strong>Subtotal:</strong> ₹${order.subtotal.toFixed(2)}</p>
-          <p><strong>GST:</strong> ₹${order.gst.toFixed(2)}</p>
+          <p><strong>GST (Included):</strong> ₹${order.gst.toFixed(2)}</p>
           <p><strong>Total:</strong> ₹${order.total.toFixed(2)}</p>
           <p><strong>Payment Status:</strong> ${order.paymentStatus}</p>
           <p><strong>Payment Method:</strong> ${order.paymentMethod}</p>
+        </div>
+        ${isUpiPayment ? `
+          <div class="qr-code">
+            <p>Scan to pay via UPI:</p>
+            <img src="${upiQrCode}" alt="UPI QR Code">
+            <p>UPI ID: ashokkothari738@oksbi</p>
+          </div>
+        ` : ''}
+        <hr />
+        <div style="text-align: center; margin-top: 20px; font-size: 14px;">
+          <p>Thank you for your business!</p>
+          <p>All prices are tax inclusive.</p>
         </div>
       </body>
       </html>
@@ -119,10 +158,30 @@ const Orders = () => {
     });
   };
 
+  const handleDeleteConfirm = () => {
+    if (orderToDelete) {
+      deleteOrder(orderToDelete.id);
+      toast({
+        title: "Order Deleted",
+        description: `Order ${orderToDelete.id} has been deleted.`,
+      });
+      setIsDeleteDialogOpen(false);
+      setOrderToDelete(null);
+    }
+  };
+
+  const handleDeleteOrder = (order: Order) => {
+    setOrderToDelete(order);
+    setIsDeleteDialogOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
+        <Button onClick={() => setIsAddOrderOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Add Order
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -221,36 +280,64 @@ const Orders = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredOrders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.id}</TableCell>
-                  <TableCell>{order.customerName || 'Guest'}</TableCell>
-                  <TableCell>
-                    {format(new Date(order.orderDate), 'PP')}
-                  </TableCell>
-                  <TableCell>{order.items.length}</TableCell>
-                  <TableCell className="text-right">₹{order.total.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={getStatusColor(order.orderStatus)}>
-                      {order.orderStatus}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={getPaymentStatusColor(order.paymentStatus)}>
-                      {order.paymentStatus}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handlePrint(order)}
-                    >
-                      <Printer className="h-4 w-4" />
-                    </Button>
+              {filteredOrders.length > 0 ? (
+                filteredOrders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">{order.id}</TableCell>
+                    <TableCell>{order.customerName || 'Guest'}</TableCell>
+                    <TableCell>
+                      {format(new Date(order.orderDate), 'PP')}
+                    </TableCell>
+                    <TableCell>{order.items.length}</TableCell>
+                    <TableCell className="text-right">₹{order.total.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getStatusColor(order.orderStatus)}>
+                        {order.orderStatus}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getPaymentStatusColor(order.paymentStatus)}>
+                        {order.paymentStatus}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handlePrint(order)}
+                        >
+                          <Printer className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteOrder(order)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-10">
+                    <p className="text-muted-foreground">No orders found</p>
+                    {searchQuery || statusFilter !== "all" ? (
+                      <p className="text-sm text-muted-foreground mt-1">Try adjusting your filters</p>
+                    ) : (
+                      <Button 
+                        onClick={() => setIsAddOrderOpen(true)} 
+                        className="mt-2"
+                      >
+                        <Plus className="h-4 w-4 mr-1" /> Add Order
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </div>
@@ -261,6 +348,25 @@ const Orders = () => {
           </p>
         </div>
       </div>
+
+      <AddOrderDialog open={isAddOrderOpen} onOpenChange={setIsAddOrderOpen} />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the order. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

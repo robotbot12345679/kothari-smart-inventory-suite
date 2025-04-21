@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,7 +55,6 @@ const Pos = () => {
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const orderIdPrefix = useUniqueId("ORD");
   
-  // Focus on barcode input when modal opens
   useEffect(() => {
     if (barcodeModalOpen && barcodeInputRef.current) {
       barcodeInputRef.current.focus();
@@ -64,7 +62,6 @@ const Pos = () => {
   }, [barcodeModalOpen]);
 
   const filteredProducts = products.filter(product => {
-    // Only show active products
     if (!product.isActive) return false;
     
     const matchesCategory = activeCategory === 1 || product.category === categories.find(c => c.id === activeCategory)?.name;
@@ -77,7 +74,6 @@ const Pos = () => {
   const addToCart = (product: any) => {
     const variant = product.variants[0];
     
-    // Skip if no variant or no stock
     if (!variant || variant.stock <= 0) {
       toast({
         title: "Cannot add product",
@@ -90,7 +86,6 @@ const Pos = () => {
     const existingItemIndex = cart.findIndex(item => item.variantId === variant.id);
     
     if (existingItemIndex >= 0) {
-      // Check if adding one more would exceed available stock
       if (cart[existingItemIndex].quantity >= variant.stock) {
         toast({
           title: "Stock limit reached",
@@ -123,7 +118,6 @@ const Pos = () => {
 
     const updatedCart = cart.map(item => {
       if (item.id === itemId) {
-        // Find the product and variant to check stock
         const product = products.find(p => p.id === item.id);
         const variant = product?.variants.find(v => v.id === item.variantId);
         
@@ -169,17 +163,15 @@ const Pos = () => {
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const gst = subtotal * 0.18; // 18% GST
+  const gst = subtotal * 0.18;
   const total = subtotal + gst;
   
-  // Calculate change for cash payment
   const getChange = () => {
     const tendered = parseFloat(amountTendered || "0");
     return Math.max(0, tendered - total).toFixed(2);
   };
 
   const handleCompletePayment = () => {
-    // Validate payment based on method
     if (currentTab === "cash" && parseFloat(amountTendered || "0") < total) {
       toast({
         title: "Invalid Payment",
@@ -189,7 +181,6 @@ const Pos = () => {
       return;
     }
     
-    // Create order
     const newOrder: Order = {
       id: orderIdPrefix,
       items: [...cart],
@@ -199,7 +190,7 @@ const Pos = () => {
       paymentMethod: currentTab,
       paymentStatus: 'Paid',
       orderDate: new Date().toISOString(),
-      orderStatus: 'Delivered', // Changed from 'Completed' to 'Delivered' to match the type
+      orderStatus: 'Delivered',
       customerName: customerInfo.name || "Guest Customer",
       customerPhone: customerInfo.phone,
       customerEmail: customerInfo.email
@@ -213,13 +204,11 @@ const Pos = () => {
         description: `Order #${orderIdPrefix} has been created successfully.`
       });
       
-      // Reset cart and other states
       setCart([]);
       setAmountTendered("");
       setPaymentModalOpen(false);
       setCustomerInfo({ name: "", phone: "", email: "" });
       
-      // Print receipt
       printReceipt(newOrder);
     } catch (error) {
       console.error("Error creating order:", error);
@@ -230,7 +219,7 @@ const Pos = () => {
       });
     }
   };
-  
+
   const printReceipt = (order: Order) => {
     const receiptWindow = window.open('', '_blank', 'width=400,height=600');
     
@@ -243,7 +232,6 @@ const Pos = () => {
       return;
     }
     
-    // Format date
     const orderDate = new Date(order.orderDate);
     const formattedDate = orderDate.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -254,8 +242,11 @@ const Pos = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+
+    const isUpiPayment = order.paymentMethod === 'upi';
+    const upiQrCode = isUpiPayment ? 
+      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ashokkothari738@oksbi%26pn=KothariDryFruits%26am=${order.total}%26cu=INR` : '';
     
-    // Create receipt content
     receiptWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -325,6 +316,14 @@ const Pos = () => {
             border-top: 1px dashed #ddd;
             margin: 15px 0;
           }
+          .qr-code {
+            text-align: center;
+            margin: 15px 0;
+          }
+          .qr-code img {
+            max-width: 150px;
+            margin: 10px auto;
+          }
           @media print {
             body {
               padding: 0;
@@ -339,7 +338,6 @@ const Pos = () => {
       <body>
         <div class="receipt">
           <div class="header">
-            <img src="/lovable-uploads/00972147-e824-453d-8b6d-dc558e1cb95e.png" alt="Kothari's" class="logo">
             <div class="title">Kothari's Dry Fruits</div>
             <div class="info">123 Market Street, Mumbai, India</div>
             <div class="info">Phone: +91 9876543210</div>
@@ -379,7 +377,7 @@ const Pos = () => {
                 <td class="item-price">₹${order.subtotal.toFixed(2)}</td>
               </tr>
               <tr>
-                <td colspan="3">GST (18%)</td>
+                <td colspan="3">GST (Included)</td>
                 <td class="item-price">₹${order.gst.toFixed(2)}</td>
               </tr>
               <tr class="total-row">
@@ -403,17 +401,25 @@ const Pos = () => {
             </tbody>
           </table>
           
+          ${isUpiPayment ? `
+            <div class="qr-code">
+              <p>Scan to pay via UPI:</p>
+              <img src="${upiQrCode}" alt="UPI QR Code">
+              <p>UPI ID: ashokkothari738@oksbi</p>
+            </div>
+          ` : ''}
+          
           <div class="divider"></div>
           
           <div class="footer">
             <p>Thank you for shopping with us!</p>
+            <p>All prices are inclusive of taxes.</p>
             <p>Visit us again soon.</p>
           </div>
         </div>
         <script>
           window.onload = function() {
             window.print();
-            // Close window after print dialog is closed (works in most modern browsers)
             setTimeout(function() {
               window.close();
             }, 500);
@@ -443,7 +449,6 @@ const Pos = () => {
             variant="outline" 
             className="gap-1"
             onClick={() => {
-              // Save cart as draft order functionality would go here
               toast({
                 title: "Order Saved",
                 description: "Your current order has been saved as a draft."
@@ -528,7 +533,7 @@ const Pos = () => {
                 </Card>
               ))
             ) : (
-              <div className="col-span-full flex flex-col items-center justify-center py-8 text-center">
+              <div className="col-span-full flex flex-col items-center justify-center text-center p-4">
                 <Tag className="h-10 w-10 text-muted-foreground mb-2" />
                 <h3 className="font-semibold text-lg">No products found</h3>
                 <p className="text-muted-foreground mt-1">Try a different search term or category</p>
@@ -641,7 +646,6 @@ const Pos = () => {
         </div>
       </div>
 
-      {/* Barcode Scanner Modal */}
       <Dialog open={barcodeModalOpen} onOpenChange={setBarcodeModalOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
@@ -677,7 +681,6 @@ const Pos = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Modal */}
       <Dialog open={paymentModalOpen} onOpenChange={setPaymentModalOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -718,10 +721,14 @@ const Pos = () => {
               <TabsContent value="upi" className="p-4">
                 <div className="flex flex-col items-center space-y-4">
                   <div className="flex items-center justify-center w-48 h-48 bg-gray-100 rounded-lg">
-                    <QrCode className="h-24 w-24 text-primary" />
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ashokkothari738@oksbi%26pn=KothariDryFruits%26am=${total}%26cu=INR`} 
+                      alt="UPI QR Code" 
+                      className="max-w-full max-h-full"
+                    />
                   </div>
                   <p className="text-center">Scan with any UPI app</p>
-                  <p className="font-medium text-center">yourmerchant@upi</p>
+                  <p className="font-medium text-center">ashokkothari738@oksbi</p>
                   <Button className="w-full gap-2" onClick={handleCompletePayment}>
                     <Wallet className="h-4 w-4" />
                     Complete Payment
@@ -786,7 +793,6 @@ const Pos = () => {
               variant="outline" 
               className="gap-2" 
               onClick={() => {
-                // Only print receipt if cart is not empty
                 if (cart.length > 0) {
                   const draftOrder: Order = {
                     id: orderIdPrefix + "-DRAFT",
