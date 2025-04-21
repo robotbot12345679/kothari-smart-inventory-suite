@@ -1,4 +1,5 @@
-import React from "react";
+
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -28,13 +30,57 @@ import {
 } from "lucide-react";
 
 const Settings = () => {
+  const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Store settings state
+  const [storeSettings, setStoreSettings] = useState({
+    name: "Kothari Dry Fruits & More",
+    email: "info@kotharidryfruits.com",
+    address: "123 Main Street, Bangalore, Karnataka, 560001",
+    phone: "+91 98765 43210",
+    currency: "inr",
+    taxRate: "18",
+    timeZone: "ist",
+    gstEnabled: true,
+    lowStockAlerts: true,
+    expiryDateTracking: true,
+    aiAnalytics: true
+  });
+  
+  // Handle form field changes
+  const handleStoreSettingChange = (field, value) => {
+    setStoreSettings(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+  
+  // Handle save changes button click
+  const handleSaveChanges = () => {
+    setIsSaving(true);
+    
+    // Simulate saving to database
+    setTimeout(() => {
+      setIsSaving(false);
+      toast({
+        title: "Settings saved",
+        description: "Your changes have been successfully saved.",
+      });
+    }, 1000);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <Button className="gap-1">
+        <Button 
+          className="gap-1" 
+          onClick={handleSaveChanges}
+          disabled={isSaving}
+        >
           <Save className="h-4 w-4" />
-          Save Changes
+          {isSaving ? "Saving..." : "Save Changes"}
         </Button>
       </div>
 
@@ -86,27 +132,47 @@ const Settings = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="store-name">Store Name</Label>
-                  <Input id="store-name" defaultValue="Kothari Dry Fruits & More" />
+                  <Input 
+                    id="store-name" 
+                    value={storeSettings.name} 
+                    onChange={(e) => handleStoreSettingChange('name', e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="store-email">Store Email</Label>
-                  <Input id="store-email" type="email" defaultValue="info@kotharidryfruits.com" />
+                  <Input 
+                    id="store-email" 
+                    type="email" 
+                    value={storeSettings.email}
+                    onChange={(e) => handleStoreSettingChange('email', e.target.value)}
+                  />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="store-address">Store Address</Label>
-                <Textarea id="store-address" defaultValue="123 Main Street, Bangalore, Karnataka, 560001" />
+                <Textarea 
+                  id="store-address" 
+                  value={storeSettings.address}
+                  onChange={(e) => handleStoreSettingChange('address', e.target.value)}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="store-phone">Phone Number</Label>
-                  <Input id="store-phone" defaultValue="+91 98765 43210" />
+                  <Input 
+                    id="store-phone" 
+                    value={storeSettings.phone}
+                    onChange={(e) => handleStoreSettingChange('phone', e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="store-currency">Currency</Label>
-                  <Select defaultValue="inr">
+                  <Select 
+                    value={storeSettings.currency}
+                    onValueChange={(value) => handleStoreSettingChange('currency', value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select currency" />
                     </SelectTrigger>
@@ -123,11 +189,19 @@ const Settings = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="tax-rate">Default Tax Rate (%)</Label>
-                  <Input id="tax-rate" type="number" defaultValue="18" />
+                  <Input 
+                    id="tax-rate" 
+                    type="number" 
+                    value={storeSettings.taxRate}
+                    onChange={(e) => handleStoreSettingChange('taxRate', e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="time-zone">Time Zone</Label>
-                  <Select defaultValue="ist">
+                  <Select 
+                    value={storeSettings.timeZone}
+                    onValueChange={(value) => handleStoreSettingChange('timeZone', value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select time zone" />
                     </SelectTrigger>
@@ -171,7 +245,10 @@ const Settings = () => {
                     Enable GST calculations for your invoices
                   </p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={storeSettings.gstEnabled}
+                  onCheckedChange={(checked) => handleStoreSettingChange('gstEnabled', checked)}
+                />
               </div>
               <Separator />
               <div className="flex items-center justify-between">
@@ -181,7 +258,10 @@ const Settings = () => {
                     Get notifications when stock is running low
                   </p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={storeSettings.lowStockAlerts}
+                  onCheckedChange={(checked) => handleStoreSettingChange('lowStockAlerts', checked)}
+                />
               </div>
               <Separator />
               <div className="flex items-center justify-between">
@@ -191,7 +271,10 @@ const Settings = () => {
                     Track and get alerts for product expiry dates
                   </p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={storeSettings.expiryDateTracking}
+                  onCheckedChange={(checked) => handleStoreSettingChange('expiryDateTracking', checked)}
+                />
               </div>
               <Separator />
               <div className="flex items-center justify-between">
@@ -201,7 +284,10 @@ const Settings = () => {
                     Enable AI insights and recommendations
                   </p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={storeSettings.aiAnalytics}
+                  onCheckedChange={(checked) => handleStoreSettingChange('aiAnalytics', checked)}
+                />
               </div>
             </CardContent>
           </Card>

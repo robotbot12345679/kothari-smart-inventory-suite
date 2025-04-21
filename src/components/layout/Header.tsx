@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { UserCircle, Bell } from "lucide-react";
+import { UserCircle, Bell, Menu } from "lucide-react";
 import { MobileNav } from "@/components/layout/MobileNav";
 
 interface HeaderProps {
@@ -21,6 +21,14 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
         </Button>
         <Button variant="ghost" size="icon">
           <UserCircle className="h-6 w-6" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => setSidebarOpen(true)}
+          className="md:flex"
+        >
+          <Menu className="h-5 w-5" />
         </Button>
       </div>
     </header>

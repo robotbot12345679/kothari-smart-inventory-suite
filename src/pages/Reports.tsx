@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -30,74 +30,6 @@ import {
 } from "@/components/ui/select";
 
 const Reports = () => {
-  // Sample reports data
-  const reports = [
-    {
-      id: 1,
-      name: "Daily Sales Report",
-      type: "Sales",
-      lastGenerated: "2023-04-18 09:30",
-      frequency: "Daily",
-      format: "PDF",
-    },
-    {
-      id: 2,
-      name: "Stock Consumption Report",
-      type: "Inventory",
-      lastGenerated: "2023-04-18 09:35",
-      frequency: "Daily",
-      format: "PDF",
-    },
-    {
-      id: 3,
-      name: "Stock Production Report",
-      type: "Inventory",
-      lastGenerated: "2023-04-18 09:40",
-      frequency: "Daily",
-      format: "PDF",
-    },
-    {
-      id: 4,
-      name: "Courier/Shipping Report",
-      type: "Shipping",
-      lastGenerated: "2023-04-18 10:00",
-      frequency: "Daily",
-      format: "PDF",
-    },
-    {
-      id: 5,
-      name: "Weekly Sales Analysis",
-      type: "Sales",
-      lastGenerated: "2023-04-17 08:30",
-      frequency: "Weekly",
-      format: "PDF",
-    },
-    {
-      id: 6,
-      name: "Monthly Inventory Turnover",
-      type: "Inventory",
-      lastGenerated: "2023-04-01 08:30",
-      frequency: "Monthly",
-      format: "PDF",
-    },
-    {
-      id: 7,
-      name: "Monthly Profit & Loss",
-      type: "Finance",
-      lastGenerated: "2023-04-01 09:00",
-      frequency: "Monthly",
-      format: "PDF",
-    },
-    {
-      id: 8,
-      name: "Expiring Products Alert",
-      type: "Inventory",
-      lastGenerated: "2023-04-18 09:45",
-      frequency: "Daily",
-      format: "PDF",
-    },
-  ];
-
   // Report templates
   const reportTemplates = [
     "Daily Sales Report",
@@ -113,6 +45,9 @@ const Reports = () => {
     "Employee Performance",
     "Vendor Payment Summary"
   ];
+
+  // Empty reports array (removed demo data)
+  const reports = [];
 
   return (
     <div className="space-y-6">
@@ -137,7 +72,7 @@ const Reports = () => {
             <FileText className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground">Available report types</p>
           </CardContent>
         </Card>
@@ -147,7 +82,7 @@ const Reports = () => {
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground">Daily reports</p>
           </CardContent>
         </Card>
@@ -157,7 +92,7 @@ const Reports = () => {
             <Calendar className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground">Auto-generated</p>
           </CardContent>
         </Card>
@@ -167,7 +102,7 @@ const Reports = () => {
             <BarChart className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground">User-defined</p>
           </CardContent>
         </Card>
@@ -225,31 +160,39 @@ const Reports = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reports.map((report) => (
-                    <TableRow key={report.id}>
-                      <TableCell className="font-medium">{report.name}</TableCell>
-                      <TableCell>{report.type}</TableCell>
-                      <TableCell>{report.lastGenerated}</TableCell>
-                      <TableCell>{report.frequency}</TableCell>
-                      <TableCell>{report.format}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <FileDown className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Printer className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Mail className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Share2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                  {reports.length > 0 ? (
+                    reports.map((report) => (
+                      <TableRow key={report.id}>
+                        <TableCell className="font-medium">{report.name}</TableCell>
+                        <TableCell>{report.type}</TableCell>
+                        <TableCell>{report.lastGenerated}</TableCell>
+                        <TableCell>{report.frequency}</TableCell>
+                        <TableCell>{report.format}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <FileDown className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Share2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                        No reports generated yet. Click "Generate Report" to create one.
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </div>
