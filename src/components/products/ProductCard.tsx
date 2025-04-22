@@ -41,6 +41,14 @@ const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => {
             <span className="text-sm">{product.category}</span>
           </div>
           <div className="flex justify-between">
+            <span className="text-sm text-muted-foreground">Price:</span>
+            <span className="text-sm">₹{product.price}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-sm text-muted-foreground">Stock:</span>
+            <span className="text-sm">{product.stock}</span>
+          </div>
+          <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Weight:</span>
             <span className="text-sm">{product.weight} {product.unit}</span>
           </div>

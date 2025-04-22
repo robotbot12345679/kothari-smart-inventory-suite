@@ -62,3 +62,12 @@ export interface Order {
   orderStatus: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
   trackingNumber?: string;
 }
+
+export interface BillingTemplate {
+  shopName: string;
+  address: string;
+  phone: string;
+  gstNumber: string;
+  footerText: string[];
+  logoUrl?: string;
+}

@@ -73,9 +73,7 @@ const Pos = () => {
   });
 
   const addToCart = (product: any) => {
-    const variant = product.variants[0];
-    
-    if (!variant || variant.stock <= 0) {
+    if (product.stock <= 0) {
       toast({
         title: "Cannot add product",
         description: "This product is out of stock",
@@ -84,13 +82,13 @@ const Pos = () => {
       return;
     }
     
-    const existingItemIndex = cart.findIndex(item => item.variantId === variant.id);
+    const existingItemIndex = cart.findIndex(item => item.id === product.id);
     
     if (existingItemIndex >= 0) {
-      if (cart[existingItemIndex].quantity >= variant.stock) {
+      if (cart[existingItemIndex].quantity >= product.stock) {
         toast({
           title: "Stock limit reached",
-          description: `Only ${variant.stock} units available in stock`,
+          description: `Only ${product.stock} units available in stock`,
           variant: "destructive"
         });
         return;
@@ -103,11 +101,10 @@ const Pos = () => {
       setCart([...cart, {
         id: product.id,
         name: product.name,
-        variantId: variant.id,
-        price: variant.price,
+        price: product.price,
         quantity: 1,
-        unit: variant.unit,
-        weight: variant.weight // Add weight property
+        unit: product.unit,
+        weight: product.weight
       }]);
     }
   };
@@ -121,12 +118,11 @@ const Pos = () => {
     const updatedCart = cart.map(item => {
       if (item.id === itemId) {
         const product = products.find(p => p.id === item.id);
-        const variant = product?.variants.find(v => v.id === item.variantId);
         
-        if (action === 'increase' && variant && item.quantity >= variant.stock) {
+        if (action === 'increase' && product && item.quantity >= product.stock) {
           toast({
             title: "Stock limit reached",
-            description: `Only ${variant.stock} units available in stock`,
+            description: `Only ${product.stock} units available in stock`,
             variant: "destructive"
           });
           return item;
@@ -165,8 +161,8 @@ const Pos = () => {
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const gst = subtotal * 0.18;
-  const total = subtotal + gst;
+  // No GST added - prices are inclusive of taxes
+  const total = subtotal;
   
   const getChange = () => {
     const tendered = parseFloat(amountTendered || "0");
@@ -187,7 +183,7 @@ const Pos = () => {
       id: orderIdPrefix,
       items: [...cart],
       subtotal,
-      gst,
+      gst: 0, // No GST
       total,
       paymentMethod: currentTab,
       paymentStatus: 'Paid',
@@ -245,9 +241,8 @@ const Pos = () => {
       minute: '2-digit'
     });
 
-    const isUpiPayment = order.paymentMethod === 'upi';
-    const upiQrCode = isUpiPayment ? 
-      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ashokkothari738@oksbi%26pn=KothariDryFruits%26am=${order.total}%26cu=INR` : '';
+    // Generate UPI QR code for the receipt
+    const upiQrCode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ashokkothari738@oksbi%26pn=KothariDryFruits%26am=${order.total}%26cu=INR`;
     
     receiptWindow.document.write(`
       <!DOCTYPE html>
@@ -375,14 +370,6 @@ const Pos = () => {
               `).join('')}
               
               <tr class="subtotal-row">
-                <td colspan="3">Subtotal</td>
-                <td class="item-price">₹${order.subtotal.toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td colspan="3">GST (Included)</td>
-                <td class="item-price">₹${order.gst.toFixed(2)}</td>
-              </tr>
-              <tr class="total-row">
                 <td colspan="3">Total</td>
                 <td class="item-price">₹${order.total.toFixed(2)}</td>
               </tr>
@@ -403,13 +390,11 @@ const Pos = () => {
             </tbody>
           </table>
           
-          ${isUpiPayment ? `
-            <div class="qr-code">
-              <p>Scan to pay via UPI:</p>
-              <img src="${upiQrCode}" alt="UPI QR Code">
-              <p>UPI ID: ashokkothari738@oksbi</p>
-            </div>
-          ` : ''}
+          <div class="qr-code">
+            <p>Scan to pay via UPI:</p>
+            <img src="${upiQrCode}" alt="UPI QR Code">
+            <p>UPI ID: ashokkothari738@oksbi</p>
+          </div>
           
           <div class="divider"></div>
           
@@ -501,7 +486,7 @@ const Pos = () => {
                 <Card
                   key={product.id}
                   className={`card-hover cursor-pointer overflow-hidden ${
-                    product.variants[0]?.stock <= 0 ? "opacity-50" : ""
+                    product.stock <= 0 ? "opacity-50" : ""
                   }`}
                   onClick={() => addToCart(product)}
                 >
@@ -522,11 +507,11 @@ const Pos = () => {
                     <h3 className="font-semibold truncate">{product.name}</h3>
                     <div className="flex justify-between items-center mt-1">
                       <span className="text-sm text-muted-foreground">{product.sku}</span>
-                      <span className="font-semibold">₹{product.variants[0]?.price}/{product.variants[0]?.unit}</span>
+                      <span className="font-semibold">₹{product.price}/{product.unit}</span>
                     </div>
                     <div className="text-xs mt-1">
-                      {product.variants[0]?.stock > 0 ? (
-                        <span className="text-green-600">In Stock: {product.variants[0]?.stock}</span>
+                      {product.stock > 0 ? (
+                        <span className="text-green-600">In Stock: {product.stock}</span>
                       ) : (
                         <span className="text-red-600">Out of Stock</span>
                       )}
@@ -620,16 +605,12 @@ const Pos = () => {
           <div className="p-4 border-t">
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>₹{subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>GST (18%)</span>
-                <span>₹{gst.toFixed(2)}</span>
+                <span>Total</span>
+                <span>₹{total.toFixed(2)}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-semibold text-lg">
-                <span>Total</span>
+                <span>Amount to Pay</span>
                 <span>₹{total.toFixed(2)}</span>
               </div>
 
@@ -800,7 +781,7 @@ const Pos = () => {
                     id: orderIdPrefix + "-DRAFT",
                     items: [...cart],
                     subtotal,
-                    gst,
+                    gst: 0, // No GST
                     total,
                     paymentMethod: 'not paid',
                     paymentStatus: 'Pending',

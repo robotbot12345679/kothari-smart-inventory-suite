@@ -1,424 +1,536 @@
 
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  Save, 
-  Store, 
-  User, 
-  Shield, 
-  Lock, 
-  Database, 
-  Truck, 
-  CreditCard, 
-  Bell, 
-  Upload 
-} from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { User, Store, Bell, CreditCard, Shield, Printer } from "lucide-react";
+import BillingSettings from "@/components/settings/BillingSettings";
+import { BillingTemplate } from "@/types/pos";
 
 const Settings = () => {
   const { toast } = useToast();
-  const [isSaving, setIsSaving] = useState(false);
   
-  // Store settings state
-  const [storeSettings, setStoreSettings] = useState({
-    name: "Kothari Dry Fruits & More",
-    email: "info@kotharidryfruits.com",
-    address: "123 Main Street, Bangalore, Karnataka, 560001",
-    phone: "+91 98765 43210",
-    currency: "inr",
-    taxRate: "18",
-    timeZone: "ist",
-    gstEnabled: true,
-    lowStockAlerts: true,
-    expiryDateTracking: true,
-    aiAnalytics: true
+  // Default billing template
+  const [billingTemplate, setBillingTemplate] = useState<BillingTemplate>({
+    shopName: "Kothari's Dry Fruits",
+    address: "123 Market Street, Mumbai, India",
+    phone: "+91 9876543210",
+    gstNumber: "27AAAAA0000A1Z5",
+    footerText: [
+      "Thank you for shopping with us!",
+      "All prices are inclusive of taxes.",
+      "Visit us again soon."
+    ]
   });
   
-  // Handle form field changes
-  const handleStoreSettingChange = (field, value) => {
-    setStoreSettings(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleSaveBillingTemplate = (template: BillingTemplate) => {
+    setBillingTemplate(template);
   };
   
-  // Handle save changes button click
-  const handleSaveChanges = () => {
-    setIsSaving(true);
+  const printTestReceipt = () => {
+    const receiptWindow = window.open('', '_blank', 'width=400,height=600');
     
-    // Simulate saving to database
-    setTimeout(() => {
-      setIsSaving(false);
+    if (!receiptWindow) {
       toast({
-        title: "Settings saved",
-        description: "Your changes have been successfully saved.",
+        title: "Print Error",
+        description: "Could not open print window. Please check your popup blocker settings.",
+        variant: "destructive"
       });
-    }, 1000);
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <Button 
-          className="gap-1" 
-          onClick={handleSaveChanges}
-          disabled={isSaving}
-        >
-          <Save className="h-4 w-4" />
-          {isSaving ? "Saving..." : "Save Changes"}
-        </Button>
-      </div>
-
-      <Tabs defaultValue="general" className="w-full">
-        <div className="border-b">
-          <div className="flex overflow-x-auto py-2">
-            <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground mx-auto">
-              <TabsTrigger value="general" className="flex items-center gap-2">
-                <Store className="h-4 w-4" />
-                General
-              </TabsTrigger>
-              <TabsTrigger value="user" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                User
-              </TabsTrigger>
-              <TabsTrigger value="security" className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Security
-              </TabsTrigger>
-              <TabsTrigger value="billing" className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />
-                Billing
-              </TabsTrigger>
-              <TabsTrigger value="shipping" className="flex items-center gap-2">
-                <Truck className="h-4 w-4" />
-                Shipping
-              </TabsTrigger>
-              <TabsTrigger value="backup" className="flex items-center gap-2">
-                <Database className="h-4 w-4" />
-                Backup
-              </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-2">
-                <Bell className="h-4 w-4" />
-                Notifications
-              </TabsTrigger>
-            </TabsList>
+      return;
+    }
+    
+    // Sample order data for testing
+    const sampleOrder = {
+      id: "TEST-ORDER",
+      customerName: "Test Customer",
+      items: [
+        { id: 1, name: "Test Product 1", price: 100, quantity: 2, unit: "kg", weight: 1 },
+        { id: 2, name: "Test Product 2", price: 200, quantity: 1, unit: "kg", weight: 0.5 }
+      ],
+      subtotal: 400,
+      total: 400,
+      paymentMethod: "cash",
+      orderDate: new Date().toISOString()
+    };
+    
+    const orderDate = new Date();
+    const formattedDate = orderDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+    const formattedTime = orderDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    // Generate UPI QR code
+    const upiQrCode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ashokkothari738@oksbi%26pn=${encodeURIComponent(billingTemplate.shopName)}%26am=${sampleOrder.total}%26cu=INR`;
+    
+    receiptWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Receipt - Test Order</title>
+        <style>
+          body {
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            max-width: 380px;
+          }
+          .receipt {
+            border: 1px solid #ddd;
+            padding: 20px;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+          }
+          .logo {
+            max-width: 100px;
+            margin: 0 auto;
+            display: block;
+          }
+          .title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+          }
+          .info {
+            margin: 5px 0;
+            font-size: 14px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          th, td {
+            text-align: left;
+            padding: 8px 4px;
+            border-bottom: 1px solid #ddd;
+            font-size: 14px;
+          }
+          th {
+            font-weight: bold;
+          }
+          .item-price {
+            text-align: right;
+          }
+          .subtotal-row td {
+            border-top: 1px solid #000;
+            border-bottom: none;
+            padding-top: 10px;
+          }
+          .total-row td {
+            font-weight: bold;
+            border-bottom: none;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+          }
+          .divider {
+            border-top: 1px dashed #ddd;
+            margin: 15px 0;
+          }
+          .qr-code {
+            text-align: center;
+            margin: 15px 0;
+          }
+          .qr-code img {
+            max-width: 150px;
+            margin: 10px auto;
+          }
+          @media print {
+            body {
+              padding: 0;
+              margin: 0;
+            }
+            .receipt {
+              border: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt">
+          <div class="header">
+            ${billingTemplate.logoUrl ? `<img src="${billingTemplate.logoUrl}" alt="Logo" class="logo">` : ''}
+            <div class="title">${billingTemplate.shopName}</div>
+            <div class="info">${billingTemplate.address}</div>
+            <div class="info">Phone: ${billingTemplate.phone}</div>
+            <div class="info">GST No: ${billingTemplate.gstNumber}</div>
+          </div>
+          
+          <div class="order-info">
+            <div class="info">Order #: ${sampleOrder.id}</div>
+            <div class="info">Date: ${formattedDate} ${formattedTime}</div>
+            <div class="info">Customer: ${sampleOrder.customerName}</div>
+          </div>
+          
+          <div class="divider"></div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th class="item-price">Price</th>
+                <th class="item-price">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sampleOrder.items.map(item => `
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${item.quantity} ${item.unit}</td>
+                  <td class="item-price">₹${item.price.toFixed(2)}</td>
+                  <td class="item-price">₹${(item.price * item.quantity).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+              
+              <tr class="subtotal-row">
+                <td colspan="3">Subtotal</td>
+                <td class="item-price">₹${sampleOrder.subtotal.toFixed(2)}</td>
+              </tr>
+              <tr class="total-row">
+                <td colspan="3">Total</td>
+                <td class="item-price">₹${sampleOrder.total.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td colspan="3">Payment Method</td>
+                <td class="item-price">${sampleOrder.paymentMethod.toUpperCase()}</td>
+              </tr>
+              ${sampleOrder.paymentMethod === 'cash' ? `
+                <tr>
+                  <td colspan="3">Amount Tendered</td>
+                  <td class="item-price">₹500.00</td>
+                </tr>
+                <tr>
+                  <td colspan="3">Change</td>
+                  <td class="item-price">₹100.00</td>
+                </tr>
+              ` : ''}
+            </tbody>
+          </table>
+          
+          <div class="qr-code">
+            <p>Scan to pay via UPI:</p>
+            <img src="${upiQrCode}" alt="UPI QR Code">
+            <p>UPI ID: ashokkothari738@oksbi</p>
+          </div>
+          
+          <div class="divider"></div>
+          
+          <div class="footer">
+            ${billingTemplate.footerText.map(line => `<p>${line}</p>`).join('')}
           </div>
         </div>
-
-        <TabsContent value="general" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Store Information</CardTitle>
-              <CardDescription>
-                Basic information about your store
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="store-name">Store Name</Label>
-                  <Input 
-                    id="store-name" 
-                    value={storeSettings.name} 
-                    onChange={(e) => handleStoreSettingChange('name', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="store-email">Store Email</Label>
-                  <Input 
-                    id="store-email" 
-                    type="email" 
-                    value={storeSettings.email}
-                    onChange={(e) => handleStoreSettingChange('email', e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="store-address">Store Address</Label>
-                <Textarea 
-                  id="store-address" 
-                  value={storeSettings.address}
-                  onChange={(e) => handleStoreSettingChange('address', e.target.value)}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="store-phone">Phone Number</Label>
-                  <Input 
-                    id="store-phone" 
-                    value={storeSettings.phone}
-                    onChange={(e) => handleStoreSettingChange('phone', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="store-currency">Currency</Label>
-                  <Select 
-                    value={storeSettings.currency}
-                    onValueChange={(value) => handleStoreSettingChange('currency', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="inr">Indian Rupee (₹)</SelectItem>
-                      <SelectItem value="usd">US Dollar ($)</SelectItem>
-                      <SelectItem value="eur">Euro (€)</SelectItem>
-                      <SelectItem value="gbp">British Pound (£)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="tax-rate">Default Tax Rate (%)</Label>
-                  <Input 
-                    id="tax-rate" 
-                    type="number" 
-                    value={storeSettings.taxRate}
-                    onChange={(e) => handleStoreSettingChange('taxRate', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="time-zone">Time Zone</Label>
-                  <Select 
-                    value={storeSettings.timeZone}
-                    onValueChange={(value) => handleStoreSettingChange('timeZone', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select time zone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ist">Indian Standard Time (IST)</SelectItem>
-                      <SelectItem value="utc">Coordinated Universal Time (UTC)</SelectItem>
-                      <SelectItem value="est">Eastern Standard Time (EST)</SelectItem>
-                      <SelectItem value="pst">Pacific Standard Time (PST)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="store-logo">Store Logo</Label>
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-md border overflow-hidden bg-muted flex items-center justify-center">
-                    <Store className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <Button variant="outline" className="gap-2">
-                    <Upload className="h-4 w-4" />
-                    Upload Logo
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Business Settings</CardTitle>
-              <CardDescription>
-                Configure your business preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base">GST Enabled</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Enable GST calculations for your invoices
-                  </p>
-                </div>
-                <Switch 
-                  checked={storeSettings.gstEnabled}
-                  onCheckedChange={(checked) => handleStoreSettingChange('gstEnabled', checked)}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base">Low Stock Alerts</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Get notifications when stock is running low
-                  </p>
-                </div>
-                <Switch 
-                  checked={storeSettings.lowStockAlerts}
-                  onCheckedChange={(checked) => handleStoreSettingChange('lowStockAlerts', checked)}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base">Expiry Date Tracking</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Track and get alerts for product expiry dates
-                  </p>
-                </div>
-                <Switch 
-                  checked={storeSettings.expiryDateTracking}
-                  onCheckedChange={(checked) => handleStoreSettingChange('expiryDateTracking', checked)}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base">AI-Powered Analytics</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Enable AI insights and recommendations
-                  </p>
-                </div>
-                <Switch 
-                  checked={storeSettings.aiAnalytics}
-                  onCheckedChange={(checked) => handleStoreSettingChange('aiAnalytics', checked)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="backup" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Automatic Backup</CardTitle>
-              <CardDescription>
-                Configure automatic data backup settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base">Enable Daily Backup</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Automatically backup your data every day
-                  </p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <Separator />
-
-              <div className="space-y-2">
-                <Label htmlFor="backup-time">Backup Time</Label>
-                <Select defaultValue="0200">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select backup time" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0000">12:00 AM</SelectItem>
-                    <SelectItem value="0200">2:00 AM</SelectItem>
-                    <SelectItem value="0400">4:00 AM</SelectItem>
-                    <SelectItem value="0600">6:00 AM</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Select a time when system load is typically low
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="backup-destination">Backup Destination</Label>
-                <Select defaultValue="google-drive">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select destination" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="google-drive">Google Drive</SelectItem>
-                    <SelectItem value="dropbox">Dropbox</SelectItem>
-                    <SelectItem value="onedrive">Microsoft OneDrive</SelectItem>
-                    <SelectItem value="local">Local Storage</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="pt-2">
-                <Button className="w-full">Connect Google Drive</Button>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Backup Retention</Label>
-                  <span className="text-sm text-muted-foreground">14 days</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Number of days to keep backup files
-                </p>
-                <Input type="range" min="7" max="90" defaultValue="14" />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>7 days</span>
-                  <span>30 days</span>
-                  <span>90 days</span>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <Button variant="outline" className="w-full">Backup Now</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="security" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-              <CardDescription>
-                Manage your account security settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="current-password">Current Password</Label>
-                <Input id="current-password" type="password" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">New Password</Label>
-                  <Input id="new-password" type="password" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm New Password</Label>
-                  <Input id="confirm-password" type="password" />
-                </div>
-              </div>
-              <Button className="gap-2">
-                <Lock className="h-4 w-4" />
-                Update Password
-              </Button>
-              
-              <Separator className="my-4" />
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base">Two-Factor Authentication</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Add an extra layer of security to your account
-                  </p>
-                </div>
-                <Switch />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() {
+              window.close();
+            }, 500);
+          }
+        </script>
+      </body>
+      </html>
+    `);
+    
+    receiptWindow.document.close();
+  };
+  
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        <p className="text-muted-foreground">
+          Manage your application settings and preferences.
+        </p>
+      </div>
+      
+      <Tabs defaultValue="account" className="w-full">
+        <TabsList className="grid grid-cols-5 w-full max-w-3xl">
+          <TabsTrigger value="account" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            <span>Account</span>
+          </TabsTrigger>
+          <TabsTrigger value="store" className="flex items-center gap-2">
+            <Store className="h-4 w-4" />
+            <span>Store</span>
+          </TabsTrigger>
+          <TabsTrigger value="billing" className="flex items-center gap-2">
+            <Printer className="h-4 w-4" />
+            <span>Billing</span>
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            <span>Notifications</span>
+          </TabsTrigger>
+          <TabsTrigger value="security" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            <span>Security</span>
+          </TabsTrigger>
+        </TabsList>
         
-        {/* Other tabs would go here */}
+        <div className="mt-6">
+          <TabsContent value="account">
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Information</CardTitle>
+                <CardDescription>
+                  Update your account settings and personal information.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">First name</Label>
+                      <Input id="firstName" placeholder="Enter your first name" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last name</Label>
+                      <Input id="lastName" placeholder="Enter your last name" />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email address</Label>
+                    <Input id="email" type="email" placeholder="Enter your email" />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="current-password">Current password</Label>
+                  <Input id="current-password" type="password" />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New password</Label>
+                    <Input id="new-password" type="password" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirm password</Label>
+                    <Input id="confirm-password" type="password" />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t px-6 py-4">
+                <Button
+                  onClick={() => {
+                    toast({
+                      title: "Settings Saved",
+                      description: "Your account settings have been updated.",
+                    });
+                  }}
+                >
+                  Save Changes
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="store">
+            <Card>
+              <CardHeader>
+                <CardTitle>Store Settings</CardTitle>
+                <CardDescription>
+                  Configure your store information and operational settings.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="store-name">Store name</Label>
+                  <Input id="store-name" placeholder="Enter your store name" />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="store-description">Description</Label>
+                  <Input id="store-description" placeholder="Brief description of your store" />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="store-address">Store address</Label>
+                  <Input id="store-address" placeholder="Enter your store address" />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="store-phone">Phone number</Label>
+                    <Input id="store-phone" placeholder="Enter phone number" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="store-email">Store email</Label>
+                    <Input id="store-email" type="email" placeholder="Enter email" />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tax-percentage">Tax percentage</Label>
+                    <Input id="tax-percentage" type="number" min="0" max="100" placeholder="Enter tax percentage" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">Currency</Label>
+                    <Input id="currency" placeholder="INR" />
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch id="tax-included" />
+                  <Label htmlFor="tax-included">Prices include tax</Label>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t px-6 py-4">
+                <Button
+                  onClick={() => {
+                    toast({
+                      title: "Store Settings Saved",
+                      description: "Your store settings have been updated.",
+                    });
+                  }}
+                >
+                  Save Changes
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="billing">
+            <BillingSettings 
+              billingTemplate={billingTemplate}
+              onSave={handleSaveBillingTemplate}
+              onPrintTest={printTestReceipt}
+            />
+          </TabsContent>
+          
+          <TabsContent value="notifications">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notification Settings</CardTitle>
+                <CardDescription>
+                  Configure how and when you receive notifications.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">New Orders</p>
+                      <p className="text-sm text-muted-foreground">
+                        Receive notifications when new orders are placed
+                      </p>
+                    </div>
+                    <Switch id="new-orders" defaultChecked />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Low Stock Alerts</p>
+                      <p className="text-sm text-muted-foreground">
+                        Get notified when products are low in stock
+                      </p>
+                    </div>
+                    <Switch id="low-stock" defaultChecked />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Payment Notifications</p>
+                      <p className="text-sm text-muted-foreground">
+                        Receive alerts for new payments and refunds
+                      </p>
+                    </div>
+                    <Switch id="payment-notifications" defaultChecked />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">System Updates</p>
+                      <p className="text-sm text-muted-foreground">
+                        Be notified about system and feature updates
+                      </p>
+                    </div>
+                    <Switch id="system-updates" />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t px-6 py-4">
+                <Button
+                  onClick={() => {
+                    toast({
+                      title: "Notification Settings Saved",
+                      description: "Your notification preferences have been updated.",
+                    });
+                  }}
+                >
+                  Save Changes
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="security">
+            <Card>
+              <CardHeader>
+                <CardTitle>Security Settings</CardTitle>
+                <CardDescription>
+                  Manage your security preferences and access controls.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Two-Factor Authentication</p>
+                      <p className="text-sm text-muted-foreground">
+                        Add an extra layer of security to your account
+                      </p>
+                    </div>
+                    <Switch id="two-factor" />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Login Notifications</p>
+                      <p className="text-sm text-muted-foreground">
+                        Receive alerts for new login attempts
+                      </p>
+                    </div>
+                    <Switch id="login-alerts" defaultChecked />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="session-timeout">Session Timeout (minutes)</Label>
+                  <Input id="session-timeout" type="number" min="5" max="120" defaultValue="60" />
+                  <p className="text-sm text-muted-foreground">
+                    Automatically log out after period of inactivity
+                  </p>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t px-6 py-4">
+                <Button
+                  onClick={() => {
+                    toast({
+                      title: "Security Settings Saved",
+                      description: "Your security preferences have been updated.",
+                    });
+                  }}
+                >
+                  Save Changes
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+        </div>
       </Tabs>
     </div>
   );
