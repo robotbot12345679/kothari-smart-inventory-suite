@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2, Edit, Package } from "lucide-react";
 import { categories } from "@/data/products";
-import type { Product, ProductVariant } from "@/types/pos";
+import type { Product } from "@/types/pos";
 
 const ProductManager = () => {
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);

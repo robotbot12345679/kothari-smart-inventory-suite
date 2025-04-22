@@ -43,13 +43,17 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
   const [orderStatus, setOrderStatus] = useState("Delivered");
   
   const selectedProductObj = products.find(p => p.id.toString() === selectedProduct);
-  const selectedVariantObj = selectedProductObj?.variants?.find(v => v.id.toString() === selectedVariant);
+  let selectedVariantObj = undefined;
+  
+  if (selectedProductObj && selectedProductObj.variants) {
+    selectedVariantObj = selectedProductObj.variants.find(v => v.id.toString() === selectedVariant);
+  }
   
   const handleAddToCart = () => {
-    if (!selectedProductObj || !selectedVariantObj) {
+    if (!selectedProductObj) {
       toast({
         title: "Selection Required",
-        description: "Please select a product and variant.",
+        description: "Please select a product.",
         variant: "destructive"
       });
       return;
@@ -64,26 +68,58 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
       return;
     }
     
-    const existingItemIndex = cart.findIndex(item => 
-      item.id === selectedProductObj.id && item.variantId === selectedVariantObj.id
-    );
-    
-    if (existingItemIndex >= 0) {
-      // Update existing item
-      const updatedCart = [...cart];
-      updatedCart[existingItemIndex].quantity += quantity;
-      setCart(updatedCart);
+    // If we have variants and one is selected, use that
+    if (selectedProductObj.variants && selectedProductObj.variants.length > 0) {
+      if (!selectedVariantObj) {
+        toast({
+          title: "Selection Required",
+          description: "Please select a product variant.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const existingItemIndex = cart.findIndex(item => 
+        item.id === selectedProductObj.id && item.variantId === selectedVariantObj?.id
+      );
+      
+      if (existingItemIndex >= 0) {
+        // Update existing item
+        const updatedCart = [...cart];
+        updatedCart[existingItemIndex].quantity += quantity;
+        setCart(updatedCart);
+      } else {
+        // Add new item with variant
+        setCart([...cart, {
+          id: selectedProductObj.id,
+          name: selectedProductObj.name,
+          price: selectedVariantObj.price,
+          quantity: quantity,
+          unit: selectedVariantObj.unit,
+          weight: selectedVariantObj.weight,
+          variantId: selectedVariantObj.id
+        }]);
+      }
     } else {
-      // Add new item with weight property
-      setCart([...cart, {
-        id: selectedProductObj.id,
-        name: selectedProductObj.name,
-        variantId: selectedVariantObj.id,
-        price: selectedVariantObj.price,
-        quantity: quantity,
-        unit: selectedVariantObj.unit,
-        weight: selectedVariantObj.weight // Add the weight property
-      }]);
+      // Add without variant
+      const existingItemIndex = cart.findIndex(item => item.id === selectedProductObj.id);
+      
+      if (existingItemIndex >= 0) {
+        // Update existing item
+        const updatedCart = [...cart];
+        updatedCart[existingItemIndex].quantity += quantity;
+        setCart(updatedCart);
+      } else {
+        // Add new item without variant
+        setCart([...cart, {
+          id: selectedProductObj.id,
+          name: selectedProductObj.name,
+          price: selectedProductObj.price,
+          quantity: quantity,
+          unit: selectedProductObj.unit,
+          weight: selectedProductObj.weight
+        }]);
+      }
     }
     
     // Reset selection
@@ -229,13 +265,13 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
                   <Select
                     value={selectedVariant}
                     onValueChange={setSelectedVariant}
-                    disabled={!selectedProduct}
+                    disabled={!selectedProduct || !(selectedProductObj?.variants && selectedProductObj?.variants.length > 0)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select variant" />
                     </SelectTrigger>
                     <SelectContent>
-                      {selectedProductObj?.variants.map((variant) => (
+                      {selectedProductObj?.variants && selectedProductObj.variants.map((variant) => (
                         <SelectItem key={variant.id} value={variant.id.toString()}>
                           {variant.name} - ₹{variant.price}/{variant.unit}
                         </SelectItem>
@@ -259,7 +295,7 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
                 <Button 
                   type="button" 
                   onClick={handleAddToCart}
-                  disabled={!selectedVariant}
+                  disabled={!selectedProduct}
                 >
                   <Plus className="h-4 w-4 mr-1" /> Add
                 </Button>

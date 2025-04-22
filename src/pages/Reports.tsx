@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,15 +11,13 @@ import { format, subDays, isAfter, startOfDay, endOfDay, isValid, parse } from "
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { Download, Calendar as CalendarIcon, FileText, Filter, Printer } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { DateRange } from "react-day-picker";
 
 const Reports = () => {
   const { orders, products, categories } = useData();
   const { toast } = useToast();
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [dateRange, setDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
+  const [dateRange, setDateRange] = useState<DateRange>({
     from: subDays(new Date(), 30),
     to: new Date()
   });
@@ -349,6 +346,13 @@ const Reports = () => {
     printWindow.document.close();
   };
   
+  const formatTooltipValue = (value: number | string) => {
+    if (typeof value === 'number') {
+      return value.toFixed(2);
+    }
+    return value;
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between">
@@ -419,7 +423,11 @@ const Reports = () => {
                     mode="range"
                     defaultMonth={dateRange.from}
                     selected={dateRange}
-                    onSelect={setDateRange}
+                    onSelect={(range) => {
+                      if (range) {
+                        setDateRange(range);
+                      }
+                    }}
                     numberOfMonths={2}
                   />
                 </PopoverContent>
@@ -531,7 +539,12 @@ const Reports = () => {
                               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                           </Pie>
-                          <Tooltip formatter={(value) => [`₹${value.toFixed(2)}`, 'Revenue']} />
+                          <Tooltip formatter={(value) => {
+                            if (typeof value === 'number') {
+                              return [`₹${value.toFixed(2)}`, 'Revenue'];
+                            }
+                            return [value, 'Revenue'];
+                          }} />
                           <Legend />
                         </PieChart>
                       </ResponsiveContainer>
@@ -569,7 +582,12 @@ const Reports = () => {
                           tick={{ fontSize: 12 }}
                           width={100}
                         />
-                        <Tooltip formatter={(value, name) => [name === "revenue" ? `₹${Number(value).toFixed(2)}` : value, name === "revenue" ? "Revenue" : "Quantity Sold"]} />
+                        <Tooltip formatter={(value, name) => {
+                          if (typeof value === 'number') {
+                            return [name === "revenue" ? `₹${value.toFixed(2)}` : value, name === "revenue" ? "Revenue" : "Quantity Sold"];
+                          }
+                          return [value, name];
+                        }} />
                         <Legend />
                         <Bar dataKey="revenue" name="Revenue" fill="#8884d8" />
                         <Bar dataKey="quantity" name="Quantity Sold" fill="#82ca9d" />
