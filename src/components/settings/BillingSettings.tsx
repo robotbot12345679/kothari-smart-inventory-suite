@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -80,7 +81,7 @@ const BillingSettings = ({ billingTemplate, onSave, onPrintTest }: BillingSettin
         <title>Receipt - Test Order</title>
         <style>
           body {
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
             margin: 0;
             padding: 20px;
             max-width: 380px;
@@ -113,25 +114,25 @@ const BillingSettings = ({ billingTemplate, onSave, onPrintTest }: BillingSettin
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
           }
           th, td {
             text-align: left;
             padding: 8px 4px;
             border-bottom: 1px solid #ddd;
             font-size: 14px;
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
           }
         </style>
       </head>
       <body>
         <div class="receipt">
           <div class="header">
-            <img src="${template.logoUrl}" alt="Shop logo" class="logo" />
+            ${template.logoUrl ? `<img src="${template.logoUrl}" alt="Shop logo" class="logo" />` : '<div style="height: 30px;"></div>'}
             <h1 class="title">${template.shopName}</h1>
             <p class="info">${template.address}</p>
             <p class="info">${template.phone}</p>
-            <p class="info">${template.gstNumber}</p>
+            <p class="info">${template.gstNumber ? 'GSTIN: ' + template.gstNumber : ''}</p>
           </div>
           <table>
             <thead>
@@ -209,6 +210,7 @@ const BillingSettings = ({ billingTemplate, onSave, onPrintTest }: BillingSettin
                 id="gst-number" 
                 value={template.gstNumber}
                 onChange={(e) => setTemplate({...template, gstNumber: e.target.value})}
+                placeholder="Enter GSTIN Number"
               />
             </div>
           </div>

@@ -20,11 +20,11 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
 
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-background">
-      <div className="flex h-16 items-center gap-4 px-4 md:px-6">
+      <div className="flex h-16 items-center px-4 md:px-6">
         <Button
           variant="ghost"
           size="icon"
-          className="md:flex"
+          className="mr-auto md:mr-0"
           onClick={onMenuToggle}
         >
           <Menu className="h-5 w-5" />
