@@ -1,52 +1,37 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/components/theme-provider";
-import { DataProvider } from "@/context/DataContext";
-import Dashboard from "./pages/Dashboard";
-import Inventory from "./pages/Inventory";
-import Pos from "./pages/Pos";
-import Orders from "./pages/Orders";
-import Shipping from "./pages/Shipping";
-import Products from "./pages/Products";
-import Customers from "./pages/Customers";
-import Analytics from "./pages/Analytics";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
-import MainLayout from "./components/layout/MainLayout";
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import MainLayout from './components/layout/MainLayout';
+import Dashboard from './pages/Dashboard';
+import Products from './pages/Products';
+import Orders from './pages/Orders';
+import Customers from './pages/Customers';
+import Reports from './pages/Reports';
+import Settings from './pages/Settings';
+import Pos from './pages/Pos';
+import { DataProvider } from './context/DataContext';
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="light">
-      <TooltipProvider>
-        <DataProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+const App = () => {
+  return (
+    <DataProvider>
+      <Router>
+        <div className="font-playfair">
+          <MainLayout>
             <Routes>
-              <Route path="/" element={<MainLayout><Dashboard /></MainLayout>} />
-              <Route path="/inventory" element={<MainLayout><Inventory /></MainLayout>} />
-              <Route path="/pos" element={<MainLayout><Pos /></MainLayout>} />
-              <Route path="/orders" element={<MainLayout><Orders /></MainLayout>} />
-              <Route path="/shipping" element={<MainLayout><Shipping /></MainLayout>} />
-              <Route path="/products" element={<MainLayout><Products /></MainLayout>} />
-              <Route path="/customers" element={<MainLayout><Customers /></MainLayout>} />
-              <Route path="/analytics" element={<MainLayout><Analytics /></MainLayout>} />
-              <Route path="/reports" element={<MainLayout><Reports /></MainLayout>} />
-              <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
-              <Route path="*" element={<NotFound />} />
+              <Route path="/" element={<Navigate to="/dashboard" />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/customers" element={<Customers />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/pos" element={<Pos />} />
             </Routes>
-          </BrowserRouter>
-        </DataProvider>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+          </MainLayout>
+        </div>
+      </Router>
+    </DataProvider>
+  );
+};
 
 export default App;

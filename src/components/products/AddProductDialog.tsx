@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,23 +24,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useData } from "@/context/DataContext";
 import { useToast } from "@/components/ui/use-toast";
 import { Plus, Trash, Edit } from "lucide-react";
-import type { Product, ProductVariant } from "@/types/pos";
+import type { Product } from "@/types/pos";
 
 interface AddProductDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product?: Product | null;
-}
-
-interface VariantFormData {
-  id: number;
-  name: string;
-  weight: number;
-  unit: 'g' | 'kg' | 'box' | 'pcs';
-  price: number;
-  stock: number;
-  profitMargin: number;
-  sku: string;
 }
 
 const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps) => {
@@ -54,11 +44,14 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
     description: "",
     barcode: "",
     image: "",
-    variants: [],
+    price: 0,
+    weight: 1,
+    unit: "kg",
+    stock: 0,
     isActive: true,
+    priceIncludesGST: true
   });
-
-  const [variants, setVariants] = useState<VariantFormData[]>([]);
+  
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
@@ -73,15 +66,6 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
         ...product,
         expiryMonth,
       });
-      
-      if (product.variants && product.variants.length > 0) {
-        setVariants(product.variants.map(v => ({
-          ...v,
-          profitMargin: v.profitMargin || 0,
-        })));
-      } else {
-        setVariants([createDefaultVariant(product.id)]);
-      }
     } else {
       setFormData({
         name: "",
@@ -90,38 +74,20 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
         description: "",
         barcode: "",
         image: "",
-        variants: [],
+        price: 0,
+        weight: 1,
+        unit: "kg",
+        stock: 0,
         isActive: true,
+        priceIncludesGST: true,
         expiryMonth: ""
       });
-      
-      setVariants([createDefaultVariant(Date.now())]);
     }
   }, [product, open]);
-
-  const createDefaultVariant = (productId: number): VariantFormData => ({
-    id: 1,
-    name: 'Default',
-    weight: 1,
-    unit: 'kg',
-    price: 0,
-    stock: 0,
-    profitMargin: 20,
-    sku: formData.sku ? `${formData.sku}-1` : ''
-  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value, type } = e.target as HTMLInputElement;
     const parsedValue = type === 'number' ? parseFloat(value) : value;
-    
-    if (id === 'sku') {
-      setVariants(prevVariants => 
-        prevVariants.map((v, idx) => ({
-          ...v,
-          sku: `${value}-${idx + 1}`
-        }))
-      );
-    }
     
     setFormData(prev => ({ ...prev, [id]: parsedValue }));
   };
@@ -132,43 +98,6 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
 
   const handleSelectChange = (value: string, field: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleVariantChange = (index: number, field: string, value: any) => {
-    setVariants(prev => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
-    });
-  };
-
-  const handleAddVariant = () => {
-    setVariants(prev => {
-      const newVariantId = prev.length > 0 ? Math.max(...prev.map(v => v.id)) + 1 : 1;
-      return [...prev, {
-        id: newVariantId,
-        name: `Variant ${prev.length + 1}`,
-        weight: 1,
-        unit: 'kg',
-        price: 0,
-        stock: 0,
-        profitMargin: 20,
-        sku: `${formData.sku}-${newVariantId}`
-      }];
-    });
-  };
-
-  const handleRemoveVariant = (index: number) => {
-    if (variants.length <= 1) {
-      toast({
-        title: "Cannot Remove",
-        description: "Product must have at least one variant",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setVariants(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,8 +126,6 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
         expiryDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
       }
       
-      const firstVariant = variants[0] || { price: 0, stock: 0, weight: 1, unit: 'kg' as const };
-      
       const productData: Product = {
         id: isEditing && product ? product.id : Date.now(),
         name: formData.name!,
@@ -207,22 +134,11 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
         description: formData.description || "",
         barcode: formData.barcode || "",
         image: selectedFile ? URL.createObjectURL(selectedFile) : (formData.image || ""),
-        price: firstVariant.price,
-        stock: firstVariant.stock,
-        weight: firstVariant.weight,
-        unit: firstVariant.unit,
+        price: formData.price || 0,
+        stock: formData.stock || 0,
+        weight: formData.weight || 1,
+        unit: (formData.unit as 'g' | 'kg' | 'box' | 'pcs') || 'kg',
         priceIncludesGST: true,
-        variants: variants.map(v => ({
-          id: v.id,
-          productId: isEditing && product ? product.id : Date.now(),
-          name: v.name,
-          weight: v.weight,
-          unit: v.unit,
-          price: v.price,
-          stock: v.stock,
-          profitMargin: v.profitMargin,
-          sku: v.sku
-        })),
         expiryDate,
         minimumStock: formData.minimumStock,
         isActive: formData.isActive !== undefined ? formData.isActive : true
@@ -255,7 +171,7 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto font-playfair">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Product" : "Add New Product"}</DialogTitle>
           <DialogDescription>
@@ -264,9 +180,8 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
         </DialogHeader>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
-              <TabsTrigger value="variants">Variants</TabsTrigger>
               <TabsTrigger value="extras">Additional</TabsTrigger>
             </TabsList>
 
@@ -325,6 +240,77 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
                 </div>
               </div>
 
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="price">Price (₹)</Label>
+                  <Input 
+                    id="price" 
+                    type="number" 
+                    placeholder="0.00" 
+                    value={formData.price || ""} 
+                    onChange={handleChange}
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="weight">Weight</Label>
+                  <Input 
+                    id="weight" 
+                    type="number" 
+                    placeholder="1" 
+                    value={formData.weight || ""} 
+                    onChange={handleChange}
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="unit">Unit</Label>
+                  <Select 
+                    value={formData.unit || "kg"} 
+                    onValueChange={(value) => handleSelectChange(value, "unit")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="g">Grams (g)</SelectItem>
+                      <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                      <SelectItem value="box">Box</SelectItem>
+                      <SelectItem value="pcs">Pieces</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="stock">Stock</Label>
+                  <Input 
+                    id="stock" 
+                    type="number" 
+                    placeholder="0" 
+                    value={formData.stock || ""} 
+                    onChange={handleChange}
+                    min="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="minimumStock">Min. Stock Level</Label>
+                  <Input 
+                    id="minimumStock" 
+                    type="number" 
+                    placeholder="0" 
+                    value={formData.minimumStock || ""} 
+                    onChange={handleChange}
+                    min="0"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea 
@@ -334,7 +320,9 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
                   onChange={handleChange}
                 />
               </div>
+            </TabsContent>
 
+            <TabsContent value="extras" className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="image">Product Image</Label>
                 <Input 
@@ -354,128 +342,7 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
                   </div>
                 )}
               </div>
-            </TabsContent>
 
-            <TabsContent value="variants" className="space-y-4 py-4">
-              <div className="flex justify-between items-center">
-                <h3 className="font-medium">Product Variants</h3>
-                <Button type="button" variant="outline" size="sm" onClick={handleAddVariant}>
-                  <Plus className="h-4 w-4 mr-1" /> Add Variant
-                </Button>
-              </div>
-              
-              {variants.map((variant, index) => (
-                <div key={index} className="border p-4 rounded-md space-y-3">
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-medium">Variant #{index + 1}</h4>
-                    <Button 
-                      type="button" 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleRemoveVariant(index)}
-                      disabled={variants.length <= 1}
-                    >
-                      <Trash className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Variant Name</Label>
-                      <Input 
-                        value={variant.name} 
-                        onChange={(e) => handleVariantChange(index, 'name', e.target.value)}
-                        placeholder="e.g. Small, 500g, etc."
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>SKU</Label>
-                      <Input 
-                        value={variant.sku} 
-                        onChange={(e) => handleVariantChange(index, 'sku', e.target.value)}
-                        placeholder="Variant SKU"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="space-y-2">
-                      <Label>Weight</Label>
-                      <Input 
-                        type="number" 
-                        value={variant.weight} 
-                        onChange={(e) => handleVariantChange(index, 'weight', parseFloat(e.target.value))}
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Unit</Label>
-                      <Select 
-                        value={variant.unit} 
-                        onValueChange={(value) => handleVariantChange(index, 'unit', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Unit" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="g">Grams (g)</SelectItem>
-                          <SelectItem value="kg">Kilograms (kg)</SelectItem>
-                          <SelectItem value="box">Box</SelectItem>
-                          <SelectItem value="pcs">Pieces</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Stock</Label>
-                      <Input 
-                        type="number" 
-                        value={variant.stock} 
-                        onChange={(e) => handleVariantChange(index, 'stock', parseInt(e.target.value))}
-                        min="0"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Price (₹)</Label>
-                      <Input 
-                        type="number" 
-                        value={variant.price} 
-                        onChange={(e) => handleVariantChange(index, 'price', parseFloat(e.target.value))}
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Profit Margin (%)</Label>
-                      <Input 
-                        type="number" 
-                        value={variant.profitMargin} 
-                        onChange={(e) => handleVariantChange(index, 'profitMargin', parseFloat(e.target.value))}
-                        min="0"
-                        max="100"
-                        step="0.1"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </TabsContent>
-
-            <TabsContent value="extras" className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="minimumStock">Minimum Stock Level</Label>
-                <Input 
-                  id="minimumStock" 
-                  type="number" 
-                  placeholder="0" 
-                  value={formData.minimumStock || ""} 
-                  onChange={handleChange}
-                />
-              </div>
-              
               <div className="space-y-2">
                 <Label htmlFor="expiryMonth">Expiry Month</Label>
                 <Input 

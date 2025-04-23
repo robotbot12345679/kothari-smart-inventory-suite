@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -161,7 +160,6 @@ const Pos = () => {
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  // No GST added - prices are inclusive of taxes
   const total = subtotal;
   
   const getChange = () => {
@@ -183,7 +181,7 @@ const Pos = () => {
       id: orderIdPrefix,
       items: [...cart],
       subtotal,
-      gst: 0, // No GST
+      gst: 0,
       total,
       paymentMethod: currentTab,
       paymentStatus: 'Paid',
@@ -241,17 +239,19 @@ const Pos = () => {
       minute: '2-digit'
     });
 
-    // Generate UPI QR code for the receipt
-    const upiQrCode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ashokkothari738@oksbi%26pn=KothariDryFruits%26am=${order.total}%26cu=INR`;
+    const showQrCode = order.paymentMethod === 'upi';
+    const upiQrCode = showQrCode ? 
+      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ashokkothari738@oksbi%26pn=KothariDryFruits%26am=${order.total}%26cu=INR` : '';
     
     receiptWindow.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
         <title>Receipt - Order #${order.id}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
         <style>
           body {
-            font-family: 'Courier New', monospace;
+            font-family: 'Playfair Display', serif;
             margin: 0;
             padding: 20px;
             max-width: 380px;
@@ -270,7 +270,7 @@ const Pos = () => {
             display: block;
           }
           .title {
-            font-size: 18px;
+            font-size: 22px;
             font-weight: bold;
             margin: 10px 0;
           }
@@ -390,11 +390,13 @@ const Pos = () => {
             </tbody>
           </table>
           
+          ${showQrCode ? `
           <div class="qr-code">
             <p>Scan to pay via UPI:</p>
             <img src="${upiQrCode}" alt="UPI QR Code">
             <p>UPI ID: ashokkothari738@oksbi</p>
           </div>
+          ` : ''}
           
           <div class="divider"></div>
           
@@ -420,7 +422,7 @@ const Pos = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
+    <div className="h-[calc(100vh-4rem)] flex flex-col font-playfair">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold tracking-tight">Point of Sale</h1>
         <div className="flex items-center gap-2">
@@ -506,8 +508,8 @@ const Pos = () => {
                   <CardContent className="p-3">
                     <h3 className="font-semibold truncate">{product.name}</h3>
                     <div className="flex justify-between items-center mt-1">
-                      <span className="text-sm text-muted-foreground">{product.sku}</span>
-                      <span className="font-semibold">₹{product.price}/{product.unit}</span>
+                      <span className="text-sm text-muted-foreground">{product.weight} {product.unit}</span>
+                      <span className="font-semibold">₹{product.price}</span>
                     </div>
                     <div className="text-xs mt-1">
                       {product.stock > 0 ? (
@@ -701,105 +703,59 @@ const Pos = () => {
                 <TabsTrigger value="cash">Cash</TabsTrigger>
                 <TabsTrigger value="card">Card</TabsTrigger>
               </TabsList>
-              <TabsContent value="upi" className="p-4">
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="flex items-center justify-center w-48 h-48 bg-gray-100 rounded-lg">
+              
+              <TabsContent value="upi" className="space-y-4">
+                <div className="flex flex-col items-center">
+                  <QrCode className="h-24 w-24 mb-2" />
+                  <p className="text-center">Scan this QR code to pay via UPI</p>
+                  <div className="text-center my-2">
                     <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ashokkothari738@oksbi%26pn=KothariDryFruits%26am=${total}%26cu=INR`} 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ashokkothari738@oksbi%26pn=KothariDryFruits%26am=${total}%26cu=INR`}
                       alt="UPI QR Code" 
-                      className="max-w-full max-h-full"
+                      className="max-w-[200px] mx-auto"
                     />
                   </div>
-                  <p className="text-center">Scan with any UPI app</p>
-                  <p className="font-medium text-center">ashokkothari738@oksbi</p>
-                  <Button className="w-full gap-2" onClick={handleCompletePayment}>
-                    <Wallet className="h-4 w-4" />
-                    Complete Payment
-                  </Button>
                 </div>
               </TabsContent>
-              <TabsContent value="cash" className="p-4 space-y-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="amount-tendered">Amount Tendered</Label>
+              
+              <TabsContent value="cash" className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="amount-tendered">Amount Tendered (₹)</Label>
                   <Input 
                     id="amount-tendered" 
                     type="number" 
                     step="0.01"
-                    placeholder="Enter amount" 
+                    min={total}
                     value={amountTendered}
                     onChange={(e) => setAmountTendered(e.target.value)}
                   />
                 </div>
-                <div className="flex justify-between">
-                  <span>Total Amount:</span>
-                  <span className="font-semibold">₹{total.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Change:</span>
-                  <span className="font-semibold">₹{getChange()}</span>
-                </div>
-                <Button 
-                  className="w-full"
-                  onClick={handleCompletePayment}
-                  disabled={parseFloat(amountTendered || "0") < total}
-                >
-                  Complete Cash Payment
-                </Button>
+                
+                {parseFloat(amountTendered || "0") >= total && (
+                  <div className="flex justify-between p-2 bg-muted rounded">
+                    <span>Change to return:</span>
+                    <span className="font-semibold">₹{getChange()}</span>
+                  </div>
+                )}
               </TabsContent>
-              <TabsContent value="card" className="p-4 space-y-4">
-                <div className="grid gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="card-number">Card Number</Label>
-                    <Input id="card-number" placeholder="•••• •••• •••• ••••" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="expiry">Expiry Date</Label>
-                      <Input id="expiry" placeholder="MM/YY" />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="cvc">CVC</Label>
-                      <Input id="cvc" placeholder="•••" />
-                    </div>
-                  </div>
+              
+              <TabsContent value="card" className="space-y-4">
+                <div className="flex flex-col items-center">
+                  <CreditCard className="h-24 w-24 mb-2" />
+                  <p className="text-center">Use card machine to process payment</p>
                 </div>
-                <Button className="w-full gap-2" onClick={handleCompletePayment}>
-                  <CreditCard className="h-4 w-4" />
-                  Process Card Payment
-                </Button>
               </TabsContent>
             </Tabs>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPaymentModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCompletePayment}>
+                Complete Payment
+              </Button>
+            </DialogFooter>
           </div>
-
-          <DialogFooter className="flex items-center justify-between">
-            <Button 
-              variant="outline" 
-              className="gap-2" 
-              onClick={() => {
-                if (cart.length > 0) {
-                  const draftOrder: Order = {
-                    id: orderIdPrefix + "-DRAFT",
-                    items: [...cart],
-                    subtotal,
-                    gst: 0, // No GST
-                    total,
-                    paymentMethod: 'not paid',
-                    paymentStatus: 'Pending',
-                    orderDate: new Date().toISOString(),
-                    orderStatus: 'Pending',
-                    customerName: customerInfo.name || "Guest Customer"
-                  };
-                  printReceipt(draftOrder);
-                }
-              }}
-            >
-              <Printer className="h-4 w-4" />
-              Print Quote
-            </Button>
-            <Button variant="outline" onClick={() => setPaymentModalOpen(false)}>
-              Cancel
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

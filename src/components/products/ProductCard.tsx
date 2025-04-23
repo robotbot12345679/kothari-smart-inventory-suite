@@ -1,82 +1,84 @@
 
 import React from "react";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Edit, Package, Trash2 } from "lucide-react";
+import { Edit, Trash2, Package } from "lucide-react";
 import type { Product } from "@/types/pos";
 
 interface ProductCardProps {
   product: Product;
-  onEdit?: (product: Product) => void;
-  onDelete?: (product: Product) => void;
+  onEdit: (product: Product) => void;
+  onDelete: (product: Product) => void;
 }
 
-const ProductCard = ({ product, onEdit, onDelete }: ProductCardProps) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) => {
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium line-clamp-1" title={product.name}>
-          {product.name}
-        </CardTitle>
-        {product.isActive ? (
-          <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
+    <Card className="overflow-hidden">
+      <div className="aspect-square relative">
+        {product.image ? (
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full h-full object-cover"
+          />
         ) : (
-          <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Inactive</Badge>
+          <div className="w-full h-full flex items-center justify-center bg-muted">
+            <Package className="h-12 w-12 text-muted-foreground" />
+          </div>
         )}
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">SKU:</span>
-            <span className="text-sm">{product.sku}</span>
+        {!product.isActive && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <span className="text-white font-medium px-2 py-1 rounded-md">
+              Inactive
+            </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">Category:</span>
-            <span className="text-sm">{product.category}</span>
+        )}
+      </div>
+
+      <CardContent className="pt-4">
+        <h3 className="font-semibold truncate">{product.name}</h3>
+        <div className="mt-1 flex justify-between items-center">
+          <span className="text-sm text-muted-foreground">{product.weight} {product.unit}</span>
+          <span className="font-medium">₹{product.price.toFixed(2)}</span>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          <div className="text-xs">
+            <span className="text-muted-foreground">SKU:</span> {product.sku}
           </div>
-          <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">Price:</span>
-            <span className="text-sm">₹{product.price}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">Stock:</span>
-            <span className="text-sm">{product.stock}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">Weight:</span>
-            <span className="text-sm">{product.weight} {product.unit}</span>
-          </div>
-          {product.minimumStock && (
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Min Stock:</span>
-              <span className="text-sm">{product.minimumStock}</span>
-            </div>
-          )}
-          <div className="flex gap-2 justify-end mt-4">
-            {onEdit && (
-              <Button variant="outline" size="sm" onClick={() => onEdit(product)}>
-                <Edit className="h-4 w-4" />
-              </Button>
-            )}
-            {onDelete && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-destructive hover:bg-destructive/10"
-                onClick={() => onDelete(product)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
+          <div className="text-xs">
+            <span className="text-muted-foreground">Stock:</span>{" "}
+            {product.stock}
           </div>
         </div>
+        
+        {product.minimumStock !== undefined && product.stock <= product.minimumStock && (
+          <div className="mt-2">
+            <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-800 rounded">
+              Low Stock
+            </span>
+          </div>
+        )}
       </CardContent>
+
+      <CardFooter className="flex justify-end gap-2 pt-0">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 px-2"
+          onClick={() => onEdit(product)}
+        >
+          <Edit className="h-3.5 w-3.5 mr-1" /> Edit
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 px-2 text-destructive hover:text-destructive"
+          onClick={() => onDelete(product)}
+        >
+          <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+        </Button>
+      </CardFooter>
     </Card>
   );
 };

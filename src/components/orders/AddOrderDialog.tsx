@@ -36,18 +36,12 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
     email: ""
   });
   const [selectedProduct, setSelectedProduct] = useState("");
-  const [selectedVariant, setSelectedVariant] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [paymentStatus, setPaymentStatus] = useState("Paid");
   const [orderStatus, setOrderStatus] = useState("Delivered");
   
   const selectedProductObj = products.find(p => p.id.toString() === selectedProduct);
-  let selectedVariantObj = undefined;
-  
-  if (selectedProductObj && selectedProductObj.variants) {
-    selectedVariantObj = selectedProductObj.variants.find(v => v.id.toString() === selectedVariant);
-  }
   
   const handleAddToCart = () => {
     if (!selectedProductObj) {
@@ -68,62 +62,26 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
       return;
     }
     
-    // If we have variants and one is selected, use that
-    if (selectedProductObj.variants && selectedProductObj.variants.length > 0) {
-      if (!selectedVariantObj) {
-        toast({
-          title: "Selection Required",
-          description: "Please select a product variant.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      const existingItemIndex = cart.findIndex(item => 
-        item.id === selectedProductObj.id && item.variantId === selectedVariantObj?.id
-      );
-      
-      if (existingItemIndex >= 0) {
-        // Update existing item
-        const updatedCart = [...cart];
-        updatedCart[existingItemIndex].quantity += quantity;
-        setCart(updatedCart);
-      } else {
-        // Add new item with variant
-        setCart([...cart, {
-          id: selectedProductObj.id,
-          name: selectedProductObj.name,
-          price: selectedVariantObj.price,
-          quantity: quantity,
-          unit: selectedVariantObj.unit,
-          weight: selectedVariantObj.weight,
-          variantId: selectedVariantObj.id
-        }]);
-      }
+    const existingItemIndex = cart.findIndex(item => item.id === selectedProductObj.id);
+    
+    if (existingItemIndex >= 0) {
+      // Update existing item
+      const updatedCart = [...cart];
+      updatedCart[existingItemIndex].quantity += quantity;
+      setCart(updatedCart);
     } else {
-      // Add without variant
-      const existingItemIndex = cart.findIndex(item => item.id === selectedProductObj.id);
-      
-      if (existingItemIndex >= 0) {
-        // Update existing item
-        const updatedCart = [...cart];
-        updatedCart[existingItemIndex].quantity += quantity;
-        setCart(updatedCart);
-      } else {
-        // Add new item without variant
-        setCart([...cart, {
-          id: selectedProductObj.id,
-          name: selectedProductObj.name,
-          price: selectedProductObj.price,
-          quantity: quantity,
-          unit: selectedProductObj.unit,
-          weight: selectedProductObj.weight
-        }]);
-      }
+      // Add new item
+      setCart([...cart, {
+        id: selectedProductObj.id,
+        name: selectedProductObj.name,
+        price: selectedProductObj.price,
+        quantity: quantity,
+        unit: selectedProductObj.unit,
+        weight: selectedProductObj.weight
+      }]);
     }
     
     // Reset selection
-    setSelectedVariant("");
     setQuantity(1);
   };
   
@@ -143,8 +101,8 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
   };
   
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const gst = subtotal * 0.18; // 18% GST
-  const total = subtotal + gst;
+  // No GST as per requirements
+  const total = subtotal;
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,7 +123,7 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
       customerEmail: customerInfo.email || undefined,
       items: [...cart],
       subtotal,
-      gst,
+      gst: 0, // No GST as per requirements
       total,
       paymentMethod,
       paymentStatus: paymentStatus as 'Pending' | 'Paid' | 'Failed',
@@ -184,7 +142,6 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
     setCart([]);
     setCustomerInfo({ name: "", phone: "", email: "" });
     setSelectedProduct("");
-    setSelectedVariant("");
     setQuantity(1);
     
     // Close dialog
@@ -193,7 +150,7 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto font-playfair">
         <DialogHeader>
           <DialogTitle>Add New Order</DialogTitle>
           <DialogDescription>
@@ -240,45 +197,23 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
             <h3 className="font-medium">Products</h3>
             
             <div className="bg-muted/30 p-4 rounded-lg space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="product">Product</Label>
-                  <Select
-                    value={selectedProduct}
-                    onValueChange={setSelectedProduct}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products.map((product) => (
-                        <SelectItem key={product.id} value={product.id.toString()}>
-                          {product.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="variant">Variant</Label>
-                  <Select
-                    value={selectedVariant}
-                    onValueChange={setSelectedVariant}
-                    disabled={!selectedProduct || !(selectedProductObj?.variants && selectedProductObj?.variants.length > 0)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select variant" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {selectedProductObj?.variants && selectedProductObj.variants.map((variant) => (
-                        <SelectItem key={variant.id} value={variant.id.toString()}>
-                          {variant.name} - ₹{variant.price}/{variant.unit}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="product">Product</Label>
+                <Select
+                  value={selectedProduct}
+                  onValueChange={setSelectedProduct}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select product" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {products.map((product) => (
+                      <SelectItem key={product.id} value={product.id.toString()}>
+                        {product.name} - {product.weight}{product.unit} - ₹{product.price}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               
               <div className="flex items-end gap-3">
@@ -352,10 +287,6 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
                     <span>₹{subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>GST (18%):</span>
-                    <span>₹{gst.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between font-bold">
                     <span>Total:</span>
