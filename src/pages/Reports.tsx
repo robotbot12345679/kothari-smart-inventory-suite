@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -372,7 +373,7 @@ const Reports = () => {
       <div className="bg-white rounded-lg shadow dark:bg-gray-800">
         <div className="p-4 border-b">
           <div className="flex flex-col sm:flex-row justify-between gap-4">
-            <Tabs defaultValue="sales" value={reportType} onValueChange={setReportType} className="w-full sm:w-auto">
+            <Tabs value={reportType} onValueChange={setReportType} className="w-full sm:w-auto">
               <TabsList>
                 <TabsTrigger value="sales">Sales Report</TabsTrigger>
                 <TabsTrigger value="inventory">Inventory Report</TabsTrigger>
@@ -436,238 +437,240 @@ const Reports = () => {
           </div>
         </div>
         
-        <TabsContent value="sales" className="p-0">
-          <div className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Orders
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalSales}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Revenue
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">₹{totalRevenue.toFixed(2)}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Average Order Value
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    ₹{totalSales > 0 ? (totalRevenue / totalSales).toFixed(2) : "0.00"}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payment Methods</CardTitle>
-                  <CardDescription>
-                    Distribution of orders by payment method
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[300px]">
-                    {paymentMethodChartData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={paymentMethodChartData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={true}
-                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {paymentMethodChartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value) => [value, 'Orders']} />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="h-full flex items-center justify-center">
-                        <p className="text-muted-foreground">No data available</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+        <Tabs value={reportType} className="w-full">
+          <TabsContent value="sales" className="p-0">
+            <div className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Orders
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{totalSales}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Revenue
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">₹{totalRevenue.toFixed(2)}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Average Order Value
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      ₹{totalSales > 0 ? (totalRevenue / totalSales).toFixed(2) : "0.00"}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
               
-              <Card>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Payment Methods</CardTitle>
+                    <CardDescription>
+                      Distribution of orders by payment method
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px]">
+                      {paymentMethodChartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={paymentMethodChartData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={true}
+                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                            >
+                              {paymentMethodChartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip formatter={(value) => [value, 'Orders']} />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center">
+                          <p className="text-muted-foreground">No data available</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Sales by Category</CardTitle>
+                    <CardDescription>
+                      Revenue distribution by product category
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px]">
+                      {categoryChartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={categoryChartData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={true}
+                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                            >
+                              {categoryChartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip formatter={(value) => {
+                              if (typeof value === 'number') {
+                                return [`₹${value.toFixed(2)}`, 'Revenue'];
+                              }
+                              return [value, 'Revenue'];
+                            }} />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center">
+                          <p className="text-muted-foreground">No data available</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <Card className="mt-6">
                 <CardHeader>
-                  <CardTitle>Sales by Category</CardTitle>
+                  <CardTitle>Top Selling Products</CardTitle>
                   <CardDescription>
-                    Revenue distribution by product category
+                    Products with the highest sales in the selected period
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[300px]">
-                    {categoryChartData.length > 0 ? (
+                  {topProducts.length > 0 ? (
+                    <div className="h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={categoryChartData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={true}
-                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {categoryChartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value) => {
+                        <BarChart
+                          data={topProducts}
+                          layout="vertical"
+                          margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis type="number" />
+                          <YAxis 
+                            type="category" 
+                            dataKey="name" 
+                            tick={{ fontSize: 12 }}
+                            width={100}
+                          />
+                          <Tooltip formatter={(value, name) => {
                             if (typeof value === 'number') {
-                              return [`₹${value.toFixed(2)}`, 'Revenue'];
+                              return [name === "revenue" ? `₹${value.toFixed(2)}` : value, name === "revenue" ? "Revenue" : "Quantity Sold"];
                             }
-                            return [value, 'Revenue'];
+                            return [value, name];
                           }} />
                           <Legend />
-                        </PieChart>
+                          <Bar dataKey="revenue" name="Revenue" fill="#8884d8" />
+                          <Bar dataKey="quantity" name="Quantity Sold" fill="#82ca9d" />
+                        </BarChart>
                       </ResponsiveContainer>
-                    ) : (
-                      <div className="h-full flex items-center justify-center">
-                        <p className="text-muted-foreground">No data available</p>
-                      </div>
-                    )}
+                    </div>
+                  ) : (
+                    <div className="py-10 text-center">
+                      <FileText className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
+                      <p className="text-muted-foreground">No sales data available for the selected period</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="inventory" className="p-0">
+            <div className="p-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Inventory Status</CardTitle>
+                  <CardDescription>
+                    Current inventory levels by product
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <div className="relative w-full overflow-auto">
+                      <table className="w-full caption-bottom text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/50">
+                            <th className="h-10 px-4 text-left font-medium">Name</th>
+                            <th className="h-10 px-4 text-left font-medium">SKU</th>
+                            <th className="h-10 px-4 text-left font-medium">Category</th>
+                            <th className="h-10 px-4 text-left font-medium">Current Stock</th>
+                            <th className="h-10 px-4 text-left font-medium">Min. Stock</th>
+                            <th className="h-10 px-4 text-left font-medium">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {inventoryData.length > 0 ? (
+                            inventoryData.map((item) => (
+                              <tr 
+                                key={item.id} 
+                                className={`border-b ${item.lowStock ? 'bg-red-50' : ''}`}
+                              >
+                                <td className="p-2 px-4">{item.name}</td>
+                                <td className="p-2 px-4">{item.sku}</td>
+                                <td className="p-2 px-4">{item.category}</td>
+                                <td className="p-2 px-4">{item.stock}</td>
+                                <td className="p-2 px-4">{item.minimumStock}</td>
+                                <td className="p-2 px-4">
+                                  {item.lowStock ? (
+                                    <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+                                      Low Stock
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                                      In Stock
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={6} className="h-24 text-center">
+                                No inventory data available
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
-            
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Top Selling Products</CardTitle>
-                <CardDescription>
-                  Products with the highest sales in the selected period
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {topProducts.length > 0 ? (
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={topProducts}
-                        layout="vertical"
-                        margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" />
-                        <YAxis 
-                          type="category" 
-                          dataKey="name" 
-                          tick={{ fontSize: 12 }}
-                          width={100}
-                        />
-                        <Tooltip formatter={(value, name) => {
-                          if (typeof value === 'number') {
-                            return [name === "revenue" ? `₹${value.toFixed(2)}` : value, name === "revenue" ? "Revenue" : "Quantity Sold"];
-                          }
-                          return [value, name];
-                        }} />
-                        <Legend />
-                        <Bar dataKey="revenue" name="Revenue" fill="#8884d8" />
-                        <Bar dataKey="quantity" name="Quantity Sold" fill="#82ca9d" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div className="py-10 text-center">
-                    <FileText className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">No sales data available for the selected period</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="inventory" className="p-0">
-          <div className="p-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Inventory Status</CardTitle>
-                <CardDescription>
-                  Current inventory levels by product
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <div className="relative w-full overflow-auto">
-                    <table className="w-full caption-bottom text-sm">
-                      <thead>
-                        <tr className="border-b bg-muted/50">
-                          <th className="h-10 px-4 text-left font-medium">Name</th>
-                          <th className="h-10 px-4 text-left font-medium">SKU</th>
-                          <th className="h-10 px-4 text-left font-medium">Category</th>
-                          <th className="h-10 px-4 text-left font-medium">Current Stock</th>
-                          <th className="h-10 px-4 text-left font-medium">Min. Stock</th>
-                          <th className="h-10 px-4 text-left font-medium">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {inventoryData.length > 0 ? (
-                          inventoryData.map((item) => (
-                            <tr 
-                              key={item.id} 
-                              className={`border-b ${item.lowStock ? 'bg-red-50' : ''}`}
-                            >
-                              <td className="p-2 px-4">{item.name}</td>
-                              <td className="p-2 px-4">{item.sku}</td>
-                              <td className="p-2 px-4">{item.category}</td>
-                              <td className="p-2 px-4">{item.stock}</td>
-                              <td className="p-2 px-4">{item.minimumStock}</td>
-                              <td className="p-2 px-4">
-                                {item.lowStock ? (
-                                  <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
-                                    Low Stock
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                    In Stock
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={6} className="h-24 text-center">
-                              No inventory data available
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
