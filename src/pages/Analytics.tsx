@@ -170,11 +170,11 @@ const Analytics = () => {
                         <div className="font-semibold text-muted-foreground">{index + 1}.</div>
                         <div>
                           <div className="font-medium">{product.name}</div>
-                          <div className="text-sm text-muted-foreground">{product.variants[0]?.price ? `₹${product.variants[0].price}` : 'No price'}</div>
+                          <div className="text-sm text-muted-foreground">₹{product.price ? product.price.toFixed(2) : 'No price'}</div>
                         </div>
                       </div>
                       <div className="text-sm font-medium">
-                        {product.variants[0]?.stock || 0} in stock
+                        {product.stock || 0} in stock
                       </div>
                     </div>
                   ))}
@@ -236,10 +236,10 @@ const Analytics = () => {
                   <div key={product.id} className="flex justify-between items-center">
                     <div>
                       <div className="font-medium">{product.name}</div>
-                      <div className="text-sm text-muted-foreground">{product.variants[0]?.unit || ''}</div>
+                      <div className="text-sm text-muted-foreground">{product.unit || ''}</div>
                     </div>
-                    <div className={`text-sm font-medium ${product.variants[0]?.stock <= (product.minimumStock || 5) ? 'text-red-500' : 'text-green-500'}`}>
-                      {product.variants[0]?.stock || 0} in stock
+                    <div className={`text-sm font-medium ${product.stock <= (product.minimumStock || 5) ? 'text-red-500' : 'text-green-500'}`}>
+                      {product.stock || 0} in stock
                     </div>
                   </div>
                 ))}
@@ -319,8 +319,8 @@ const Analytics = () => {
                     <div className="bg-muted/50 p-3 rounded-lg">
                       <p className="font-medium text-sm text-primary">Inventory Optimization</p>
                       <p className="text-sm mt-1">
-                        {products.filter(p => p.variants[0]?.stock <= (p.minimumStock || 5)).length > 0 ? 
-                          `${products.filter(p => p.variants[0]?.stock <= (p.minimumStock || 5)).length} products are running low on stock and need replenishment.` : 
+                        {products.filter(p => p.stock <= (p.minimumStock || 5)).length > 0 ? 
+                          `${products.filter(p => p.stock <= (p.minimumStock || 5)).length} products are running low on stock and need replenishment.` : 
                           'All products are currently well-stocked.'}
                       </p>
                     </div>

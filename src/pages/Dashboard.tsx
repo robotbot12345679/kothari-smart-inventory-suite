@@ -1,3 +1,4 @@
+
 import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -23,8 +24,7 @@ const Dashboard = () => {
     const activeProducts = products.filter(p => p.isActive).length;
     const lowStockItems = products.filter(p => {
       if (!p.minimumStock) return false;
-      const totalStock = p.variants.reduce((sum, v) => sum + v.stock, 0);
-      return totalStock < p.minimumStock;
+      return p.stock < p.minimumStock;
     }).length;
 
     // Calculate total sales amount from orders
@@ -281,9 +281,8 @@ const Dashboard = () => {
             {products.length > 0 ? (
               <div className="space-y-4">
                 {products.slice(0, 5).map((product) => {
-                  const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
                   const stockPercentage = product.minimumStock
-                    ? Math.min(100, Math.round((totalStock / (product.minimumStock * 2)) * 100))
+                    ? Math.min(100, Math.round((product.stock / (product.minimumStock * 2)) * 100))
                     : 100;
                   
                   let statusColor = "bg-primary";

@@ -39,10 +39,9 @@ const Inventory = () => {
     const matchesCategory = categoryFilter === "all" || 
       product.category === categoryFilter;
 
-    // Calculate total stock across all variants
-    const totalStock = product.variants.reduce((sum, variant) => sum + variant.stock, 0);
-    const stockStatus = totalStock === 0 ? "Out of Stock" : 
-                       totalStock <= (product.minimumStock || 10) ? "Low Stock" : 
+    // Use product.stock directly
+    const stockStatus = product.stock === 0 ? "Out of Stock" : 
+                       product.stock <= (product.minimumStock || 10) ? "Low Stock" : 
                        "In Stock";
     
     const matchesStatus = statusFilter === "all" || 
@@ -54,7 +53,7 @@ const Inventory = () => {
   // Calculate inventory metrics
   const totalProducts = products.length;
   const lowStockCount = products.filter(p => 
-    p.variants.reduce((sum, v) => sum + v.stock, 0) <= (p.minimumStock || 10)
+    p.stock <= (p.minimumStock || 10)
   ).length;
 
   const expiringSoonCount = products.filter(p => {
@@ -64,9 +63,7 @@ const Inventory = () => {
   }).length;
 
   const totalValue = products.reduce((total, product) => 
-    total + product.variants.reduce((sum, variant) => 
-      sum + (variant.price * variant.stock)
-    , 0)
+    total + (product.price * product.stock)
   , 0);
 
   const handleAddProduct = () => {
@@ -186,19 +183,16 @@ const Inventory = () => {
                 <TableHead>SKU</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead className="text-right">Stock</TableHead>
-                <TableHead className="text-right">Price Range</TableHead>
+                <TableHead className="text-right">Price</TableHead>
                 <TableHead>Expiry Date</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredProducts.map((product) => {
-                const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
-                const minPrice = Math.min(...product.variants.map(v => v.price));
-                const maxPrice = Math.max(...product.variants.map(v => v.price));
-                const stockStatus = totalStock === 0 ? "Out of Stock" : 
-                                  totalStock <= (product.minimumStock || 10) ? "Low Stock" : 
-                                  "In Stock";
+                const stockStatus = product.stock === 0 ? "Out of Stock" : 
+                                   product.stock <= (product.minimumStock || 10) ? "Low Stock" : 
+                                   "In Stock";
 
                 return (
                   <TableRow key={product.id}>
@@ -206,12 +200,10 @@ const Inventory = () => {
                     <TableCell>{product.sku}</TableCell>
                     <TableCell>{product.category}</TableCell>
                     <TableCell className="text-right">
-                      {totalStock} {product.variants[0]?.unit}
+                      {product.stock} {product.unit}
                     </TableCell>
                     <TableCell className="text-right">
-                      ₹{minPrice === maxPrice ? 
-                          minPrice.toFixed(2) : 
-                          `${minPrice.toFixed(2)} - ${maxPrice.toFixed(2)}`}
+                      ₹{product.price.toFixed(2)}
                     </TableCell>
                     <TableCell>
                       {product.expiryDate ? 
