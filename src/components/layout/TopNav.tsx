@@ -20,17 +20,18 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
 
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-background">
-      <div className="flex h-16 items-center px-4 md:px-6">
+      <div className="flex h-16 items-center gap-4 px-4 md:px-6">
         <Button
           variant="ghost"
           size="icon"
-          className="mr-2 md:hidden"
+          className="md:flex"
           onClick={onMenuToggle}
         >
           <Menu className="h-5 w-5" />
           <span className="sr-only">Toggle menu</span>
         </Button>
-        <div className="ml-auto flex items-center gap-2">
+        
+        <div className="flex-1 flex items-center justify-end gap-4">
           <div className="relative hidden md:flex w-full max-w-sm items-center">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -39,6 +40,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
               className="w-full bg-background pl-8 md:w-[300px] lg:w-[400px]"
             />
           </div>
+          
           <Button
             variant="ghost"
             size="icon"
@@ -48,6 +50,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
             <Bell className="h-5 w-5" />
             <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive"></span>
           </Button>
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -68,12 +71,13 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          
           <Button
             variant="ghost"
             size="sm"
-            className="gap-2 text-sm font-normal md:flex"
+            className="gap-2 text-sm font-normal"
           >
-            <span className="hidden md:inline-block">Admin</span>
+            <span>Admin</span>
           </Button>
         </div>
       </div>
