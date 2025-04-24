@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { User, Store, Bell, CreditCard, Shield, Printer, Download, Cloud } from "lucide-react";
 import BillingSettings from "@/components/settings/BillingSettings";
 import { BillingTemplate } from "@/types/pos";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Settings = () => {
   const { toast } = useToast();
