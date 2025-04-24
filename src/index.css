@@ -121,4 +121,8 @@
   .card-hover {
     @apply transition-all duration-200 hover:shadow-md;
   }
+  
+  .playfair {
+    font-family: 'Playfair Display', serif;
+  }
 }
