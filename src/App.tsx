@@ -11,6 +11,8 @@ import Settings from './pages/Settings';
 import Pos from './pages/Pos';
 import Analytics from './pages/Analytics';
 import Shipping from './pages/Shipping';
+import Inventory from './pages/Inventory';
+import BillsReport from './pages/BillsReport';
 import { DataProvider } from './context/DataContext';
 
 const App = () => {
@@ -30,6 +32,8 @@ const App = () => {
               <Route path="/pos" element={<Pos />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/shipping" element={<Shipping />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/bills" element={<BillsReport />} />
             </Routes>
           </MainLayout>
         </div>

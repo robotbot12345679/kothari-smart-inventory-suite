@@ -335,91 +335,92 @@ const Pos = () => {
       <body>
         <div class="receipt">
           <div class="header">
-            <div class="title">Kothari's Dry Fruits</div>
-            <div class="info">123 Market Street, Mumbai, India</div>
-            <div class="info">Phone: +91 9876543210</div>
-            <div class="info">GST No: 27AAAAA0000A1Z5</div>
-          </div>
-          
-          <div class="order-info">
-            <div class="info">Order #: ${order.id}</div>
-            <div class="info">Date: ${formattedDate} ${formattedTime}</div>
-            <div class="info">Customer: ${order.customerName}</div>
-            ${order.customerPhone ? `<div class="info">Phone: ${order.customerPhone}</div>` : ''}
-          </div>
-          
-          <div class="divider"></div>
-          
-          <table>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Qty</th>
-                <th class="item-price">Price</th>
-                <th class="item-price">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${order.items.map(item => `
-                <tr>
-                  <td>${item.name}</td>
-                  <td>${item.quantity} ${item.unit}</td>
-                  <td class="item-price">₹${item.price.toFixed(2)}</td>
-                  <td class="item-price">₹${(item.price * item.quantity).toFixed(2)}</td>
-                </tr>
-              `).join('')}
-              
-              <tr class="subtotal-row">
-                <td colspan="3">Total</td>
-                <td class="item-price">₹${order.total.toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td colspan="3">Payment Method</td>
-                <td class="item-price">${order.paymentMethod.toUpperCase()}</td>
-              </tr>
-              ${order.paymentMethod === 'cash' ? `
-                <tr>
-                  <td colspan="3">Amount Tendered</td>
-                  <td class="item-price">₹${parseFloat(amountTendered).toFixed(2)}</td>
-                </tr>
-                <tr>
-                  <td colspan="3">Change</td>
-                  <td class="item-price">₹${getChange()}</td>
-                </tr>
-              ` : ''}
-            </tbody>
-          </table>
-          
-          ${showQrCode ? `
-          <div class="qr-code">
-            <p>Scan to pay via UPI:</p>
-            <img src="${upiQrCode}" alt="UPI QR Code">
-            <p>UPI ID: ashokkothari738@oksbi</p>
-          </div>
-          ` : ''}
-          
-          <div class="divider"></div>
-          
-          <div class="footer">
-            <p>Thank you for shopping with us!</p>
-            <p>All prices are inclusive of taxes.</p>
-            <p>Visit us again soon.</p>
-          </div>
+            <img src="/lovable-uploads/00972147-e824-453d-8b6d-dc558e1cb95e.png" class="logo" alt="Logo">
+          <div class="title">Kothari's Dry Fruits</div>
+          <div class="info">123 Market Street, Mumbai, India</div>
+          <div class="info">Phone: +91 9876543210</div>
+          <div class="info">GST No: 27AAAAA0000A1Z5</div>
         </div>
-        <script>
-          window.onload = function() {
-            window.print();
-            setTimeout(function() {
-              window.close();
-            }, 500);
-          }
-        </script>
-      </body>
-      </html>
-    `);
-    
-    receiptWindow.document.close();
-  };
+        
+        <div class="order-info">
+          <div class="info">Order #: ${order.id}</div>
+          <div class="info">Date: ${formattedDate} ${formattedTime}</div>
+          <div class="info">Customer: ${order.customerName}</div>
+          ${order.customerPhone ? `<div class="info">Phone: ${order.customerPhone}</div>` : ''}
+        </div>
+        
+        <div class="divider"></div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Qty</th>
+              <th class="item-price">Price</th>
+              <th class="item-price">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${order.items.map(item => `
+              <tr>
+                <td>${item.name}</td>
+                <td>${item.quantity} ${item.unit}</td>
+                <td class="item-price">₹${item.price.toFixed(2)}</td>
+                <td class="item-price">₹${(item.price * item.quantity).toFixed(2)}</td>
+              </tr>
+            `).join('')}
+            
+            <tr class="subtotal-row">
+              <td colspan="3">Total</td>
+              <td class="item-price">₹${order.total.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td colspan="3">Payment Method</td>
+              <td class="item-price">${order.paymentMethod.toUpperCase()}</td>
+            </tr>
+            ${order.paymentMethod === 'cash' ? `
+              <tr>
+                <td colspan="3">Amount Tendered</td>
+                <td class="item-price">₹${parseFloat(amountTendered).toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td colspan="3">Change</td>
+                <td class="item-price">₹${getChange()}</td>
+              </tr>
+            ` : ''}
+          </tbody>
+        </table>
+        
+        ${showQrCode ? `
+        <div class="qr-code">
+          <p>Scan to pay via UPI:</p>
+          <img src="${upiQrCode}" alt="UPI QR Code">
+          <p>UPI ID: ashokkothari738@oksbi</p>
+        </div>
+        ` : ''}
+        
+        <div class="divider"></div>
+        
+        <div class="footer">
+          <p>Thank you for shopping with us!</p>
+          <p>All prices are inclusive of taxes.</p>
+          <p>Visit us again soon.</p>
+        </div>
+      </div>
+      <script>
+        window.onload = function() {
+          window.print();
+          setTimeout(function() {
+            window.close();
+          }, 500);
+        }
+      </script>
+    </body>
+    </html>
+  `);
+  
+  receiptWindow.document.close();
+};
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col font-playfair">
@@ -509,7 +510,7 @@ const Pos = () => {
                     <h3 className="font-semibold truncate">{product.name}</h3>
                     <div className="flex justify-between items-center mt-1">
                       <span className="text-sm text-muted-foreground">{product.weight} {product.unit}</span>
-                      <span className="font-semibold">₹{product.price}</span>
+                      <span className="font-semibold">₹{product.price}/{product.weight}{product.unit}</span>
                     </div>
                     <div className="text-xs mt-1">
                       {product.stock > 0 ? (
