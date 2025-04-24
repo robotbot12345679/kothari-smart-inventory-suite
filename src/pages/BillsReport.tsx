@@ -89,24 +89,12 @@ const BillsReport = () => {
     console.log("Downloading receipt for order", order.id);
   };
 
-  // Function to connect to OneDrive for backup
-  const connectToOneDrive = () => {
-    // This is a placeholder - would need Microsoft Graph API integration
-    alert("OneDrive connection feature is coming soon. This would allow automatic backups of all transaction data.");
-  };
-
   const totalSales = filteredOrders.reduce((sum, order) => sum + order.total, 0);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Bills & Receipts</h1>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={connectToOneDrive} className="gap-1">
-            <Download className="h-4 w-4" />
-            Backup to OneDrive
-          </Button>
-        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -317,19 +305,6 @@ const BillsReport = () => {
             <span className="font-medium">{orders.length}</span> bills
           </p>
         </div>
-      </div>
-
-      {/* OneDrive Backup Information */}
-      <div className="p-4 bg-muted rounded-lg border border-border">
-        <h3 className="font-semibold mb-2">About OneDrive Backup</h3>
-        <p className="text-sm text-muted-foreground mb-2">
-          Connect your Microsoft OneDrive account to automatically back up all your transaction data,
-          receipts, and database. This ensures your business data is safe and accessible from anywhere.
-        </p>
-        <Button variant="outline" onClick={connectToOneDrive} className="gap-1">
-          <Download className="h-4 w-4" />
-          Setup OneDrive Backup
-        </Button>
       </div>
     </div>
   );

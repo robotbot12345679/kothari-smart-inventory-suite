@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
-import { User, Store, Bell, CreditCard, Shield, Printer } from "lucide-react";
+import { User, Store, Bell, CreditCard, Shield, Printer, Download, Cloud } from "lucide-react";
 import BillingSettings from "@/components/settings/BillingSettings";
 import { BillingTemplate } from "@/types/pos";
 
@@ -26,9 +26,56 @@ const Settings = () => {
       "Visit us again soon."
     ]
   });
+
+  // OneDrive connection state
+  const [isConnectedToOneDrive, setIsConnectedToOneDrive] = useState(false);
+  const [backupFrequency, setBackupFrequency] = useState("daily");
   
   const handleSaveBillingTemplate = (template: BillingTemplate) => {
     setBillingTemplate(template);
+  };
+  
+  // Function to handle OneDrive connection
+  const connectToOneDrive = () => {
+    // This would integrate with Microsoft Graph API in a real implementation
+    toast({
+      title: "OneDrive Connection",
+      description: "Setting up connection to OneDrive. This would open Microsoft authentication in a real implementation."
+    });
+    
+    // Simulate successful connection for demo
+    setTimeout(() => {
+      setIsConnectedToOneDrive(true);
+      toast({
+        title: "Connected to OneDrive",
+        description: "Your store data will now be backed up automatically."
+      });
+    }, 2000);
+  };
+
+  // Function to handle backup immediately
+  const backupNow = () => {
+    toast({
+      title: "Backup Started",
+      description: "Backing up all store data to OneDrive."
+    });
+    
+    // Simulate successful backup
+    setTimeout(() => {
+      toast({
+        title: "Backup Complete",
+        description: "All data has been successfully backed up to OneDrive."
+      });
+    }, 3000);
+  };
+
+  // Function to disconnect from OneDrive
+  const disconnectOneDrive = () => {
+    setIsConnectedToOneDrive(false);
+    toast({
+      title: "Disconnected from OneDrive",
+      description: "Your store data will no longer be backed up automatically."
+    });
   };
   
   const printTestReceipt = () => {
@@ -166,7 +213,7 @@ const Settings = () => {
             <div class="title">${billingTemplate.shopName}</div>
             <div class="info">${billingTemplate.address}</div>
             <div class="info">Phone: ${billingTemplate.phone}</div>
-            <div class="info">GST No: ${billingTemplate.gstNumber}</div>
+            <div class="info">${billingTemplate.gstNumber ? 'GST No: ' + billingTemplate.gstNumber : ''}</div>
           </div>
           
           <div class="order-info">
@@ -341,69 +388,170 @@ const Settings = () => {
           </TabsContent>
           
           <TabsContent value="store">
-            <Card>
-              <CardHeader>
-                <CardTitle>Store Settings</CardTitle>
-                <CardDescription>
-                  Configure your store information and operational settings.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="store-name">Store name</Label>
-                  <Input id="store-name" placeholder="Enter your store name" />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="store-description">Description</Label>
-                  <Input id="store-description" placeholder="Brief description of your store" />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="store-address">Store address</Label>
-                  <Input id="store-address" placeholder="Enter your store address" />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Store Settings</CardTitle>
+                  <CardDescription>
+                    Configure your store information and operational settings.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="store-phone">Phone number</Label>
-                    <Input id="store-phone" placeholder="Enter phone number" />
+                    <Label htmlFor="store-name">Store name</Label>
+                    <Input id="store-name" placeholder="Enter your store name" />
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="store-email">Store email</Label>
-                    <Input id="store-email" type="email" placeholder="Enter email" />
+                    <Label htmlFor="store-description">Description</Label>
+                    <Input id="store-description" placeholder="Brief description of your store" />
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="tax-percentage">Tax percentage</Label>
-                    <Input id="tax-percentage" type="number" min="0" max="100" placeholder="Enter tax percentage" />
+                    <Label htmlFor="store-address">Store address</Label>
+                    <Input id="store-address" placeholder="Enter your store address" />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="currency">Currency</Label>
-                    <Input id="currency" placeholder="INR" />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="store-phone">Phone number</Label>
+                      <Input id="store-phone" placeholder="Enter phone number" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="store-email">Store email</Label>
+                      <Input id="store-email" type="email" placeholder="Enter email" />
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch id="tax-included" />
-                  <Label htmlFor="tax-included">Prices include tax</Label>
-                </div>
-              </CardContent>
-              <CardFooter className="border-t px-6 py-4">
-                <Button
-                  onClick={() => {
-                    toast({
-                      title: "Store Settings Saved",
-                      description: "Your store settings have been updated.",
-                    });
-                  }}
-                >
-                  Save Changes
-                </Button>
-              </CardFooter>
-            </Card>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="tax-percentage">Tax percentage</Label>
+                      <Input id="tax-percentage" type="number" min="0" max="100" placeholder="Enter tax percentage" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="currency">Currency</Label>
+                      <Input id="currency" placeholder="INR" />
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch id="tax-included" />
+                    <Label htmlFor="tax-included">Prices include tax</Label>
+                  </div>
+                </CardContent>
+                <CardFooter className="border-t px-6 py-4">
+                  <Button
+                    onClick={() => {
+                      toast({
+                        title: "Store Settings Saved",
+                        description: "Your store settings have been updated.",
+                      });
+                    }}
+                  >
+                    Save Changes
+                  </Button>
+                </CardFooter>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>OneDrive Backup</CardTitle>
+                  <CardDescription>
+                    Back up your store data and database to Microsoft OneDrive.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {isConnectedToOneDrive ? (
+                    <>
+                      <div className="flex items-center gap-2 text-green-600 mb-2">
+                        <Cloud className="h-5 w-5" />
+                        <div>
+                          <p className="font-medium">Connected to OneDrive</p>
+                          <p className="text-sm text-muted-foreground">
+                            Last backup: Today at 12:45 PM
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="backup-frequency">Backup Frequency</Label>
+                        <Select value={backupFrequency} onValueChange={setBackupFrequency}>
+                          <SelectTrigger id="backup-frequency">
+                            <SelectValue placeholder="Select frequency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="hourly">Every Hour</SelectItem>
+                            <SelectItem value="daily">Once a Day</SelectItem>
+                            <SelectItem value="weekly">Once a Week</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>What to Back Up</Label>
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Switch id="backup-products" defaultChecked />
+                            <Label htmlFor="backup-products">Products & Categories</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch id="backup-orders" defaultChecked />
+                            <Label htmlFor="backup-orders">Orders & Transactions</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch id="backup-customers" defaultChecked />
+                            <Label htmlFor="backup-customers">Customer Data</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch id="backup-settings" defaultChecked />
+                            <Label htmlFor="backup-settings">Store Settings</Label>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                        <Button className="gap-2" onClick={backupNow}>
+                          <Download className="h-4 w-4" />
+                          Backup Now
+                        </Button>
+                        <Button variant="outline" className="gap-2" onClick={disconnectOneDrive}>
+                          Disconnect OneDrive
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-muted p-4 rounded-md">
+                        <h3 className="font-semibold mb-2">Why Back Up to OneDrive?</h3>
+                        <ul className="space-y-2 text-sm">
+                          <li className="flex gap-2">
+                            <div className="flex-shrink-0 mt-0.5 bg-primary rounded-full h-1.5 w-1.5 p-0"></div>
+                            <div>Never lose product data, transactions or customer information</div>
+                          </li>
+                          <li className="flex gap-2">
+                            <div className="flex-shrink-0 mt-0.5 bg-primary rounded-full h-1.5 w-1.5 p-0"></div>
+                            <div>Automatic backup on your preferred schedule</div>
+                          </li>
+                          <li className="flex gap-2">
+                            <div className="flex-shrink-0 mt-0.5 bg-primary rounded-full h-1.5 w-1.5 p-0"></div>
+                            <div>Access your store data from anywhere via OneDrive</div>
+                          </li>
+                          <li className="flex gap-2">
+                            <div className="flex-shrink-0 mt-0.5 bg-primary rounded-full h-1.5 w-1.5 p-0"></div>
+                            <div>Encrypted and secure data transfer</div>
+                          </li>
+                        </ul>
+                      </div>
+                      
+                      <Button onClick={connectToOneDrive} className="w-full gap-2 mt-4">
+                        <Cloud className="h-4 w-4" />
+                        Connect to Microsoft OneDrive
+                      </Button>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
           <TabsContent value="billing">

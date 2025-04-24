@@ -144,14 +144,14 @@ const BillingSettings = ({ billingTemplate, onSave, onPrintTest }: BillingSettin
             </thead>
             <tbody>
               <tr>
-                <td>Item 1</td>
-                <td>1</td>
-                <td>$10.00</td>
+                <td>Chilean Walnuts (500g)</td>
+                <td>2</td>
+                <td>₹980.00</td>
               </tr>
               <tr>
-                <td>Item 2</td>
-                <td>2</td>
-                <td>$20.00</td>
+                <td>Cashews (200g)</td>
+                <td>1</td>
+                <td>₹420.00</td>
               </tr>
             </tbody>
           </table>
