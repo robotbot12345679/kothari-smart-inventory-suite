@@ -30,7 +30,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { CartItem, Order } from "@/types/pos";
+import { CartItem, Order, Product } from "@/types/pos";
 import { useData } from "@/context/DataContext";
 import { useToast } from "@/components/ui/use-toast";
 import { useUniqueId } from "@/hooks/useUniqueId";
@@ -71,7 +71,7 @@ const Pos = () => {
     return matchesCategory && matchesSearch;
   });
 
-  const addToCart = (product: any) => {
+  const addToCart = (product: Product) => {
     if (product.stock <= 0) {
       toast({
         title: "Cannot add product",
@@ -97,14 +97,15 @@ const Pos = () => {
       updatedCart[existingItemIndex].quantity += 1;
       setCart(updatedCart);
     } else {
-      setCart([...cart, {
+      const cartItem: CartItem = {
         id: product.id,
         name: product.name,
         price: product.price,
         quantity: 1,
         unit: product.unit,
         weight: product.weight
-      }]);
+      };
+      setCart([...cart, cartItem]);
     }
   };
 

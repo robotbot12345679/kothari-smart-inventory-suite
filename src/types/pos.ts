@@ -31,6 +31,7 @@ export interface CartItem {
   quantity: number;
   unit: string;
   weight: number;
+  variantId?: number; // Making variantId optional
 }
 
 export interface Customer {
