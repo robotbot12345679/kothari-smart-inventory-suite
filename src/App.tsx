@@ -9,13 +9,15 @@ import Customers from './pages/Customers';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Pos from './pages/Pos';
+import Analytics from './pages/Analytics';
+import Shipping from './pages/Shipping';
 import { DataProvider } from './context/DataContext';
 
 const App = () => {
   return (
     <DataProvider>
       <Router>
-        <div className="font-playfair">
+        <div>
           <MainLayout>
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" />} />
@@ -26,6 +28,8 @@ const App = () => {
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/pos" element={<Pos />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/shipping" element={<Shipping />} />
             </Routes>
           </MainLayout>
         </div>

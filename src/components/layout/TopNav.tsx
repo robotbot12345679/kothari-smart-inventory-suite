@@ -24,7 +24,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
         <Button
           variant="ghost"
           size="icon"
-          className="mr-auto md:mr-0"
+          className="mr-2"
           onClick={onMenuToggle}
         >
           <Menu className="h-5 w-5" />
