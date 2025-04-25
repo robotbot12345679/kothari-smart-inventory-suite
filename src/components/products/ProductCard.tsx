@@ -36,10 +36,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
       </div>
 
       <CardContent className="pt-4">
-        <h3 className="font-semibold truncate">{product.name}</h3>
+        <h3 className="font-bold text-lg truncate">{product.name}</h3>
         <div className="mt-1 flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Pack: {product.weight}{product.unit}</span>
-          <span className="font-medium">₹{product.price.toFixed(2)}</span>
+          <span className="text-sm text-muted-foreground">{product.weight}{product.unit}/pack</span>
+          <span className="font-bold">₹{product.price.toFixed(2)}</span>
         </div>
         
         <div className="grid grid-cols-2 gap-2 mt-2">
@@ -47,8 +47,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
             <span className="text-muted-foreground">SKU:</span> {product.sku}
           </div>
           <div className="text-xs">
-            <span className="text-muted-foreground">Stock:</span>{" "}
-            {product.stock}
+            <span className="text-muted-foreground">Stock:</span> {product.stock}
           </div>
         </div>
         
