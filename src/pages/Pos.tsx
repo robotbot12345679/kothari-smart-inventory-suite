@@ -424,9 +424,9 @@ const Pos = () => {
 };
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col font-poppins">
+    <div className="h-[calc(100vh-4rem)] flex flex-col font-playfair">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-3xl font-bold tracking-tight playfair">Point of Sale</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Point of Sale</h1>
         <div className="flex items-center gap-2">
           <Button 
             variant="outline" 
@@ -508,10 +508,10 @@ const Pos = () => {
                     )}
                   </div>
                   <CardContent className="p-3">
-                    <h3 className="font-semibold truncate playfair">{product.name}</h3>
+                    <h3 className="font-semibold truncate">{product.name}</h3>
                     <div className="flex justify-between items-center mt-1">
-                      <span className="text-sm text-muted-foreground">1 × {product.weight}{product.unit}</span>
-                      <span className="font-semibold">₹{product.price}</span>
+                      <span className="text-sm text-muted-foreground">{product.weight} {product.unit}</span>
+                      <span className="font-semibold">₹{product.price}/{product.weight}{product.unit}</span>
                     </div>
                     <div className="text-xs mt-1">
                       {product.stock > 0 ? (
@@ -536,7 +536,7 @@ const Pos = () => {
         <div className="w-1/3 flex flex-col bg-white rounded-lg shadow dark:bg-gray-800">
           <div className="p-4 border-b">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold playfair flex items-center gap-2">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5" />
                 Cart
               </h2>
@@ -568,7 +568,7 @@ const Pos = () => {
                     className="flex items-start justify-between p-3 border rounded-lg"
                   >
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold truncate playfair">{item.name}</h3>
+                      <h3 className="font-semibold truncate">{item.name}</h3>
                       <p className="text-sm text-muted-foreground">
                         ₹{item.price} × {item.quantity} {item.unit}
                       </p>
