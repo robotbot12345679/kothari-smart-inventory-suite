@@ -47,7 +47,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
       <CardContent className="pt-4 flex-grow">
         <h3 className="font-bold text-lg truncate">{product.name}</h3>
         <div className="mt-1 flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">{product.weight}{product.unit}/pack</span>
+          <span className="text-sm text-muted-foreground">{product.weight}{product.unit} per item</span>
           <span className="font-bold">₹{product.price.toFixed(2)}</span>
         </div>
         
@@ -56,7 +56,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
             <span className="text-muted-foreground">SKU:</span> {product.sku}
           </div>
           <div className="text-xs">
-            <span className="text-muted-foreground">Stock:</span> {product.stock}
+            <span className="text-muted-foreground">Stock:</span> {product.stock} items
           </div>
         </div>
         
