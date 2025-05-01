@@ -484,12 +484,12 @@ const Pos = () => {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="flex-1 overflow-y-auto p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {filteredProducts.length > 0 ? (
               filteredProducts.map(product => (
                 <Card
                   key={product.id}
-                  className={`card-hover cursor-pointer overflow-hidden ${
+                  className={`card-hover cursor-pointer overflow-hidden h-full flex flex-col ${
                     product.stock <= 0 ? "opacity-50" : ""
                   }`}
                   onClick={() => addToCart(product)}
@@ -500,6 +500,15 @@ const Pos = () => {
                         src={product.image} 
                         alt={product.name} 
                         className="h-full w-full object-cover transition-all hover:scale-105"
+                        loading="lazy"
+                        onError={(e) => {
+                          // If image fails to load, show placeholder
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement?.classList.add('bg-muted', 'flex', 'items-center', 'justify-center');
+                          const icon = document.createElement('div');
+                          icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M20.91 8.84 8.56 2.23a1.93 1.93 0 0 0-1.81 0L3.1 4.13a2.12 2.12 0 0 0-.05 3.69l12.22 6.93a2 2 0 0 0 1.94 0L21 12.51a2.12 2.12 0 0 0-.09-3.67Z"></path><path d="m3.09 8.84 12.35-6.61a1.93 1.93 0 0 1 1.81 0l3.65 1.9a2.12 2.12 0 0 1 .1 3.69L8.73 14.75a2 2 0 0 1-1.94 0L3 12.51a2.12 2.12 0 0 1 .09-3.67Z"></path><line x1="12" y1="22" x2="12" y2="13"></line><path d="M20 13.5v3.37a2.06 2.06 0 0 1-1.11 1.83l-6 3.08a1.93 1.93 0 0 1-1.78 0l-6-3.08A2.06 2.06 0 0 1 4 16.87V13.5"></path></svg>';
+                          e.currentTarget.parentElement?.appendChild(icon);
+                        }}
                       />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center bg-muted">
@@ -507,11 +516,11 @@ const Pos = () => {
                       </div>
                     )}
                   </div>
-                  <CardContent className="p-3">
+                  <CardContent className="p-3 flex-grow">
                     <h3 className="font-semibold truncate">{product.name}</h3>
                     <div className="flex justify-between items-center mt-1">
                       <span className="text-sm text-muted-foreground">{product.weight} {product.unit}</span>
-                      <span className="font-semibold">₹{product.price}/{product.weight}{product.unit}</span>
+                      <span className="font-semibold">₹{product.price}</span>
                     </div>
                     <div className="text-xs mt-1">
                       {product.stock > 0 ? (

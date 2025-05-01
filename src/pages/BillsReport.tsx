@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,10 @@ import {
   Download,
   Printer,
   ChevronDown,
+  MessageSquare,
+  CreditCard,
+  Link,
+  Mail,
 } from "lucide-react";
 import {
   Table,
@@ -43,14 +46,32 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 const BillsReport = () => {
   const { orders } = useData();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [date, setDate] = useState<Date | undefined>(undefined);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isPaymentLinkDialogOpen, setIsPaymentLinkDialogOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [messageText, setMessageText] = useState("");
   
   // Filter the orders based on search, payment method, and date
   const filteredOrders = orders.filter((order) => {
@@ -89,12 +110,107 @@ const BillsReport = () => {
     console.log("Downloading receipt for order", order.id);
   };
 
+  // Function to handle sharing invoice via WhatsApp
+  const shareInvoiceWhatsApp = () => {
+    if (!selectedOrder || !customerPhone) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a valid phone number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const formattedPhone = customerPhone.replace(/[\s+\-()]/g, "");
+    // Format phone number for WhatsApp (remove any non-digit characters)
+    const phone = formattedPhone.startsWith("+") ? formattedPhone.substring(1) : formattedPhone;
+    
+    // Create a WhatsApp message with invoice details
+    const message = messageText || 
+      `Dear Customer, please find your invoice #${selectedOrder.id} for Rs. ${selectedOrder.total.toFixed(2)} dated ${format(new Date(selectedOrder.orderDate), 'PP')}. Thank you for shopping with us!`;
+    
+    // Generate WhatsApp URL
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    
+    // Open WhatsApp in new tab
+    window.open(whatsappUrl, "_blank");
+    
+    toast({
+      title: "WhatsApp Message Ready",
+      description: "Redirecting to WhatsApp to send the invoice",
+    });
+    
+    setIsShareDialogOpen(false);
+    setCustomerPhone("");
+    setMessageText("");
+  };
+
+  // Function to handle sharing invoice via Email
+  const shareInvoiceEmail = () => {
+    if (!selectedOrder || !customerEmail) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const subject = `Invoice #${selectedOrder.id} - Kothari's Dry Fruits`;
+    const body = messageText || 
+      `Dear Customer,\n\nPlease find attached your invoice #${selectedOrder.id} for Rs. ${selectedOrder.total.toFixed(2)} dated ${format(new Date(selectedOrder.orderDate), 'PP')}.\n\nThank you for shopping with us!\n\nRegards,\nKothari's Dry Fruits`;
+    
+    // Generate mailto URL
+    const mailtoUrl = `mailto:${customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    // Open email client
+    window.location.href = mailtoUrl;
+    
+    toast({
+      title: "Email Prepared",
+      description: "Opening your email client to send the invoice",
+    });
+    
+    setIsShareDialogOpen(false);
+    setCustomerEmail("");
+    setMessageText("");
+  };
+
+  // Function to generate payment link
+  const generatePaymentLink = () => {
+    if (!selectedOrder) {
+      toast({
+        title: "Error",
+        description: "No order selected",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // In a real implementation, this would call your payment gateway API
+    // For now, we'll simulate creating a payment link
+    const dummyPaymentLink = `https://pay.example.com/invoice/${selectedOrder.id}?amount=${selectedOrder.total}`;
+    
+    // Copy link to clipboard
+    navigator.clipboard.writeText(dummyPaymentLink).then(() => {
+      toast({
+        title: "Payment Link Generated",
+        description: "The payment link has been copied to clipboard",
+      });
+    });
+    
+    setIsPaymentLinkDialogOpen(false);
+  };
+
   const totalSales = filteredOrders.reduce((sum, order) => sum + order.total, 0);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Bills & Receipts</h1>
+        <Button variant="outline" className="gap-2">
+          <Download className="h-4 w-4" /> Export Report
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -230,6 +346,7 @@ const BillsReport = () => {
                 filteredOrders.map((order) => {
                   const orderDate = new Date(order.orderDate);
                   const source = order.id.startsWith("ORD") ? "POS" : "Order";
+                  const isPaid = order.paymentStatus === "Paid";
                   
                   return (
                     <TableRow key={order.id}>
@@ -250,8 +367,8 @@ const BillsReport = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {order.paymentMethod}
+                        <Badge variant="outline" className={isPaid ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
+                          {isPaid ? "Paid" : "Pending"} - {order.paymentMethod}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -278,6 +395,32 @@ const BillsReport = () => {
                               <Download className="mr-2 h-4 w-4" />
                               Download PDF
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedOrder(order);
+                              setIsShareDialogOpen(true);
+                              setCustomerPhone(order.customerPhone || "");
+                            }}>
+                              <MessageSquare className="mr-2 h-4 w-4" />
+                              Share via WhatsApp
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedOrder(order);
+                              setIsShareDialogOpen(true);
+                              setCustomerEmail(order.customerEmail || "");
+                            }}>
+                              <Mail className="mr-2 h-4 w-4" />
+                              Share via Email
+                            </DropdownMenuItem>
+                            {!isPaid && (
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedOrder(order);
+                                setIsPaymentLinkDialogOpen(true);
+                              }}>
+                                <Link className="mr-2 h-4 w-4" />
+                                Generate Payment Link
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -306,6 +449,135 @@ const BillsReport = () => {
           </p>
         </div>
       </div>
+
+      {/* WhatsApp/Email Share Dialog */}
+      <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Share Invoice</DialogTitle>
+            <DialogDescription>
+              Send this invoice to your customer via WhatsApp or Email
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <Tabs defaultValue="whatsapp">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="whatsapp" className="gap-2">
+                  <MessageSquare className="h-4 w-4" /> WhatsApp
+                </TabsTrigger>
+                <TabsTrigger value="email" className="gap-2">
+                  <Mail className="h-4 w-4" /> Email
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="whatsapp" className="space-y-4 mt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="phone-number">Phone Number</Label>
+                  <Input
+                    id="phone-number"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="+91 9876543210"
+                  />
+                  <p className="text-xs text-muted-foreground">Include country code (e.g. +91 for India)</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="message">Message</Label>
+                  <Textarea
+                    id="message"
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    placeholder="Enter custom message or leave blank to use default"
+                    rows={3}
+                  />
+                </div>
+                
+                <Button onClick={shareInvoiceWhatsApp} className="w-full gap-2">
+                  <MessageSquare className="h-4 w-4" /> Share via WhatsApp
+                </Button>
+              </TabsContent>
+              
+              <TabsContent value="email" className="space-y-4 mt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    placeholder="customer@example.com"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email-message">Message</Label>
+                  <Textarea
+                    id="email-message"
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    placeholder="Enter custom message or leave blank to use default"
+                    rows={3}
+                  />
+                </div>
+                
+                <Button onClick={shareInvoiceEmail} className="w-full gap-2">
+                  <Mail className="h-4 w-4" /> Share via Email
+                </Button>
+              </TabsContent>
+            </Tabs>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsShareDialogOpen(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Link Dialog */}
+      <Dialog open={isPaymentLinkDialogOpen} onOpenChange={setIsPaymentLinkDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Generate Payment Link</DialogTitle>
+            <DialogDescription>
+              Create a payment link for this invoice to send to your customer
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-medium">Order ID:</span>
+                <span>{selectedOrder?.id}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-medium">Customer:</span>
+                <span>{selectedOrder?.customerName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-medium">Amount:</span>
+                <span className="font-bold">₹{selectedOrder?.total.toFixed(2)}</span>
+              </div>
+            </div>
+            
+            <div className="bg-muted p-3 rounded text-sm">
+              <p>This will generate a payment link that can be shared with the customer. Once the payment is complete, the order status will be updated.</p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPaymentLinkDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={generatePaymentLink} className="gap-2">
+              <CreditCard className="h-4 w-4" /> Generate Payment Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,97 +1,130 @@
 
 import React from "react";
-import { NavLink } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Link, useLocation } from "react-router-dom";
 import {
-  BarChart3,
-  ShoppingCart,
-  Package,
-  Truck,
-  Users,
-  Settings,
-  BarChart,
+  LucideIcon,
   Home,
-  Tag,
-  Package2,
+  Package,
+  ClipboardList,
+  Users,
+  ShoppingCart,
+  BarChart,
+  Settings,
+  Truck,
+  Box,
+  FileText,
+  Menu,
+  X,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   open: boolean;
   setOpen: (open: boolean) => void;
 }
 
+interface SidebarItemProps {
+  icon: LucideIcon;
+  label: string;
+  path: string;
+  isActive: boolean;
+}
+
+const SidebarItem: React.FC<SidebarItemProps> = ({
+  icon: Icon,
+  label,
+  path,
+  isActive,
+}) => {
+  return (
+    <li>
+      <Link
+        to={path}
+        className={cn(
+          "flex items-center px-3 py-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+          isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+        )}
+      >
+        <Icon className="mr-3 h-5 w-5" />
+        <span>{label}</span>
+        {/* Show notifications indicator */}
+        {label === "Bills" && (
+          <span className="ml-auto bg-primary text-white text-xs font-medium px-1.5 py-0.5 rounded-full">
+            New
+          </span>
+        )}
+      </Link>
+    </li>
+  );
+};
+
 const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
+  const location = useLocation();
   const isMobile = useIsMobile();
 
-  const navItems = [
-    { title: "Dashboard", path: "/", icon: <Home className="w-5 h-5" /> },
-    { title: "Inventory", path: "/inventory", icon: <Package className="w-5 h-5" /> },
-    { title: "POS", path: "/pos", icon: <ShoppingCart className="w-5 h-5" /> },
-    { title: "Orders", path: "/orders", icon: <Package2 className="w-5 h-5" /> },
-    { title: "Shipping", path: "/shipping", icon: <Truck className="w-5 h-5" /> },
-    { title: "Products", path: "/products", icon: <Tag className="w-5 h-5" /> },
-    { title: "Customers", path: "/customers", icon: <Users className="w-5 h-5" /> },
-    { title: "Analytics", path: "/analytics", icon: <BarChart3 className="w-5 h-5" /> },
-    { title: "Reports", path: "/reports", icon: <BarChart className="w-5 h-5" /> },
-    { title: "Settings", path: "/settings", icon: <Settings className="w-5 h-5" /> },
+  const sidebarItems = [
+    { icon: Home, label: "Dashboard", path: "/dashboard" },
+    { icon: Package, label: "Products", path: "/products" },
+    { icon: ClipboardList, label: "Orders", path: "/orders" },
+    { icon: Users, label: "Customers", path: "/customers" },
+    { icon: ShoppingCart, label: "Point of Sale", path: "/pos" },
+    { icon: BarChart, label: "Analytics", path: "/analytics" },
+    { icon: Truck, label: "Shipping", path: "/shipping" },
+    { icon: Box, label: "Inventory", path: "/inventory" },
+    { icon: FileText, label: "Bills", path: "/bills" },
+    { icon: Settings, label: "Settings", path: "/settings" },
   ];
 
-  const SidebarContent = () => (
-    <div className="h-full flex flex-col">
-      <div className="p-4 border-b">
-        <h2 className="text-xl font-semibold text-primary">Kothari Smart</h2>
-        <p className="text-sm text-muted-foreground">Inventory Suite</p>
-      </div>
-      <nav className="flex-1 py-4 overflow-y-auto">
-        <ul className="space-y-1 px-2">
-          {navItems.map((item) => (
-            <li key={item.path}>
-              <NavLink
-                to={item.path}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
-                    isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "text-foreground hover:bg-muted hover:text-foreground"
-                  )
-                }
-                onClick={() => isMobile && setOpen(false)}
-              >
-                {item.icon}
-                {item.title}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-      </nav>
-      <div className="mt-auto p-4 border-t text-xs text-muted-foreground">
-        <p>Kothari Dry Fruits & More</p>
-        <p>© {new Date().getFullYear()}</p>
-      </div>
-    </div>
-  );
-
-  if (isMobile) {
-    return (
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="p-0 w-[270px]">
-          <SidebarContent />
-        </SheetContent>
-      </Sheet>
-    );
+  if (isMobile && !open) {
+    return null;
   }
 
   return (
     <div
       className={cn(
-        "h-full fixed left-0 top-[64px] bottom-0 z-10 w-64 bg-background border-r transition-transform duration-300 ease-in-out transform",
-        open ? "translate-x-0" : "-translate-x-full"
+        "bg-sidebar-background border-r border-sidebar-border text-sidebar-foreground transition-all duration-300 z-50",
+        isMobile
+          ? "fixed inset-y-0 left-0 w-64 shadow-lg"
+          : open
+          ? "w-64 fixed inset-y-0 left-0"
+          : "w-0 hidden"
       )}
     >
-      <SidebarContent />
+      <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
+        <div className="flex items-center">
+          <img
+            src="/lovable-uploads/00972147-e824-453d-8b6d-dc558e1cb95e.png"
+            alt="Logo"
+            className="h-8 w-auto mr-2"
+          />
+          <span className="text-lg font-semibold">Kothari's</span>
+        </div>
+        {isMobile && (
+          <button
+            onClick={() => setOpen(false)}
+            className="p-1 rounded-full hover:bg-sidebar-accent"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
+      </div>
+
+      <div className="overflow-y-auto h-[calc(100vh-4rem)]">
+        <nav className="p-3">
+          <ul className="space-y-1">
+            {sidebarItems.map((item) => (
+              <SidebarItem
+                key={item.path}
+                icon={item.icon}
+                label={item.label}
+                path={item.path}
+                isActive={location.pathname === item.path}
+              />
+            ))}
+          </ul>
+        </nav>
+      </div>
     </div>
   );
 };
