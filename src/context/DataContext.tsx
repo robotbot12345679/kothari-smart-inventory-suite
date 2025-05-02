@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Product, Category, Order, Customer } from "@/types/pos";
 import { useToast } from "@/components/ui/use-toast";
@@ -21,6 +20,17 @@ interface DataContextType {
   addCustomer: (customer: Customer) => void;
   updateCustomer: (id: number, updatedCustomer: Customer) => void;
   deleteCustomer: (id: number) => void;
+  updateInventoryStock: (id: number, additionalStock: number) => void;
+  createAccount: (email: string, name: string, password: string) => boolean;
+  login: (email: string, password: string) => boolean;
+  logout: () => void;
+  currentUser: { email: string; name: string } | null;
+}
+
+interface UserAccount {
+  email: string;
+  name: string;
+  password: string;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -31,17 +41,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
+  const [currentUser, setCurrentUser] = useState<{ email: string; name: string } | null>(null);
 
   useEffect(() => {
     const savedProducts = localStorage.getItem("products");
     const savedCategories = localStorage.getItem("categories");
     const savedOrders = localStorage.getItem("orders");
     const savedCustomers = localStorage.getItem("customers");
+    const savedUserAccounts = localStorage.getItem("userAccounts");
+    const savedCurrentUser = localStorage.getItem("currentUser");
 
     if (savedProducts) setProducts(JSON.parse(savedProducts));
     if (savedCategories) setCategories(JSON.parse(savedCategories));
     if (savedOrders) setOrders(JSON.parse(savedOrders));
     if (savedCustomers) setCustomers(JSON.parse(savedCustomers));
+    if (savedUserAccounts) setUserAccounts(JSON.parse(savedUserAccounts));
+    if (savedCurrentUser) setCurrentUser(JSON.parse(savedCurrentUser));
 
     if (!savedCategories || JSON.parse(savedCategories).length === 0) {
       setCategories([
@@ -59,10 +75,83 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem("categories", JSON.stringify(categories));
     localStorage.setItem("orders", JSON.stringify(orders));
     localStorage.setItem("customers", JSON.stringify(customers));
-  }, [products, categories, orders, customers]);
+    localStorage.setItem("userAccounts", JSON.stringify(userAccounts));
+    if (currentUser) {
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem("currentUser");
+    }
+  }, [products, categories, orders, customers, userAccounts, currentUser]);
 
   const findProductByBarcode = (barcode: string): Product | undefined => {
     return products.find(product => product.barcode === barcode);
+  };
+
+  const updateInventoryStock = (id: number, additionalStock: number) => {
+    setProducts(prev => prev.map(product => {
+      if (product.id === id) {
+        const newStock = product.stock + additionalStock;
+        return { ...product, stock: newStock };
+      }
+      return product;
+    }));
+    
+    toast({
+      title: "Stock Updated",
+      description: `Inventory stock has been updated successfully.`,
+    });
+  };
+
+  const createAccount = (email: string, name: string, password: string): boolean => {
+    // Check if email already exists
+    if (userAccounts.some(account => account.email === email)) {
+      toast({
+        title: "Account Creation Failed",
+        description: "An account with this email already exists.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // Create new account
+    const newAccount = { email, name, password };
+    setUserAccounts(prev => [...prev, newAccount]);
+    setCurrentUser({ email, name });
+    
+    toast({
+      title: "Account Created",
+      description: `Welcome, ${name}! Your account has been created successfully.`,
+    });
+    return true;
+  };
+
+  const login = (email: string, password: string): boolean => {
+    const account = userAccounts.find(account => account.email === email && account.password === password);
+    
+    if (account) {
+      setCurrentUser({ email: account.email, name: account.name });
+      
+      toast({
+        title: "Login Successful",
+        description: `Welcome back, ${account.name}!`,
+      });
+      return true;
+    } else {
+      toast({
+        title: "Login Failed",
+        description: "Invalid email or password.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+    toast({
+      title: "Logged Out",
+      description: "You have been logged out successfully.",
+    });
   };
 
   const addProduct = (product: Product) => {
@@ -189,7 +278,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       findProductByBarcode,
       addCustomer,
       updateCustomer,
-      deleteCustomer
+      deleteCustomer,
+      updateInventoryStock,
+      createAccount,
+      login,
+      logout,
+      currentUser
     }}>
       {children}
     </DataContext.Provider>

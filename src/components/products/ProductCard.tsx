@@ -2,8 +2,9 @@
 import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Package } from "lucide-react";
+import { Edit, Trash2, Package, Plus } from "lucide-react";
 import type { Product } from "@/types/pos";
+import UpdateStockDialog from "../inventory/UpdateStockDialog";
 
 interface ProductCardProps {
   product: Product;
@@ -13,7 +14,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) => {
   return (
-    <Card className="overflow-hidden h-full flex flex-col">
+    <Card className="overflow-hidden">
       <div className="aspect-square relative">
         {product.image ? (
           <img
@@ -44,48 +45,35 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
         )}
       </div>
 
-      <CardContent className="pt-4 flex-grow">
-        <h3 className="font-bold text-lg truncate">{product.name}</h3>
-        <div className="mt-1 flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">{product.weight}{product.unit}</span>
-          <span className="font-bold">₹{product.price.toFixed(2)}</span>
+      <CardContent className="pt-4">
+        <h3 className="font-bold text-lg text-gray-800">{product.name}</h3>
+        <p className="text-sm text-gray-500">{product.weight}{product.unit} • SKU: {product.sku}</p>
+        <div className="flex justify-between items-center mt-2">
+          <span className="text-[#c87137] font-bold text-xl">₹{product.price.toFixed(2)}</span>
+          <span className="text-gray-600 text-sm">{product.stock} in stock</span>
         </div>
-        
-        <div className="grid grid-cols-2 gap-2 mt-2">
-          <div className="text-xs">
-            <span className="text-muted-foreground">SKU:</span> {product.sku}
-          </div>
-          <div className="text-xs">
-            <span className="text-muted-foreground">Stock:</span> {product.stock} items
-          </div>
-        </div>
-        
-        {product.minimumStock !== undefined && product.stock <= product.minimumStock && (
-          <div className="mt-2">
-            <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-800 rounded">
-              Low Stock
-            </span>
-          </div>
-        )}
       </CardContent>
 
-      <CardFooter className="flex justify-end gap-2 pt-0 mt-auto">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 px-2"
-          onClick={() => onEdit(product)}
-        >
-          <Edit className="h-3.5 w-3.5 mr-1" /> Edit
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 px-2 text-destructive hover:text-destructive"
-          onClick={() => onDelete(product)}
-        >
-          <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
-        </Button>
+      <CardFooter className="flex justify-between gap-2 pt-0">
+        <UpdateStockDialog product={product} />
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-2"
+            onClick={() => onEdit(product)}
+          >
+            <Edit className="h-3.5 w-3.5 mr-1" /> Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-2 text-destructive hover:text-destructive"
+            onClick={() => onDelete(product)}
+          >
+            <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );

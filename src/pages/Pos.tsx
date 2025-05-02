@@ -357,11 +357,11 @@ const Pos = () => {
       <body>
         <div class="receipt">
           <div class="header">
-            <img src="/lovable-uploads/00972147-e824-453d-8b6d-dc558e1cb95e.png" class="logo" alt="Logo">
+            <img src="/lovable-uploads/ae24266c-004d-443e-8160-8559b829245d.png" class="logo" alt="Logo">
           <div class="title">Kothari's Dry Fruits</div>
-          <div class="info">123 Market Street, Mumbai, India</div>
-          <div class="info">Phone: +91 9876543210</div>
-          <div class="info">GST No: 27AAAAA0000A1Z5</div>
+          <div class="info">89, Sukan Mall, Nr. CIMS Hospital,</div>
+          <div class="info">Science City Road, Ahmedabad, Gujarat 380060</div>
+          <div class="info">Phone: +91 75677 00090</div>
         </div>
         
         <div class="order-info">
@@ -386,7 +386,7 @@ const Pos = () => {
             ${order.items.map(item => `
               <tr>
                 <td>${item.name}</td>
-                <td>${item.quantity} ${item.unit}</td>
+                <td>${item.quantity} ${item.quantity > 1 ? "items" : "item"}</td>
                 <td class="item-price">₹${item.price.toFixed(2)}</td>
                 <td class="item-price">₹${(item.price * item.quantity).toFixed(2)}</td>
               </tr>
@@ -425,7 +425,6 @@ const Pos = () => {
         
         <div class="footer">
           <p>Thank you for shopping with us!</p>
-          <p>All prices are inclusive of taxes.</p>
           <p>Visit us again soon.</p>
         </div>
       </div>
@@ -537,18 +536,12 @@ const Pos = () => {
                       </div>
                     )}
                   </div>
-                  <CardContent className="p-3 flex-grow">
-                    <h3 className="font-semibold truncate">{product.name}</h3>
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="text-sm text-muted-foreground">{product.weight} {product.unit}</span>
-                      <span className="font-semibold">₹{product.price}</span>
-                    </div>
-                    <div className="text-xs mt-1">
-                      {product.stock > 0 ? (
-                        <span className="text-green-600">In Stock: {product.stock} items</span>
-                      ) : (
-                        <span className="text-red-600">Out of Stock</span>
-                      )}
+                  <CardContent className="p-3">
+                    <h3 className="font-semibold text-gray-800 truncate">{product.name}</h3>
+                    <p className="text-sm text-gray-500">{product.weight}{product.unit} • SKU: {product.sku}</p>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="font-semibold text-[#c87137]">₹{product.price}</span>
+                      <span className="text-xs text-gray-600">{product.stock} in stock</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -600,7 +593,7 @@ const Pos = () => {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold truncate">{item.name}</h3>
                       <p className="text-sm text-muted-foreground">
-                        ₹{item.price} × {item.quantity} items
+                        ₹{item.price} × {item.quantity} {item.quantity > 1 ? "items" : "item"}
                       </p>
                     </div>
                     <div className="flex items-center gap-1 ml-2">
