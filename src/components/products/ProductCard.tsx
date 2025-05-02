@@ -47,7 +47,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
       <CardContent className="pt-4 flex-grow">
         <h3 className="font-bold text-lg truncate">{product.name}</h3>
         <div className="mt-1 flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">{product.weight}{product.unit} per item</span>
+          <span className="text-sm text-muted-foreground">{product.weight}{product.unit}</span>
           <span className="font-bold">₹{product.price.toFixed(2)}</span>
         </div>
         

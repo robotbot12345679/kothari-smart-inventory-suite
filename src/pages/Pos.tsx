@@ -19,7 +19,8 @@ import {
   ArrowRight,
   Save,
   Barcode,
-  Package
+  Package,
+  Share
 } from "lucide-react";
 import {
   Dialog,
@@ -34,6 +35,8 @@ import { CartItem, Order, Product } from "@/types/pos";
 import { useData } from "@/context/DataContext";
 import { useToast } from "@/components/ui/use-toast";
 import { useUniqueId } from "@/hooks/useUniqueId";
+import ProfessionalInvoice from "@/components/invoice/ProfessionalInvoice";
+import { sendInvoiceViaWhatsApp } from "@/services/WhatsAppService";
 
 const Pos = () => {
   const { products, categories, addOrder, findProductByBarcode } = useData();
@@ -51,9 +54,11 @@ const Pos = () => {
     phone: "",
     email: ""
   });
+  const [showProfessionalInvoice, setShowProfessionalInvoice] = useState<boolean>(false);
+  const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
   
+  const orderId = useUniqueId("ORD");
   const barcodeInputRef = useRef<HTMLInputElement>(null);
-  const orderIdPrefix = useUniqueId("ORD");
   
   useEffect(() => {
     if (barcodeModalOpen && barcodeInputRef.current) {
@@ -179,7 +184,7 @@ const Pos = () => {
     }
     
     const newOrder: Order = {
-      id: orderIdPrefix,
+      id: orderId,
       items: [...cart],
       subtotal,
       gst: 0,
@@ -198,15 +203,31 @@ const Pos = () => {
       
       toast({
         title: "Order Completed",
-        description: `Order #${orderIdPrefix} has been created successfully.`
+        description: `Order #${orderId} has been created successfully.`
       });
       
+      // Set current order for professional invoice
+      setCurrentOrder(newOrder);
+      
+      setPaymentModalOpen(false);
+      
+      // Ask if they want to print receipt
+      const shouldPrint = window.confirm("Do you want to print a receipt?");
+      if (shouldPrint) {
+        printReceipt(newOrder);
+      }
+      
+      // Ask if they want to show professional invoice
+      const shouldShowInvoice = window.confirm("Do you want to view/share a professional invoice?");
+      if (shouldShowInvoice) {
+        setShowProfessionalInvoice(true);
+      }
+      
+      // Reset cart and customer info
       setCart([]);
       setAmountTendered("");
-      setPaymentModalOpen(false);
       setCustomerInfo({ name: "", phone: "", email: "" });
       
-      printReceipt(newOrder);
     } catch (error) {
       console.error("Error creating order:", error);
       toast({
@@ -524,7 +545,7 @@ const Pos = () => {
                     </div>
                     <div className="text-xs mt-1">
                       {product.stock > 0 ? (
-                        <span className="text-green-600">In Stock: {product.stock}</span>
+                        <span className="text-green-600">In Stock: {product.stock} items</span>
                       ) : (
                         <span className="text-red-600">Out of Stock</span>
                       )}
@@ -579,7 +600,7 @@ const Pos = () => {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold truncate">{item.name}</h3>
                       <p className="text-sm text-muted-foreground">
-                        ₹{item.price} × {item.quantity} {item.unit}
+                        ₹{item.price} × {item.quantity} items
                       </p>
                     </div>
                     <div className="flex items-center gap-1 ml-2">
@@ -677,6 +698,19 @@ const Pos = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Professional Invoice Dialog */}
+      <Dialog open={showProfessionalInvoice} onOpenChange={setShowProfessionalInvoice}>
+        <DialogContent className="sm:max-w-[850px] max-h-[90vh] overflow-y-auto p-0">
+          {currentOrder && (
+            <ProfessionalInvoice 
+              order={currentOrder} 
+              onClose={() => setShowProfessionalInvoice(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Invoice Dialog */}
       <Dialog open={paymentModalOpen} onOpenChange={setPaymentModalOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
