@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Package, Plus } from "lucide-react";
+import { Edit, Trash2, Package, Square } from "lucide-react";
 import type { Product } from "@/types/pos";
 import UpdateStockDialog from "../inventory/UpdateStockDialog";
 
@@ -15,7 +15,7 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) => {
   return (
     <Card className="overflow-hidden">
-      <div className="aspect-square relative">
+      <div className="aspect-square h-[200px] relative">
         {product.image ? (
           <img
             src={product.image}
@@ -45,16 +45,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
         )}
       </div>
 
-      <CardContent className="pt-4">
-        <h3 className="font-bold text-lg text-gray-800">{product.name}</h3>
-        <p className="text-sm text-gray-500">{product.weight}{product.unit} • SKU: {product.sku}</p>
+      <CardContent className="pt-3 p-4">
+        <h3 className="font-bold text-lg truncate text-gray-800">{product.name}</h3>
+        <p className="text-sm text-gray-500 truncate">{product.weight}{product.unit} • SKU: {product.sku}</p>
         <div className="flex justify-between items-center mt-2">
-          <span className="text-[#c87137] font-bold text-xl">₹{product.price.toFixed(2)}</span>
+          <span className="text-[#c87137] font-bold text-lg">₹{product.price.toFixed(2)}</span>
           <span className="text-gray-600 text-sm">{product.stock} in stock</span>
         </div>
       </CardContent>
 
-      <CardFooter className="flex justify-between gap-2 pt-0">
+      <CardFooter className="flex justify-between gap-2 pt-0 p-4">
         <UpdateStockDialog product={product} />
         <div className="flex gap-2">
           <Button
