@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Package, Square } from "lucide-react";
+import { Edit, Trash2, Package } from "lucide-react";
 import type { Product } from "@/types/pos";
 import UpdateStockDialog from "../inventory/UpdateStockDialog";
 
@@ -14,8 +14,8 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) => {
   return (
-    <Card className="overflow-hidden">
-      <div className="aspect-square h-[200px] relative">
+    <Card className="overflow-hidden h-[350px] flex flex-col">
+      <div className="h-[150px] relative">
         {product.image ? (
           <img
             src={product.image}
@@ -45,33 +45,33 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
         )}
       </div>
 
-      <CardContent className="pt-3 p-4">
-        <h3 className="font-bold text-lg truncate text-gray-800">{product.name}</h3>
-        <p className="text-sm text-gray-500 truncate">{product.weight}{product.unit} • SKU: {product.sku}</p>
-        <div className="flex justify-between items-center mt-2">
-          <span className="text-[#c87137] font-bold text-lg">₹{product.price.toFixed(2)}</span>
-          <span className="text-gray-600 text-sm">{product.stock} in stock</span>
+      <CardContent className="pt-2 p-3 flex-grow">
+        <h3 className="font-bold text-base truncate text-gray-800">{product.name}</h3>
+        <p className="text-xs text-gray-500 truncate">{product.weight}{product.unit} • SKU: {product.sku}</p>
+        <div className="flex justify-between items-center mt-1">
+          <span className="text-[#c87137] font-bold text-base">₹{product.price.toFixed(2)}</span>
+          <span className="text-gray-600 text-xs">{product.stock} in stock</span>
         </div>
       </CardContent>
 
-      <CardFooter className="flex justify-between gap-2 pt-0 p-4">
+      <CardFooter className="flex justify-between gap-2 pt-0 p-3 mt-auto">
         <UpdateStockDialog product={product} />
         <div className="flex gap-2">
           <Button
             variant="outline"
             size="sm"
-            className="h-8 px-2"
+            className="h-7 px-2"
             onClick={() => onEdit(product)}
           >
-            <Edit className="h-3.5 w-3.5 mr-1" /> Edit
+            <Edit className="h-3 w-3 mr-1" /> Edit
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="h-8 px-2 text-destructive hover:text-destructive"
+            className="h-7 px-2 text-destructive hover:text-destructive"
             onClick={() => onDelete(product)}
           >
-            <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+            <Trash2 className="h-3 w-3 mr-1" /> Delete
           </Button>
         </div>
       </CardFooter>
