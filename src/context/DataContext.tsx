@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Product, Category, Order, Customer } from "@/types/pos";
+import { Product, Category, Order, Customer, CartItem } from "@/types/pos";
 import { useToast } from "@/components/ui/use-toast";
 
 interface DataContextType {
@@ -21,6 +21,7 @@ interface DataContextType {
   updateCustomer: (id: number, updatedCustomer: Customer) => void;
   deleteCustomer: (id: number) => void;
   updateInventoryStock: (id: number, additionalStock: number) => void;
+  updateInventoryAfterSale: (cartItems: CartItem[]) => void;
   createAccount: (email: string, name: string, password: string) => boolean;
   login: (email: string, password: string) => boolean;
   logout: () => void;
@@ -100,6 +101,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       title: "Stock Updated",
       description: `Inventory stock has been updated successfully.`,
     });
+  };
+
+  const updateInventoryAfterSale = (cartItems: CartItem[]) => {
+    setProducts(prev => prev.map(product => {
+      const cartItem = cartItems.find(item => item.id === product.id);
+      if (cartItem) {
+        return {
+          ...product,
+          stock: Math.max(0, product.stock - cartItem.quantity)
+        };
+      }
+      return product;
+    }));
   };
 
   const createAccount = (email: string, name: string, password: string): boolean => {
@@ -280,6 +294,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateCustomer,
       deleteCustomer,
       updateInventoryStock,
+      updateInventoryAfterSale,
       createAccount,
       login,
       logout,

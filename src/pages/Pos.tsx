@@ -39,7 +39,7 @@ import ProfessionalInvoice from "@/components/invoice/ProfessionalInvoice";
 import { sendInvoiceViaWhatsApp } from "@/services/WhatsAppService";
 
 const Pos = () => {
-  const { products, categories, addOrder, findProductByBarcode } = useData();
+  const { products, categories, addOrder, findProductByBarcode, updateInventoryAfterSale } = useData();
   const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -199,6 +199,10 @@ const Pos = () => {
     };
     
     try {
+      // Update inventory stock levels after a successful sale
+      updateInventoryAfterSale(cart);
+      
+      // Add the order to the system
       addOrder(newOrder);
       
       toast({
@@ -249,6 +253,16 @@ const Pos = () => {
       });
       return;
     }
+    
+    // Get billing template from localStorage or use defaults
+    const storedTemplate = localStorage.getItem("billingTemplate");
+    const billingTemplate = storedTemplate ? JSON.parse(storedTemplate) : {
+      shopName: "Kothari's Dry Fruits & More",
+      address: "89, Sukan Mall, Nr. CIMS Hospital, Science City Road, Ahmedabad, Gujarat 380060",
+      phone: "+91 75677 00090",
+      logoUrl: "/lovable-uploads/6ab04e40-2860-4562-bace-e35da6383972.png",
+      footerText: ["Thank you for shopping with us!", "Visit again soon!"]
+    };
     
     const orderDate = new Date(order.orderDate);
     const formattedDate = orderDate.toLocaleDateString('en-US', {
@@ -357,91 +371,90 @@ const Pos = () => {
       <body>
         <div class="receipt">
           <div class="header">
-            <img src="/lovable-uploads/ae24266c-004d-443e-8160-8559b829245d.png" class="logo" alt="Logo">
-          <div class="title">Kothari's Dry Fruits</div>
-          <div class="info">89, Sukan Mall, Nr. CIMS Hospital,</div>
-          <div class="info">Science City Road, Ahmedabad, Gujarat 380060</div>
-          <div class="info">Phone: +91 75677 00090</div>
-        </div>
+            <img src="${billingTemplate.logoUrl}" class="logo" alt="Logo">
+            <div class="title">${billingTemplate.shopName}</div>
+            <div class="info">${billingTemplate.address}</div>
+            <div class="info">Phone: ${billingTemplate.phone}</div>
+            ${billingTemplate.gstNumber ? `<div class="info">GSTIN: ${billingTemplate.gstNumber}</div>` : ''}
+          </div>
         
-        <div class="order-info">
-          <div class="info">Order #: ${order.id}</div>
-          <div class="info">Date: ${formattedDate} ${formattedTime}</div>
-          <div class="info">Customer: ${order.customerName}</div>
-          ${order.customerPhone ? `<div class="info">Phone: ${order.customerPhone}</div>` : ''}
-        </div>
+          <div class="order-info">
+            <div class="info">Order #: ${order.id}</div>
+            <div class="info">Date: ${formattedDate} ${formattedTime}</div>
+            <div class="info">Customer: ${order.customerName}</div>
+            ${order.customerPhone ? `<div class="info">Phone: ${order.customerPhone}</div>` : ''}
+          </div>
         
-        <div class="divider"></div>
+          <div class="divider"></div>
         
-        <table>
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Qty</th>
-              <th class="item-price">Price</th>
-              <th class="item-price">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${order.items.map(item => `
+          <table>
+            <thead>
               <tr>
-                <td>${item.name}</td>
-                <td>${item.quantity} ${item.quantity > 1 ? "items" : "item"}</td>
-                <td class="item-price">₹${item.price.toFixed(2)}</td>
-                <td class="item-price">₹${(item.price * item.quantity).toFixed(2)}</td>
+                <th>Item</th>
+                <th>Qty</th>
+                <th class="item-price">Price</th>
+                <th class="item-price">Amount</th>
               </tr>
-            `).join('')}
+            </thead>
+            <tbody>
+              ${order.items.map(item => `
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${item.quantity} ${item.quantity > 1 ? "items" : "item"}</td>
+                  <td class="item-price">₹${item.price.toFixed(2)}</td>
+                  <td class="item-price">₹${(item.price * item.quantity).toFixed(2)}</td>
+                </tr>
+              `).join('')}
             
-            <tr class="subtotal-row">
-              <td colspan="3">Total</td>
-              <td class="item-price">₹${order.total.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td colspan="3">Payment Method</td>
-              <td class="item-price">${order.paymentMethod.toUpperCase()}</td>
-            </tr>
-            ${order.paymentMethod === 'cash' ? `
-              <tr>
-                <td colspan="3">Amount Tendered</td>
-                <td class="item-price">₹${parseFloat(amountTendered).toFixed(2)}</td>
+              <tr class="subtotal-row">
+                <td colspan="3">Total</td>
+                <td class="item-price">₹${order.total.toFixed(2)}</td>
               </tr>
               <tr>
-                <td colspan="3">Change</td>
-                <td class="item-price">₹${getChange()}</td>
+                <td colspan="3">Payment Method</td>
+                <td class="item-price">${order.paymentMethod.toUpperCase()}</td>
               </tr>
-            ` : ''}
-          </tbody>
-        </table>
+              ${order.paymentMethod === 'cash' ? `
+                <tr>
+                  <td colspan="3">Amount Tendered</td>
+                  <td class="item-price">₹${parseFloat(amountTendered).toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td colspan="3">Change</td>
+                  <td class="item-price">₹${getChange()}</td>
+                </tr>
+              ` : ''}
+            </tbody>
+          </table>
         
-        ${showQrCode ? `
-        <div class="qr-code">
-          <p>Scan to pay via UPI:</p>
-          <img src="${upiQrCode}" alt="UPI QR Code">
-          <p>UPI ID: ashokkothari738@oksbi</p>
+          ${showQrCode ? `
+          <div class="qr-code">
+            <p>Scan to pay via UPI:</p>
+            <img src="${upiQrCode}" alt="UPI QR Code">
+            <p>UPI ID: ashokkothari738@oksbi</p>
+          </div>
+          ` : ''}
+        
+          <div class="divider"></div>
+        
+          <div class="footer">
+            ${billingTemplate.footerText.map(line => `<p>${line}</p>`).join('')}
+          </div>
         </div>
-        ` : ''}
-        
-        <div class="divider"></div>
-        
-        <div class="footer">
-          <p>Thank you for shopping with us!</p>
-          <p>Visit us again soon.</p>
-        </div>
-      </div>
-      <script>
-        window.onload = function() {
-          window.print();
-          setTimeout(function() {
-            window.close();
-          }, 500);
-        }
-      </script>
-    </body>
-    </html>
-  `);
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() {
+              window.close();
+            }, 500);
+          }
+        </script>
+      </body>
+      </html>
+    `);
   
-  receiptWindow.document.close();
-};
+    receiptWindow.document.close();
+  };
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col font-playfair">

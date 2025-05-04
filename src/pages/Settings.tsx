@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BillingSettings from "@/components/settings/BillingSettings";
 import AccountSettings from "@/components/settings/AccountSettings";
@@ -16,6 +15,19 @@ const Settings = () => {
     logoUrl: "/lovable-uploads/6ab04e40-2860-4562-bace-e35da6383972.png",
     footerText: ["Thank you for shopping with us!", "Visit again soon!"]
   });
+
+  // Load billing template from localStorage on component mount
+  useEffect(() => {
+    const storedTemplate = localStorage.getItem("billingTemplate");
+    if (storedTemplate) {
+      try {
+        const parsedTemplate = JSON.parse(storedTemplate);
+        setBillingTemplate(parsedTemplate);
+      } catch (error) {
+        console.error("Failed to parse stored billing template:", error);
+      }
+    }
+  }, []);
 
   const handleSaveTemplate = (template: BillingTemplate) => {
     setBillingTemplate(template);
