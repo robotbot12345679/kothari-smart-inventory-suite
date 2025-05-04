@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -22,27 +23,31 @@ const Dashboard = () => {
   // Ensure we always have the latest data
   useEffect(() => {
     // Sort orders by date (most recent first)
-    const sortedOrders = [...orders].sort((a, b) => 
-      new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
-    );
-    setRecentOrdersData(sortedOrders.slice(0, 5));
+    if (orders && orders.length > 0) {
+      const sortedOrders = [...orders].sort((a, b) => 
+        new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
+      );
+      setRecentOrdersData(sortedOrders.slice(0, 5));
+    } else {
+      setRecentOrdersData([]);
+    }
   }, [orders]);
 
   // Calculate stats based on real data
   const stats = useMemo(() => {
-    const activeProducts = products.filter(p => p.isActive).length;
-    const lowStockItems = products.filter(p => {
+    const activeProducts = products?.filter(p => p.isActive)?.length || 0;
+    const lowStockItems = products?.filter(p => {
       if (!p.minimumStock) return false;
       return p.stock < p.minimumStock;
-    }).length;
+    })?.length || 0;
 
     // Calculate total sales amount from orders
-    const totalSales = orders.reduce((sum, order) => sum + order.total, 0);
+    const totalSales = orders?.reduce((sum, order) => sum + order.total, 0) || 0;
 
     // Get pending orders
-    const pendingOrders = orders.filter(order => 
+    const pendingOrders = orders?.filter(order => 
       order.orderStatus === 'Pending' || order.orderStatus === 'Processing'
-    ).length;
+    )?.length || 0;
 
     return {
       totalSales,
@@ -54,13 +59,18 @@ const Dashboard = () => {
 
   // Top selling products calculation
   const topSellingProducts = useMemo(() => {
+    if (!orders || orders.length === 0) return [];
+    
     const productSales = new Map();
     
     // Count product occurrences in orders
     orders.forEach(order => {
+      if (!order.items) return;
+      
       order.items.forEach(item => {
+        if (!item) return;
         const currentCount = productSales.get(item.name) || 0;
-        productSales.set(item.name, currentCount + item.quantity);
+        productSales.set(item.name, currentCount + (item.quantity || 0));
       });
     });
     
@@ -95,7 +105,7 @@ const Dashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">₹{stats.totalSales.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              From {orders.length} orders
+              From {orders?.length || 0} orders
             </p>
           </CardContent>
         </Card>
@@ -135,7 +145,7 @@ const Dashboard = () => {
             <Package className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{products.length}</div>
+            <div className="text-2xl font-bold">{products?.length || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {stats.activeProducts} active products
             </p>
@@ -144,14 +154,14 @@ const Dashboard = () => {
       </div>
 
       {/* Charts and Insights */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card className="card-hover">
           <CardHeader>
             <CardTitle>Sales Overview</CardTitle>
             <CardDescription>Daily sales performance</CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            {orders.length > 0 ? (
+            {orders && orders.length > 0 ? (
               <div className="h-[300px] flex items-center justify-center">
                 Chart will be displayed here when more data is available
               </div>
@@ -176,7 +186,7 @@ const Dashboard = () => {
             <CardDescription>System recommendations</CardDescription>
           </CardHeader>
           <CardContent>
-            {products.length === 0 && orders.length === 0 ? (
+            {(!products || products.length === 0) && (!orders || orders.length === 0) ? (
               <div className="flex flex-col items-center justify-center py-6">
                 <p className="text-center mb-4">
                   Add products and create orders to see AI-powered insights
@@ -199,7 +209,7 @@ const Dashboard = () => {
                     <p className="text-sm mt-1">{stats.pendingOrders} orders waiting to be processed.</p>
                   </div>
                 )}
-                {products.length > 0 && (
+                {products && products.length > 0 && (
                   <div className="bg-muted/50 p-3 rounded-lg">
                     <p className="font-medium text-sm text-primary">Inventory Status</p>
                     <p className="text-sm mt-1">
@@ -220,7 +230,7 @@ const Dashboard = () => {
             <CardDescription>Latest orders</CardDescription>
           </CardHeader>
           <CardContent>
-            {recentOrdersData.length > 0 ? (
+            {recentOrdersData && recentOrdersData.length > 0 ? (
               <div className="space-y-2">
                 {recentOrdersData.map((order) => (
                   <div key={order.id} className="flex justify-between items-center border-b pb-2 last:border-0">
@@ -257,7 +267,7 @@ const Dashboard = () => {
             <CardDescription>Best performers</CardDescription>
           </CardHeader>
           <CardContent>
-            {topSellingProducts.length > 0 ? (
+            {topSellingProducts && topSellingProducts.length > 0 ? (
               <div className="space-y-2">
                 {topSellingProducts.map((product, index) => (
                   <div key={product.name} className="flex justify-between items-center border-b pb-2 last:border-0">
@@ -293,7 +303,7 @@ const Dashboard = () => {
             <CardDescription>Stock levels</CardDescription>
           </CardHeader>
           <CardContent>
-            {products.length > 0 ? (
+            {products && products.length > 0 ? (
               <div className="space-y-4">
                 {products.slice(0, 5).map((product) => {
                   const stockPercentage = product.minimumStock
