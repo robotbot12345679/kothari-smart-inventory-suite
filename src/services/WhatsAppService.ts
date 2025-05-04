@@ -3,14 +3,34 @@ export const sendInvoiceViaWhatsApp = (
   order: any,
   phoneNumber: string = "+91 75677 00090"
 ) => {
+  // Get billing template from localStorage or use defaults
+  const storedTemplate = localStorage.getItem("billingTemplate");
+  const billingTemplate = storedTemplate ? JSON.parse(storedTemplate) : {
+    shopName: "Kothari's Dry Fruits & More",
+    address: "89, Sukan Mall, Nr. CIMS Hospital, Science City Road, Ahmedabad, Gujarat 380060",
+    phone: "+91 75677 00090"
+  };
+
   // Format phone number by removing spaces
   const formattedPhone = phoneNumber.replace(/\s+/g, "");
   
-  // Create invoice URL based on order ID
-  const invoiceUrl = `https://invoice.example.com/view/${order.id}`;
-  
-  // Create WhatsApp message
-  const message = `Dear ${order.customerName || "Customer"},\n\nYour order #${order.id} has been processed. View your invoice here: ${invoiceUrl}\n\nThank you for shopping with Kothari's Dry Fruits!\n\nRegards,\nKothari's Dry Fruits`;
+  // Create invoice message
+  const message = `Dear ${order.customerName || "Customer"},
+
+Thank you for your order from ${billingTemplate.shopName}!
+
+*Order Summary:*
+Order #: ${order.id}
+Total: ₹${order.total.toFixed(2)}
+Date: ${new Date(order.orderDate).toLocaleDateString()}
+
+*Items:*
+${order.items.map(item => `- ${item.name} (${item.quantity}x) - ₹${(item.price * item.quantity).toFixed(2)}`).join('\n')}
+
+For any questions, please contact us at ${billingTemplate.phone}.
+
+Thank you for your business!
+${billingTemplate.shopName}`;
   
   // Encode the message for WhatsApp
   const encodedMessage = encodeURIComponent(message);

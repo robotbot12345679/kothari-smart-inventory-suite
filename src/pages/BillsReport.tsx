@@ -60,6 +60,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { sendInvoiceViaWhatsApp } from "@/services/WhatsAppService";
+import ProfessionalInvoice from "@/components/invoice/ProfessionalInvoice";
 
 const BillsReport = () => {
   const { orders } = useData();
@@ -74,6 +76,7 @@ const BillsReport = () => {
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [messageText, setMessageText] = useState("");
+  const [showInvoicePreview, setShowInvoicePreview] = useState(false);
   
   // Filter the orders based on search, payment method, and date
   const filteredOrders = orders.filter((order) => {
@@ -101,15 +104,14 @@ const BillsReport = () => {
 
   // Function to print a receipt
   const printReceipt = (order: Order) => {
-    // This is a placeholder - in a real app, you would call the same receipt printing function
-    // that's used in the POS page
-    window.open(`/receipts/${order.id}`, "_blank");
+    setSelectedOrder(order);
+    setShowInvoicePreview(true);
   };
 
   // Function to download receipts
   const downloadReceipt = (order: Order) => {
-    // This is a placeholder for downloading receipt functionality
-    console.log("Downloading receipt for order", order.id);
+    setSelectedOrder(order);
+    setShowInvoicePreview(true);
   };
 
   // Function to handle sharing invoice via WhatsApp
@@ -123,19 +125,7 @@ const BillsReport = () => {
       return;
     }
 
-    const formattedPhone = customerPhone.replace(/[\s+\-()]/g, "");
-    // Format phone number for WhatsApp (remove any non-digit characters)
-    const phone = formattedPhone.startsWith("+") ? formattedPhone.substring(1) : formattedPhone;
-    
-    // Create a WhatsApp message with invoice details
-    const message = messageText || 
-      `Dear Customer, please find your invoice #${selectedOrder.id} for Rs. ${selectedOrder.total.toFixed(2)} dated ${format(new Date(selectedOrder.orderDate), 'PP')}. Thank you for shopping with us!`;
-    
-    // Generate WhatsApp URL
-    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    
-    // Open WhatsApp in new tab
-    window.open(whatsappUrl, "_blank");
+    sendInvoiceViaWhatsApp(selectedOrder, customerPhone);
     
     toast({
       title: "WhatsApp Message Ready",
@@ -158,9 +148,15 @@ const BillsReport = () => {
       return;
     }
     
-    const subject = `Invoice #${selectedOrder.id} - Kothari's Dry Fruits`;
+    // Get billing template from localStorage or use defaults
+    const storedTemplate = localStorage.getItem("billingTemplate");
+    const billingTemplate = storedTemplate ? JSON.parse(storedTemplate) : {
+      shopName: "Kothari's Dry Fruits & More"
+    };
+    
+    const subject = `Invoice #${selectedOrder.id} - ${billingTemplate.shopName}`;
     const body = messageText || 
-      `Dear Customer,\n\nPlease find attached your invoice #${selectedOrder.id} for Rs. ${selectedOrder.total.toFixed(2)} dated ${format(new Date(selectedOrder.orderDate), 'PP')}.\n\nThank you for shopping with us!\n\nRegards,\nKothari's Dry Fruits`;
+      `Dear ${selectedOrder.customerName || "Customer"},\n\nPlease find attached your invoice #${selectedOrder.id} for Rs. ${selectedOrder.total.toFixed(2)} dated ${format(new Date(selectedOrder.orderDate), 'PP')}.\n\nThank you for shopping with us!\n\nRegards,\n${billingTemplate.shopName}`;
     
     // Generate mailto URL
     const mailtoUrl = `mailto:${customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -391,7 +387,7 @@ const BillsReport = () => {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => printReceipt(order)}>
                               <Printer className="mr-2 h-4 w-4" />
-                              Print Receipt
+                              View/Print Invoice
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => downloadReceipt(order)}>
                               <Download className="mr-2 h-4 w-4" />
@@ -578,6 +574,18 @@ const BillsReport = () => {
               <CreditCard className="h-4 w-4" /> Generate Payment Link
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invoice Preview Dialog */}
+      <Dialog open={showInvoicePreview} onOpenChange={setShowInvoicePreview}>
+        <DialogContent className="sm:max-w-[850px] max-h-[90vh] overflow-y-auto p-0">
+          {selectedOrder && (
+            <ProfessionalInvoice 
+              order={selectedOrder} 
+              onClose={() => setShowInvoicePreview(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

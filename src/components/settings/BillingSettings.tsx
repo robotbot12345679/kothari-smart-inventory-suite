@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   Card, 
@@ -26,6 +26,12 @@ const BillingSettings = ({ billingTemplate, onSave, onPrintTest }: BillingSettin
   const [template, setTemplate] = useState<BillingTemplate>(billingTemplate);
   const [footerText, setFooterText] = useState(billingTemplate.footerText.join('\n'));
   
+  // Update local state when props change
+  useEffect(() => {
+    setTemplate(billingTemplate);
+    setFooterText(billingTemplate.footerText.join('\n'));
+  }, [billingTemplate]);
+  
   const handleSave = () => {
     const updatedTemplate = {
       ...template,
@@ -33,10 +39,6 @@ const BillingSettings = ({ billingTemplate, onSave, onPrintTest }: BillingSettin
     };
     
     onSave(updatedTemplate);
-    toast({
-      title: "Settings Saved",
-      description: "Billing template settings have been updated successfully."
-    });
   };
   
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,110 +62,6 @@ const BillingSettings = ({ billingTemplate, onSave, onPrintTest }: BillingSettin
       });
     };
     reader.readAsDataURL(file);
-  };
-  
-  const printTestReceipt = () => {
-    const receiptWindow = window.open('', '_blank', 'width=400,height=600');
-    
-    if (!receiptWindow) {
-      toast({
-        title: "Print Error",
-        description: "Could not open print window. Please check your popup blocker settings.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    receiptWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Receipt - Test Order</title>
-        <style>
-          body {
-            font-family: 'Courier New', monospace;
-            margin: 0;
-            padding: 20px;
-            max-width: 380px;
-          }
-          .receipt {
-            border: 1px solid #ddd;
-            padding: 20px;
-          }
-          .header {
-            text-align: center;
-            margin-bottom: 20px;
-          }
-          .logo {
-            max-width: 100px;
-            margin: 0 auto;
-            display: block;
-          }
-          .title {
-            font-size: 18px;
-            font-weight: bold;
-            margin: 10px 0;
-            font-family: 'Courier New', monospace;
-          }
-          .info {
-            margin: 5px 0;
-            font-size: 14px;
-            font-family: 'Courier New', monospace;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            font-family: 'Courier New', monospace;
-          }
-          th, td {
-            text-align: left;
-            padding: 8px 4px;
-            border-bottom: 1px solid #ddd;
-            font-size: 14px;
-            font-family: 'Courier New', monospace;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="receipt">
-          <div class="header">
-            ${template.logoUrl ? `<img src="${template.logoUrl}" alt="Shop logo" class="logo" />` : '<div style="height: 30px;"></div>'}
-            <h1 class="title">${template.shopName}</h1>
-            <p class="info">${template.address}</p>
-            <p class="info">${template.phone}</p>
-            <p class="info">${template.gstNumber ? 'GSTIN: ' + template.gstNumber : ''}</p>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Quantity</th>
-                <th>Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Chilean Walnuts (500g)</td>
-                <td>2</td>
-                <td>₹980.00</td>
-              </tr>
-              <tr>
-                <td>Cashews (200g)</td>
-                <td>1</td>
-                <td>₹420.00</td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="footer">
-            ${footerText.split('\n').map(line => `<p>${line}</p>`).join('')}
-          </div>
-        </div>
-      </body>
-      </html>
-    `);
-    
-    receiptWindow.document.close();
   };
   
   return (
