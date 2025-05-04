@@ -19,22 +19,24 @@ const App = () => {
   return (
     <DataProvider>
       <Router>
-        <MainLayout>
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/pos" element={<Pos />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/shipping" element={<Shipping />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/bills" element={<BillsReport />} />
-          </Routes>
-        </MainLayout>
+        <div>
+          <MainLayout>
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/customers" element={<Customers />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/pos" element={<Pos />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/shipping" element={<Shipping />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/bills" element={<BillsReport />} />
+            </Routes>
+          </MainLayout>
+        </div>
       </Router>
     </DataProvider>
   );

@@ -50,6 +50,3 @@ Note: Please see the attached invoice PDF for your records.`;
     window.open(whatsappUrl, "_blank");
   }, 500);
 };
-
-// Re-export createPrintableInvoice to fix the import issue in BillsReport.tsx
-export { createPrintableInvoice };
