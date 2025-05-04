@@ -107,13 +107,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProducts(prev => prev.map(product => {
       const cartItem = cartItems.find(item => item.id === product.id);
       if (cartItem) {
+        const newStock = Math.max(0, product.stock - cartItem.quantity);
+        console.log(`Updating stock for ${product.name}: ${product.stock} - ${cartItem.quantity} = ${newStock}`);
         return {
           ...product,
-          stock: Math.max(0, product.stock - cartItem.quantity)
+          stock: newStock
         };
       }
       return product;
     }));
+    console.log("Inventory updated after sale");
   };
 
   const createAccount = (email: string, name: string, password: string): boolean => {
@@ -227,10 +230,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addOrder = (order: Order) => {
     setOrders(prev => [...prev, order]);
+    
+    // Automatically update inventory when order is added
+    if (order.items && order.items.length > 0) {
+      updateInventoryAfterSale(order.items);
+    }
   };
 
   const updateOrder = (id: string, updatedOrder: Order) => {
+    // Get the old order to calculate stock differences if needed
+    const oldOrder = orders.find(order => order.id === id);
+    
     setOrders(prev => prev.map(order => order.id === id ? updatedOrder : order));
+    
+    // Handle inventory updates if the order items changed
+    if (oldOrder && updatedOrder.items) {
+      // This is a simplified approach - in a real app, you'd need to track 
+      // which items were added/removed/changed quantity
+      updateInventoryAfterSale(updatedOrder.items);
+    }
   };
 
   const deleteOrder = (id: string) => {

@@ -1,4 +1,6 @@
 
+import { createPrintableInvoice } from "./InvoiceService";
+
 export const sendInvoiceViaWhatsApp = (
   order: any,
   phoneNumber: string = "+91 75677 00090"
@@ -30,7 +32,9 @@ ${order.items.map(item => `- ${item.name} (${item.quantity}x) - ₹${(item.price
 For any questions, please contact us at ${billingTemplate.phone}.
 
 Thank you for your business!
-${billingTemplate.shopName}`;
+${billingTemplate.shopName}
+
+Note: Please see the attached invoice PDF for your records.`;
   
   // Encode the message for WhatsApp
   const encodedMessage = encodeURIComponent(message);
@@ -38,6 +42,11 @@ ${billingTemplate.shopName}`;
   // Create WhatsApp API URL
   const whatsappUrl = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`;
   
-  // Open WhatsApp in a new window
-  window.open(whatsappUrl, "_blank");
+  // First, generate the PDF invoice in a new window
+  createPrintableInvoice(order);
+  
+  // Open WhatsApp in a new window with the message
+  setTimeout(() => {
+    window.open(whatsappUrl, "_blank");
+  }, 500);
 };

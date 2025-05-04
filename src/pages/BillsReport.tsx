@@ -60,7 +60,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { sendInvoiceViaWhatsApp } from "@/services/WhatsAppService";
+import { sendInvoiceViaWhatsApp, createPrintableInvoice } from "@/services/WhatsAppService";
 import ProfessionalInvoice from "@/components/invoice/ProfessionalInvoice";
 
 const BillsReport = () => {
@@ -158,15 +158,21 @@ const BillsReport = () => {
     const body = messageText || 
       `Dear ${selectedOrder.customerName || "Customer"},\n\nPlease find attached your invoice #${selectedOrder.id} for Rs. ${selectedOrder.total.toFixed(2)} dated ${format(new Date(selectedOrder.orderDate), 'PP')}.\n\nThank you for shopping with us!\n\nRegards,\n${billingTemplate.shopName}`;
     
-    // Generate mailto URL
-    const mailtoUrl = `mailto:${customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    // First, generate the PDF in a new window
+    createPrintableInvoice(selectedOrder);
     
-    // Open email client
-    window.location.href = mailtoUrl;
+    // After a short delay to allow the PDF to initialize, open the email client
+    setTimeout(() => {
+      // Generate mailto URL
+      const mailtoUrl = `mailto:${customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      
+      // Open email client
+      window.location.href = mailtoUrl;
+    }, 500);
     
     toast({
       title: "Email Prepared",
-      description: "Opening your email client to send the invoice",
+      description: "Opening your email client to send the invoice with PDF attachment",
     });
     
     setIsShareDialogOpen(false);

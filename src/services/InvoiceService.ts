@@ -35,6 +35,9 @@ export const createPrintableInvoice = (order: Order): Window | null => {
     return null;
   }
   
+  // Ensure we have the correct logo URL from the billing template
+  const logoUrl = billingTemplate.logoUrl || "/lovable-uploads/6ab04e40-2860-4562-bace-e35da6383972.png";
+  
   printWindow.document.write(`
     <!DOCTYPE html>
     <html>
@@ -159,11 +162,11 @@ export const createPrintableInvoice = (order: Order): Window | null => {
         }
       </style>
     </head>
-    <body onload="setTimeout(function() { window.print(); window.close(); }, 500);">
+    <body onload="setTimeout(function() { window.print(); }, 500);">
       <div class="invoice-container">
         <div class="header">
           <div>
-            <img class="logo" src="${billingTemplate.logoUrl}" alt="${billingTemplate.shopName}">
+            <img class="logo" src="${logoUrl}" alt="${billingTemplate.shopName}">
             <div style="margin-top: 10px;">
               <div>${billingTemplate.shopName}</div>
               <div style="font-size: 14px; color: #666;">${billingTemplate.address}</div>

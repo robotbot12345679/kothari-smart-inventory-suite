@@ -1,5 +1,4 @@
-
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   TrendingUp, 
@@ -18,6 +17,16 @@ import { Button } from "@/components/ui/button";
 const Dashboard = () => {
   const { products, orders } = useData();
   const navigate = useNavigate();
+  const [recentOrdersData, setRecentOrdersData] = useState([]);
+
+  // Ensure we always have the latest data
+  useEffect(() => {
+    // Sort orders by date (most recent first)
+    const sortedOrders = [...orders].sort((a, b) => 
+      new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
+    );
+    setRecentOrdersData(sortedOrders.slice(0, 5));
+  }, [orders]);
 
   // Calculate stats based on real data
   const stats = useMemo(() => {
@@ -76,6 +85,7 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -133,8 +143,9 @@ const Dashboard = () => {
         </Card>
       </div>
 
+      {/* Charts and Insights */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="card-hover md:col-span-2 lg:col-span-4">
+        <Card className="card-hover">
           <CardHeader>
             <CardTitle>Sales Overview</CardTitle>
             <CardDescription>Daily sales performance</CardDescription>
@@ -159,7 +170,7 @@ const Dashboard = () => {
             )}
           </CardContent>
         </Card>
-        <Card className="card-hover md:col-span-2 lg:col-span-3">
+        <Card className="card-hover">
           <CardHeader>
             <CardTitle>Insights</CardTitle>
             <CardDescription>System recommendations</CardDescription>
@@ -209,9 +220,9 @@ const Dashboard = () => {
             <CardDescription>Latest orders</CardDescription>
           </CardHeader>
           <CardContent>
-            {orders.length > 0 ? (
+            {recentOrdersData.length > 0 ? (
               <div className="space-y-2">
-                {orders.slice(0, 5).map((order) => (
+                {recentOrdersData.map((order) => (
                   <div key={order.id} className="flex justify-between items-center border-b pb-2 last:border-0">
                     <div>
                       <p className="font-medium">Order #{order.id}</p>
@@ -238,6 +249,8 @@ const Dashboard = () => {
             )}
           </CardContent>
         </Card>
+        
+        {/* Top Selling Products */}
         <Card className="card-hover">
           <CardHeader>
             <CardTitle>Top Selling Products</CardTitle>
@@ -272,6 +285,8 @@ const Dashboard = () => {
             )}
           </CardContent>
         </Card>
+        
+        {/* Inventory Status */}
         <Card className="card-hover">
           <CardHeader>
             <CardTitle>Inventory Status</CardTitle>
