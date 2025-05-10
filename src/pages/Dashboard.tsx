@@ -9,7 +9,10 @@ import {
   BarChart3, 
   ArrowUpRight, 
   ArrowDownRight,
-  Plus
+  Plus,
+  ArrowRight,
+  Calendar,
+  Link
 } from "lucide-react";
 import { useData } from "@/context/DataContext";
 import { useNavigate } from "react-router-dom";
@@ -27,6 +30,7 @@ const Dashboard = () => {
       const sortedOrders = [...orders].sort((a, b) => 
         new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
       );
+      // Display only 5 most recent orders
       setRecentOrdersData(sortedOrders.slice(0, 5));
     } else {
       setRecentOrdersData([]);
@@ -35,17 +39,24 @@ const Dashboard = () => {
 
   // Calculate stats based on real data
   const stats = useMemo(() => {
-    const activeProducts = products?.filter(p => p.isActive)?.length || 0;
-    const lowStockItems = products?.filter(p => {
+    if (!products || !orders) return {
+      totalSales: 0,
+      activeProducts: 0,
+      lowStockItems: 0,
+      pendingOrders: 0
+    };
+
+    const activeProducts = products.filter(p => p.isActive)?.length || 0;
+    const lowStockItems = products.filter(p => {
       if (!p.minimumStock) return false;
       return p.stock < p.minimumStock;
     })?.length || 0;
 
     // Calculate total sales amount from orders
-    const totalSales = orders?.reduce((sum, order) => sum + order.total, 0) || 0;
+    const totalSales = orders.reduce((sum, order) => sum + order.total, 0) || 0;
 
     // Get pending orders
-    const pendingOrders = orders?.filter(order => 
+    const pendingOrders = orders.filter(order => 
       order.orderStatus === 'Pending' || order.orderStatus === 'Processing'
     )?.length || 0;
 
@@ -61,24 +72,37 @@ const Dashboard = () => {
   const topSellingProducts = useMemo(() => {
     if (!orders || orders.length === 0) return [];
     
-    const productSales = new Map();
-    
-    // Count product occurrences in orders
-    orders.forEach(order => {
-      if (!order.items) return;
+    try {
+      const productSales = new Map();
       
-      order.items.forEach(item => {
-        if (!item) return;
-        const currentCount = productSales.get(item.name) || 0;
-        productSales.set(item.name, currentCount + (item.quantity || 0));
+      // Count product occurrences in orders
+      orders.forEach(order => {
+        if (!order.items) return;
+        
+        order.items.forEach(item => {
+          if (!item || !item.name) return;
+          const currentCount = productSales.get(item.name) || 0;
+          productSales.set(item.name, currentCount + (item.quantity || 0));
+        });
       });
-    });
-    
-    // Convert to array and sort
-    return Array.from(productSales, ([name, quantity]) => ({ name, quantity }))
-      .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, 5);
+      
+      // Convert to array and sort
+      return Array.from(productSales, ([name, quantity]) => ({ name, quantity }))
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 5);
+    } catch (error) {
+      console.error("Error calculating top products:", error);
+      return [];
+    }
   }, [orders]);
+
+  // Helper function to simplify order numbers
+  const getSimplifiedOrderId = (orderId) => {
+    if (!orderId) return "";
+    // Extract just the numeric part if it follows a pattern like 'ORD12345'
+    const match = orderId.match(/[A-Za-z]+(\d+)/);
+    return match ? `#${match[1]}` : `#${orderId}`;
+  };
 
   return (
     <div className="space-y-6">
@@ -224,26 +248,49 @@ const Dashboard = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Recent Orders Card - Updated with link to Orders page */}
         <Card className="card-hover">
-          <CardHeader>
-            <CardTitle>Recent Orders</CardTitle>
-            <CardDescription>Latest orders</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Recent Orders</CardTitle>
+              <CardDescription>Latest transactions</CardDescription>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/orders')}
+              className="flex items-center text-primary"
+            >
+              View All <ArrowRight className="ml-1 h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent>
             {recentOrdersData && recentOrdersData.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {recentOrdersData.map((order) => (
-                  <div key={order.id} className="flex justify-between items-center border-b pb-2 last:border-0">
-                    <div>
-                      <p className="font-medium">Order #{order.id}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {order.customerName || "Guest Customer"}
-                      </p>
+                  <div 
+                    key={order.id} 
+                    className="flex justify-between items-center hover:bg-muted/50 p-2 rounded-md cursor-pointer"
+                    onClick={() => navigate('/orders')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Calendar className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium">Order {getSimplifiedOrderId(order.id)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(order.orderDate).toLocaleDateString('en-US', {
+                            day: 'numeric',
+                            month: 'short'
+                          })}
+                        </p>
+                      </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">₹{order.total.toLocaleString()}</p>
+                      <p className="font-semibold">₹{order.total.toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(order.orderDate).toLocaleDateString()}
+                        {order.items?.length || 0} item(s)
                       </p>
                     </div>
                   </div>
@@ -268,9 +315,9 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             {topSellingProducts && topSellingProducts.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {topSellingProducts.map((product, index) => (
-                  <div key={product.name} className="flex justify-between items-center border-b pb-2 last:border-0">
+                  <div key={product.name} className="flex justify-between items-center border-b pb-3 last:border-0 last:pb-0">
                     <div className="flex items-center">
                       <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary font-medium mr-2">
                         {index + 1}
@@ -306,9 +353,14 @@ const Dashboard = () => {
             {products && products.length > 0 ? (
               <div className="space-y-4">
                 {products.slice(0, 5).map((product) => {
-                  const stockPercentage = product.minimumStock
-                    ? Math.min(100, Math.round((product.stock / (product.minimumStock * 2)) * 100))
-                    : 100;
+                  let stockPercentage = 100;
+                  try {
+                    stockPercentage = product.minimumStock
+                      ? Math.min(100, Math.round((product.stock / (product.minimumStock * 2)) * 100))
+                      : 100;
+                  } catch (e) {
+                    console.error("Error calculating stock percentage:", e);
+                  }
                   
                   let statusColor = "bg-primary";
                   if (stockPercentage < 20) statusColor = "bg-destructive";

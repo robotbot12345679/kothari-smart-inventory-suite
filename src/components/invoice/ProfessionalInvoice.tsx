@@ -4,7 +4,7 @@ import { Order } from "@/types/pos";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import { sendInvoiceViaWhatsApp } from "@/services/WhatsAppService";
-import { getBillingTemplate, createPrintableInvoice } from "@/services/InvoiceService";
+import { getBillingTemplate, createPrintableInvoice, generateInvoiceNumber } from "@/services/InvoiceService";
 import InvoiceHeader from "./InvoiceHeader";
 import CustomerInfo from "./CustomerInfo";
 import InvoiceItems from "./InvoiceItems";
@@ -21,8 +21,8 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
   const { toast } = useToast();
   const orderDate = new Date(order.orderDate);
   const invoiceDate = format(orderDate, "MMM dd, yyyy");
-  const dueDate = format(new Date(orderDate.setDate(orderDate.getDate() + 30)), "MMM dd, yyyy");
-  const invoiceNumber = `INV-${order.id.replace('ORD', '')}`;
+  const dueDate = format(new Date(new Date(order.orderDate).setDate(new Date(order.orderDate).getDate() + 30)), "MMM dd, yyyy");
+  const invoiceNumber = generateInvoiceNumber(order.id);
   
   // Get billing template from localStorage or use defaults
   const billingTemplate = getBillingTemplate();
@@ -53,10 +53,16 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
       return;
     }
 
-    const subject = `Invoice #${invoiceNumber} - ${billingTemplate.shopName}`;
-    const body = `Dear ${order.customerName},\n\nPlease find attached your invoice #${invoiceNumber} for your recent purchase.\n\nThank you for your business!\n\nRegards,\n${billingTemplate.shopName}`;
+    const subject = `Invoice ${invoiceNumber} - ${billingTemplate.shopName}`;
+    const body = `Dear ${order.customerName},\n\nPlease find attached your invoice ${invoiceNumber} for your recent purchase.\n\nThank you for your business!\n\nRegards,\n${billingTemplate.shopName}`;
     
-    window.location.href = `mailto:${order.customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    // First generate the PDF
+    createPrintableInvoice(order);
+    
+    // Then open email client
+    setTimeout(() => {
+      window.location.href = `mailto:${order.customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    }, 500);
 
     toast({
       title: "Email Sharing",

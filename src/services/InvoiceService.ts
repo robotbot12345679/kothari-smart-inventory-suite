@@ -19,19 +19,30 @@ export const getBillingTemplate = () => {
   return storedTemplate ? JSON.parse(storedTemplate) : getDefaultBillingTemplate();
 };
 
+// Function to generate invoice number
+export const generateInvoiceNumber = (orderId) => {
+  if (!orderId) return "INV-0001";
+  // Extract just the numeric part if it follows a pattern like 'ORD12345'
+  const match = orderId.match(/[A-Za-z]+(\d+)/);
+  return match ? `INV-${match[1]}` : `INV-${orderId.replace('ORD', '')}`;
+};
+
 // Function to create a printable window for invoice
 export const createPrintableInvoice = (order: Order): Window | null => {
   const billingTemplate = getBillingTemplate();
-  const invoiceNumber = `INV-${order.id.replace('ORD', '')}`;
+  const invoiceNumber = generateInvoiceNumber(order.id);
   const orderDate = new Date(order.orderDate);
   const invoiceDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(orderDate);
+  
+  // Calculate due date (30 days from order date)
   const dueDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(
-    new Date(orderDate.setDate(orderDate.getDate() + 30))
+    new Date(new Date(order.orderDate).setDate(new Date(order.orderDate).getDate() + 30))
   );
   
   const printWindow = window.open('', '_blank', 'width=800,height=600');
   
   if (!printWindow) {
+    console.error('Failed to open print window. Check popup blocker settings.');
     return null;
   }
   
@@ -176,7 +187,7 @@ export const createPrintableInvoice = (order: Order): Window | null => {
           </div>
           <div style="text-align: right;">
             <div class="invoice-title">INVOICE</div>
-            <div class="invoice-number"># ${invoiceNumber}</div>
+            <div class="invoice-number">${invoiceNumber}</div>
             <div class="dates">
               <div>Issue Date: ${invoiceDate}</div>
               <div>Due Date: ${dueDate}</div>
