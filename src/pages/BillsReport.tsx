@@ -62,6 +62,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sendInvoiceViaWhatsApp, createPrintableInvoice } from "@/services/WhatsAppService";
 import ProfessionalInvoice from "@/components/invoice/ProfessionalInvoice";
+import { generateInvoiceNumber } from "@/services/InvoiceService";
 
 const BillsReport = () => {
   const { orders, updateOrderPaymentStatus } = useData();

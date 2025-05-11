@@ -26,6 +26,7 @@ interface DataContextType {
   login: (email: string, password: string) => boolean;
   logout: () => void;
   currentUser: { email: string; name: string } | null;
+  updateOrderPaymentStatus: (orderId: string, updatedOrder: Order) => void;
 }
 
 interface UserAccount {
