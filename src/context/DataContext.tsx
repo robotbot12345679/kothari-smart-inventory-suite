@@ -292,6 +292,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  // Add a new function to update order payment status
+  const updateOrderPaymentStatus = (orderId: string, updatedOrder: Order) => {
+    setOrders((prevOrders) => {
+      return prevOrders.map((order) => {
+        if (order.id === orderId) {
+          return {
+            ...order,
+            ...updatedOrder
+          };
+        }
+        return order;
+      });
+    });
+    
+    // Save to localStorage
+    const updatedOrders = orders.map((order) => {
+      if (order.id === orderId) {
+        return {
+          ...order,
+          ...updatedOrder
+        };
+      }
+      return order;
+    });
+    
+    localStorage.setItem("orders", JSON.stringify(updatedOrders));
+  };
+
   return (
     <DataContext.Provider value={{
       products,
@@ -316,7 +344,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createAccount,
       login,
       logout,
-      currentUser
+      currentUser,
+      updateOrderPaymentStatus
     }}>
       {children}
     </DataContext.Provider>

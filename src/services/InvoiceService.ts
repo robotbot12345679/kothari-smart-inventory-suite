@@ -19,12 +19,11 @@ export const getBillingTemplate = () => {
   return storedTemplate ? JSON.parse(storedTemplate) : getDefaultBillingTemplate();
 };
 
-// Function to generate invoice number
+// Function to generate simplified invoice number
 export const generateInvoiceNumber = (orderId) => {
-  if (!orderId) return "INV-0001";
-  // Extract just the numeric part if it follows a pattern like 'ORD12345'
-  const match = orderId.match(/[A-Za-z]+(\d+)/);
-  return match ? `INV-${match[1]}` : `INV-${orderId.replace('ORD', '')}`;
+  // Remove any non-numeric characters and format as simple invoice number
+  const numericPart = orderId.replace(/\D/g, '');
+  return `INV${numericPart}`;
 };
 
 // Function to create a printable window for invoice
@@ -34,10 +33,8 @@ export const createPrintableInvoice = (order: Order): Window | null => {
   const orderDate = new Date(order.orderDate);
   const invoiceDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(orderDate);
   
-  // Calculate due date (30 days from order date)
-  const dueDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(
-    new Date(new Date(order.orderDate).setDate(new Date(order.orderDate).getDate() + 30))
-  );
+  // Use proper customer name handling
+  const customerName = order.customerName && order.customerName.trim() ? order.customerName : "";
   
   const printWindow = window.open('', '_blank', 'width=800,height=600');
   
@@ -101,6 +98,10 @@ export const createPrintableInvoice = (order: Order): Window | null => {
           font-weight: bold;
           margin-top: 10px;
         }
+        .unpaid-badge {
+          background-color: #fff0c2;
+          color: #b7791f;
+        }
         .client-info {
           margin: 30px 0;
         }
@@ -161,6 +162,18 @@ export const createPrintableInvoice = (order: Order): Window | null => {
           border-top: 1px solid #e0e0e0;
           padding-top: 20px;
         }
+        .payment-section {
+          margin-top: 30px;
+          padding: 15px;
+          background-color: #f5f5f5;
+          border-radius: 5px;
+        }
+        .payment-qr {
+          text-align: center;
+        }
+        .payment-qr img {
+          max-width: 150px;
+        }
         @media print {
           body {
             padding: 0;
@@ -189,16 +202,15 @@ export const createPrintableInvoice = (order: Order): Window | null => {
             <div class="invoice-title">INVOICE</div>
             <div class="invoice-number">${invoiceNumber}</div>
             <div class="dates">
-              <div>Issue Date: ${invoiceDate}</div>
-              <div>Due Date: ${dueDate}</div>
+              <div>Date: ${invoiceDate}</div>
             </div>
-            <div class="status-badge">PAID</div>
+            <div class="status-badge ${order.paymentStatus !== 'Paid' ? 'unpaid-badge' : ''}">${order.paymentStatus || 'PAID'}</div>
           </div>
         </div>
         
         <div class="client-info">
           <div class="section-title">Bill To:</div>
-          <div style="font-weight: 500;">${order.customerName || "Guest Customer"}</div>
+          ${customerName ? `<div style="font-weight: 500;">${customerName}</div>` : ''}
           ${order.customerPhone ? `<div>Phone: ${order.customerPhone}</div>` : ''}
           ${order.customerEmail ? `<div>Email: ${order.customerEmail}</div>` : ''}
           ${order.shippingAddress ? `<div>${order.shippingAddress}</div>` : ''}
@@ -244,10 +256,27 @@ export const createPrintableInvoice = (order: Order): Window | null => {
             </tr>
             <tr>
               <td>Amount Paid</td>
+              <td class="amount-col">${order.paymentStatus === 'Paid' ? '₹' + order.total.toFixed(2) : '₹0.00'}</td>
+            </tr>
+            ${order.paymentStatus !== 'Paid' ? `
+            <tr>
+              <td>Balance Due</td>
               <td class="amount-col">₹${order.total.toFixed(2)}</td>
             </tr>
+            ` : ''}
           </table>
         </div>
+
+        ${order.paymentStatus !== 'Paid' ? `
+        <div class="payment-section">
+          <div class="section-title">Payment Information</div>
+          <p>Please scan the QR code below or use the payment link to complete your payment.</p>
+          <div class="payment-qr">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=ashokkothari738@oksbi%26pn=KothariDryFruits%26am=${order.total}%26cu=INR" alt="UPI Payment QR Code">
+            <p>UPI ID: ashokkothari738@oksbi</p>
+          </div>
+        </div>
+        ` : ''}
         
         <div class="footer">
           ${billingTemplate.footerText.map(line => `<p>${line}</p>`).join('')}

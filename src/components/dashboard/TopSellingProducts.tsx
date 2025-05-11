@@ -3,6 +3,7 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Tag } from "lucide-react";
 
 interface TopProductItem {
   name: string;
@@ -17,8 +18,8 @@ const TopSellingProducts: React.FC<TopSellingProductsProps> = ({ products }) => 
   const navigate = useNavigate();
 
   return (
-    <Card className="card-hover">
-      <CardHeader>
+    <Card className="card-hover h-full">
+      <CardHeader className="pb-2">
         <CardTitle>Top Selling Products</CardTitle>
         <CardDescription>Best performers</CardDescription>
       </CardHeader>
@@ -42,8 +43,9 @@ const TopSellingProducts: React.FC<TopSellingProductsProps> = ({ products }) => 
             ))}
           </div>
         ) : (
-          <div className="py-6 text-center">
-            <p className="mb-4">No sales data yet</p>
+          <div className="py-8 text-center">
+            <Tag className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+            <p className="mb-4 text-muted-foreground">No sales data yet</p>
             <Button variant="outline" onClick={() => navigate('/pos')}>
               Create Sale
             </Button>

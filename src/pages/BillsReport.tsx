@@ -64,7 +64,7 @@ import { sendInvoiceViaWhatsApp, createPrintableInvoice } from "@/services/Whats
 import ProfessionalInvoice from "@/components/invoice/ProfessionalInvoice";
 
 const BillsReport = () => {
-  const { orders } = useData();
+  const { orders, updateOrderPaymentStatus } = useData();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
@@ -77,14 +77,18 @@ const BillsReport = () => {
   const [customerEmail, setCustomerEmail] = useState("");
   const [messageText, setMessageText] = useState("");
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
+  const [isRecordPaymentOpen, setIsRecordPaymentOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [paymentDate, setPaymentDate] = useState<Date | undefined>(new Date());
   
   // Filter the orders based on search, payment method, and date
   const filteredOrders = orders.filter((order) => {
     // Filter by search (order ID or customer name)
     const matchesSearch =
       searchQuery === "" ||
-      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customerName.toLowerCase().includes(searchQuery.toLowerCase());
+      (order.id && order.id.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (order.customerName && order.customerName.toLowerCase().includes(searchQuery.toLowerCase()));
 
     // Filter by payment method
     const matchesPaymentMethod =
@@ -93,10 +97,10 @@ const BillsReport = () => {
     // Filter by date
     const matchesDate =
       !date ||
-      format(new Date(order.orderDate), "yyyy-MM-dd") === format(date, "yyyy-MM-dd");
+      (order.orderDate && format(new Date(order.orderDate), "yyyy-MM-dd") === format(date, "yyyy-MM-dd"));
 
     // Filter by source (POS vs Orders)
-    const orderSource = order.id.startsWith("ORD") ? "pos" : "orders";
+    const orderSource = order.id && order.id.startsWith("ORD") ? "pos" : "orders";
     const matchesSource = sourceFilter === "all" || orderSource === sourceFilter;
 
     return matchesSearch && matchesPaymentMethod && matchesDate && matchesSource;
@@ -154,9 +158,20 @@ const BillsReport = () => {
       shopName: "Kothari's Dry Fruits & More"
     };
     
-    const subject = `Invoice #${selectedOrder.id} - ${billingTemplate.shopName}`;
+    const invoiceNumber = generateInvoiceNumber(selectedOrder.id);
+    const orderDate = new Date(selectedOrder.orderDate);
+    const formattedDate = format(orderDate, 'PP');
+    
+    const subject = `Invoice ${invoiceNumber} - ${billingTemplate.shopName}`;
     const body = messageText || 
-      `Dear ${selectedOrder.customerName || "Customer"},\n\nPlease find attached your invoice #${selectedOrder.id} for Rs. ${selectedOrder.total.toFixed(2)} dated ${format(new Date(selectedOrder.orderDate), 'PP')}.\n\nThank you for shopping with us!\n\nRegards,\n${billingTemplate.shopName}`;
+      `Dear ${selectedOrder.customerName || ""},
+
+Please find attached your invoice #${invoiceNumber} for Rs. ${selectedOrder.total.toFixed(2)} dated ${formattedDate}.
+
+Thank you for shopping with us!
+
+Regards,
+${billingTemplate.shopName}`;
     
     // First, generate the PDF in a new window
     createPrintableInvoice(selectedOrder);
@@ -180,6 +195,39 @@ const BillsReport = () => {
     setMessageText("");
   };
 
+  // Function to record payment
+  const handleRecordPayment = () => {
+    if (!selectedOrder) return;
+    
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0 || amount > selectedOrder.total) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid payment amount",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Update the order payment status
+    const updatedOrder = {
+      ...selectedOrder,
+      paymentStatus: "Paid",
+      paymentMethod: paymentMethod,
+      paymentDate: paymentDate ? paymentDate.toISOString() : new Date().toISOString()
+    };
+    
+    updateOrderPaymentStatus(selectedOrder.id, updatedOrder);
+    
+    toast({
+      title: "Payment Recorded",
+      description: `Payment of ₹${amount.toFixed(2)} has been recorded for invoice ${generateInvoiceNumber(selectedOrder.id)}`,
+    });
+    
+    setIsRecordPaymentOpen(false);
+    setPaymentAmount("");
+  };
+
   // Function to generate payment link
   const generatePaymentLink = () => {
     if (!selectedOrder) {
@@ -193,7 +241,8 @@ const BillsReport = () => {
     
     // In a real implementation, this would call your payment gateway API
     // For now, we'll simulate creating a payment link
-    const dummyPaymentLink = `https://pay.example.com/invoice/${selectedOrder.id}?amount=${selectedOrder.total}`;
+    const invoiceNumber = generateInvoiceNumber(selectedOrder.id);
+    const dummyPaymentLink = `https://pay.example.com/invoice/${invoiceNumber}?amount=${selectedOrder.total}`;
     
     // Copy link to clipboard
     navigator.clipboard.writeText(dummyPaymentLink).then(() => {
@@ -248,7 +297,7 @@ const BillsReport = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {filteredOrders.filter(o => o.id.startsWith("ORD")).length} POS / {filteredOrders.filter(o => !o.id.startsWith("ORD")).length} Orders
+              {filteredOrders.filter(o => o.id && o.id.startsWith("ORD")).length} POS / {filteredOrders.filter(o => o.id && !o.id.startsWith("ORD")).length} Orders
             </div>
             <p className="text-xs text-muted-foreground">
               POS vs. Order Management bills
@@ -336,8 +385,8 @@ const BillsReport = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Bill #</TableHead>
-                <TableHead>Date & Time</TableHead>
+                <TableHead>Invoice #</TableHead>
+                <TableHead>Date</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Payment</TableHead>
                 <TableHead>Source</TableHead>
@@ -349,12 +398,13 @@ const BillsReport = () => {
               {filteredOrders.length > 0 ? (
                 filteredOrders.map((order) => {
                   const orderDate = new Date(order.orderDate);
-                  const source = order.id.startsWith("ORD") ? "POS" : "Order";
+                  const source = order.id?.startsWith("ORD") ? "POS" : "Order";
                   const isPaid = order.paymentStatus === "Paid";
+                  const invoiceNumber = generateInvoiceNumber(order.id);
                   
                   return (
                     <TableRow key={order.id}>
-                      <TableCell className="font-medium">{order.id}</TableCell>
+                      <TableCell className="font-medium">{invoiceNumber}</TableCell>
                       <TableCell>
                         {format(orderDate, "PPP")}
                         <br />
@@ -363,7 +413,7 @@ const BillsReport = () => {
                         </span>
                       </TableCell>
                       <TableCell>
-                        {order.customerName}
+                        {order.customerName ? order.customerName : "—"}
                         {order.customerPhone && (
                           <div className="text-xs text-muted-foreground">
                             {order.customerPhone}
@@ -372,7 +422,7 @@ const BillsReport = () => {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={isPaid ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
-                          {isPaid ? "Paid" : "Pending"} - {order.paymentMethod}
+                          {isPaid ? "Paid" : "Pending"} - {order.paymentMethod || "N/A"}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -417,13 +467,23 @@ const BillsReport = () => {
                               Share via Email
                             </DropdownMenuItem>
                             {!isPaid && (
-                              <DropdownMenuItem onClick={() => {
-                                setSelectedOrder(order);
-                                setIsPaymentLinkDialogOpen(true);
-                              }}>
-                                <Link className="mr-2 h-4 w-4" />
-                                Generate Payment Link
-                              </DropdownMenuItem>
+                              <>
+                                <DropdownMenuItem onClick={() => {
+                                  setSelectedOrder(order);
+                                  setPaymentAmount(order.total.toString());
+                                  setIsRecordPaymentOpen(true);
+                                }}>
+                                  <CreditCard className="mr-2 h-4 w-4" />
+                                  Record Payment
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => {
+                                  setSelectedOrder(order);
+                                  setIsPaymentLinkDialogOpen(true);
+                                }}>
+                                  <Link className="mr-2 h-4 w-4" />
+                                  Generate Payment Link
+                                </DropdownMenuItem>
+                              </>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -488,7 +548,7 @@ const BillsReport = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="message">Message</Label>
+                  <Label htmlFor="message">Custom Message (Optional)</Label>
                   <Textarea
                     id="message"
                     value={messageText}
@@ -516,7 +576,7 @@ const BillsReport = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="email-message">Message</Label>
+                  <Label htmlFor="email-message">Custom Message (Optional)</Label>
                   <Textarea
                     id="email-message"
                     value={messageText}
@@ -554,12 +614,12 @@ const BillsReport = () => {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-medium">Order ID:</span>
-                <span>{selectedOrder?.id}</span>
+                <span className="font-medium">Invoice Number:</span>
+                <span>{selectedOrder ? generateInvoiceNumber(selectedOrder.id) : ''}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-medium">Customer:</span>
-                <span>{selectedOrder?.customerName}</span>
+                <span>{selectedOrder?.customerName || "—"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-medium">Amount:</span>
@@ -578,6 +638,85 @@ const BillsReport = () => {
             </Button>
             <Button onClick={generatePaymentLink} className="gap-2">
               <CreditCard className="h-4 w-4" /> Generate Payment Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Record Payment Dialog */}
+      <Dialog open={isRecordPaymentOpen} onOpenChange={setIsRecordPaymentOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Record Payment</DialogTitle>
+            <DialogDescription>
+              Record a payment for invoice {selectedOrder ? generateInvoiceNumber(selectedOrder.id) : ''}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="payment-amount">Payment Amount</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5">₹</span>
+                <Input
+                  id="payment-amount"
+                  type="number"
+                  placeholder="0.00"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  className="pl-7"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="payment-method">Payment Method</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger id="payment-method">
+                  <SelectValue placeholder="Select payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="card">Card</SelectItem>
+                  <SelectItem value="upi">UPI</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="payment-date">Payment Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !paymentDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {paymentDate ? format(paymentDate, 'PPP') : "Select date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={paymentDate}
+                    onSelect={setPaymentDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRecordPaymentOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRecordPayment}>
+              Record Payment
             </Button>
           </DialogFooter>
         </DialogContent>

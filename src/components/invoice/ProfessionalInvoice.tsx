@@ -21,11 +21,13 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
   const { toast } = useToast();
   const orderDate = new Date(order.orderDate);
   const invoiceDate = format(orderDate, "MMM dd, yyyy");
-  const dueDate = format(new Date(new Date(order.orderDate).setDate(new Date(order.orderDate).getDate() + 30)), "MMM dd, yyyy");
   const invoiceNumber = generateInvoiceNumber(order.id);
   
   // Get billing template from localStorage or use defaults
   const billingTemplate = getBillingTemplate();
+  
+  // Use proper customer name handling
+  const customerName = order.customerName && order.customerName.trim() ? order.customerName : "";
   
   const handlePrint = () => {
     window.print();
@@ -54,7 +56,8 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
     }
 
     const subject = `Invoice ${invoiceNumber} - ${billingTemplate.shopName}`;
-    const body = `Dear ${order.customerName},\n\nPlease find attached your invoice ${invoiceNumber} for your recent purchase.\n\nThank you for your business!\n\nRegards,\n${billingTemplate.shopName}`;
+    const orderTimeStr = format(orderDate, "MMM dd, yyyy 'at' h:mm a");
+    const body = `Hello${customerName ? " " + customerName : ""},\n\nPlease find attached your invoice ${invoiceNumber} for your purchase on ${orderTimeStr}.\n\nThank you for your business!\n\nRegards,\n${billingTemplate.shopName}`;
     
     // First generate the PDF
     createPrintableInvoice(order);
@@ -110,12 +113,12 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
           logoUrl={billingTemplate.logoUrl || ""}
           invoiceNumber={invoiceNumber}
           invoiceDate={invoiceDate}
-          dueDate={dueDate}
+          paymentStatus={order.paymentStatus || "Paid"}
         />
         
         {/* Bill To Section */}
         <CustomerInfo 
-          customerName={order.customerName || ""}
+          customerName={customerName}
           customerPhone={order.customerPhone}
           customerEmail={order.customerEmail}
           shippingAddress={order.shippingAddress}
@@ -128,6 +131,7 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
         <InvoiceTotals 
           subtotal={order.subtotal}
           total={order.total}
+          paid={order.paymentStatus === "Paid" ? order.total : 0}
         />
         
         {/* Footer Notes */}
