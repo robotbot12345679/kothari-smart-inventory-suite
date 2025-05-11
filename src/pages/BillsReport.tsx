@@ -210,10 +210,10 @@ ${billingTemplate.shopName}`;
       return;
     }
     
-    // Update the order payment status
+    // Update the order payment status - Fix the type issue by ensuring paymentStatus is one of the allowed values
     const updatedOrder = {
       ...selectedOrder,
-      paymentStatus: "Paid",
+      paymentStatus: "Paid" as "Pending" | "Paid" | "Failed", // Type assertion to match the required union type
       paymentMethod: paymentMethod,
       paymentDate: paymentDate ? paymentDate.toISOString() : new Date().toISOString()
     };
