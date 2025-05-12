@@ -1,8 +1,6 @@
 
-// This file will serve as a wrapper to run electron without modifying package.json scripts
 const { spawn } = require('child_process');
 const path = require('path');
-const fs = require('fs');
 const waitOn = require('wait-on');
 
 console.log('Starting Electron development environment...');
