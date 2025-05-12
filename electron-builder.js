@@ -21,8 +21,8 @@ buildReactProcess.on('close', (code) => {
   
   console.log('React build complete. Building Electron app...');
   
-  // Then build the Electron app
-  const buildElectronProcess = spawn('npx', ['electron-builder', 'build', '--win', '--mac', '--linux'], {
+  // Then build the Electron app with npm instead of npx
+  const buildElectronProcess = spawn('npm', ['exec', 'electron-builder', 'build', '--win', '--mac', '--linux'], {
     shell: true,
     env: process.env,
     stdio: 'inherit'

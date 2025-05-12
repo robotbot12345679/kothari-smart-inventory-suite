@@ -46,7 +46,7 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
     image: "",
     price: 0,
     weight: 1,
-    unit: "kg",
+    unit: "g", // Changed default to grams
     stock: 0,
     isActive: true,
     priceIncludesGST: true
@@ -76,7 +76,7 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
         image: "",
         price: 0,
         weight: 1,
-        unit: "kg",
+        unit: "g", // Default to grams
         stock: 0,
         isActive: true,
         priceIncludesGST: true,
@@ -109,6 +109,7 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Add validation checks
     if (!formData.name || !formData.sku || !formData.category) {
       toast({
         title: "Validation Error",
@@ -137,7 +138,7 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
         price: formData.price || 0,
         stock: formData.stock || 0,
         weight: formData.weight || 1,
-        unit: (formData.unit as 'g' | 'kg' | 'box' | 'pcs') || 'kg',
+        unit: (formData.unit as 'g' | 'kg' | 'box' | 'pcs') || 'g', // Default to grams
         priceIncludesGST: true,
         expiryDate,
         minimumStock: formData.minimumStock,
@@ -270,7 +271,7 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
                 <div className="space-y-2">
                   <Label htmlFor="unit">Unit</Label>
                   <Select 
-                    value={formData.unit || "kg"} 
+                    value={formData.unit || "g"} 
                     onValueChange={(value) => handleSelectChange(value, "unit")}
                   >
                     <SelectTrigger>

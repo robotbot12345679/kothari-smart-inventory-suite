@@ -47,15 +47,25 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
   const salesData = prepareSalesData();
   const hasData = salesData.length > 0;
 
+  const handleChartClick = () => {
+    navigate('/analytics');
+  };
+
   return (
     <Card className="card-hover">
       <CardHeader>
-        <CardTitle>Sales Overview</CardTitle>
+        <CardTitle className="flex justify-between cursor-pointer" onClick={handleChartClick}>
+          Sales Overview
+          <span className="text-sm text-muted-foreground hover:text-primary underline">View Analytics</span>
+        </CardTitle>
         <CardDescription>Daily sales performance</CardDescription>
       </CardHeader>
       <CardContent className="pl-2">
         {hasData ? (
-          <div className="h-[300px] w-full">
+          <div 
+            className="h-[300px] w-full cursor-pointer" 
+            onClick={handleChartClick}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={salesData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />

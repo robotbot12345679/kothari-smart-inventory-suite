@@ -9,6 +9,20 @@ interface InventoryStatusProps {
   products: Product[];
 }
 
+// Color palette for product bars
+const productColors = [
+  "bg-emerald-500", // Green
+  "bg-amber-500",   // Amber/Orange
+  "bg-blue-500",    // Blue
+  "bg-purple-500",  // Purple
+  "bg-rose-500",    // Rose
+  "bg-indigo-500",  // Indigo
+  "bg-cyan-500",    // Cyan
+  "bg-fuchsia-500", // Fuchsia
+  "bg-lime-500",    // Lime
+  "bg-teal-500",    // Teal
+];
+
 const InventoryStatus: React.FC<InventoryStatusProps> = ({ products }) => {
   const navigate = useNavigate();
 
@@ -22,10 +36,9 @@ const InventoryStatus: React.FC<InventoryStatusProps> = ({ products }) => {
       console.error("Error calculating stock percentage:", e);
     }
     
-    let statusColor = "bg-primary";
-    if (stockPercentage < 20) statusColor = "bg-destructive";
-    else if (stockPercentage < 50) statusColor = "bg-amber-500";
-    else if (stockPercentage > 80) statusColor = "bg-emerald-500";
+    // Get color based on product index for variety
+    const colorIndex = product.id % productColors.length;
+    const statusColor = productColors[colorIndex];
     
     return { percentage: stockPercentage, statusColor };
   };

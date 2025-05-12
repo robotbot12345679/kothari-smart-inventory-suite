@@ -23,8 +23,8 @@ waitOn({ resources: ['http://localhost:8080'] }, (err) => {
   
   console.log('Vite server is ready. Starting Electron...');
   
-  // Then start Electron
-  const electronProcess = spawn('npx', ['electron', '.', '--no-sandbox'], {
+  // Then start Electron with npm instead of npx to avoid git clone issues
+  const electronProcess = spawn('npm', ['exec', 'electron', '.', '--no-sandbox'], {
     shell: true,
     env: {
       ...process.env,

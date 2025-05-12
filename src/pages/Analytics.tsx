@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,16 @@ import {
 } from "@/components/ui/select";
 import { useCustomerMetrics } from "@/hooks/useCustomerMetrics";
 import { useData } from "@/context/DataContext";
+import AddSalesDialog from "@/components/analytics/AddSalesDialog";
+import {
+  ResponsiveContainer,
+  BarChart,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Bar,
+  CartesianGrid,
+} from "recharts";
 
 const Analytics = () => {
   const { 
@@ -45,8 +54,37 @@ const Analytics = () => {
     return orders.filter(order => new Date(order.orderDate) >= startDate);
   };
   
+  // Prepare monthly sales data
+  const prepareSalesData = () => {
+    const salesByDate = {};
+    
+    if (!orders || !orders.length) return [];
+    
+    // Group sales by date
+    orders.forEach((order) => {
+      const date = new Date(order.orderDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (!salesByDate[date]) {
+        salesByDate[date] = 0;
+      }
+      salesByDate[date] += order.total;
+    });
+    
+    // Convert to array format for Recharts
+    return Object.keys(salesByDate)
+      .sort((a, b) => {
+        const dateA = new Date(a);
+        const dateB = new Date(b);
+        return dateA.getTime() - dateB.getTime();
+      })
+      .map((date) => ({
+        date,
+        sales: salesByDate[date],
+      }));
+  };
+  
   const periodOrders = getOrdersForPeriod();
   const periodRevenue = periodOrders.reduce((sum, order) => sum + order.total, 0);
+  const salesData = prepareSalesData();
 
   return (
     <div className="space-y-6">
@@ -65,6 +103,7 @@ const Analytics = () => {
               <SelectItem value="custom">Custom Range</SelectItem>
             </SelectContent>
           </Select>
+          <AddSalesDialog />
           <Button variant="outline" className="gap-1">
             <RefreshCw className="h-4 w-4" />
             Refresh
@@ -148,12 +187,35 @@ const Analytics = () => {
                 <CardTitle>Sales Trend</CardTitle>
                 <CardDescription>Daily sales over the selected period ({period} days)</CardDescription>
               </CardHeader>
-              <CardContent className="h-[350px] flex items-center justify-center">
-                <div className="text-muted-foreground flex flex-col items-center">
-                  <LineChart className="h-12 w-12 mb-2 opacity-50" />
-                  <p>Sales trend chart will appear here</p>
-                  <p className="text-xs">Showing data for last {period} days</p>
-                </div>
+              <CardContent className="h-[350px]">
+                {salesData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={salesData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="date" />
+                      <YAxis 
+                        tickFormatter={(value) => `₹${value}`} 
+                        tickCount={5}
+                      />
+                      <Tooltip 
+                        formatter={(value) => [`₹${value}`, 'Sales']}
+                        labelFormatter={(label) => `Date: ${label}`}
+                      />
+                      <Bar 
+                        dataKey="sales" 
+                        name="Sales" 
+                        fill="#c87137" 
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-muted-foreground flex flex-col h-full items-center justify-center">
+                    <LineChart className="h-12 w-12 mb-2 opacity-50" />
+                    <p>No sales data available for the selected period</p>
+                    <p className="text-xs mt-2">Try adding missing sales data or changing the time period</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
