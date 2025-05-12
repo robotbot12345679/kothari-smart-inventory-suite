@@ -41,13 +41,13 @@ const AddSalesDialog = () => {
     const manualOrder: Order = {
       id: uuidv4(),
       orderDate: new Date(date).toISOString(),
-      orderStatus: "Delivered", // Changed from "Completed" to "Delivered" to match the type
+      orderStatus: "Delivered",
       paymentStatus: "Paid",
       paymentMethod: "Cash",
       items: [],
       total: parseFloat(totalSales),
       subtotal: parseFloat(totalSales),
-      tax: 0,
+      gst: 0, // Changed from 'tax' to 'gst' to match the Order type
       customerName: "Manual Entry",
       customerEmail: "",
       customerPhone: "",

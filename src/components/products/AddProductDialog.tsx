@@ -30,9 +30,10 @@ interface AddProductDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product?: Product | null;
+  defaultUnit?: 'g' | 'kg' | 'box' | 'pcs'; // Added defaultUnit prop
 }
 
-const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps) => {
+const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g' }: AddProductDialogProps) => {
   const { categories, addProduct, updateProduct } = useData();
   const { toast } = useToast();
   const isEditing = !!product;
@@ -46,7 +47,7 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
     image: "",
     price: 0,
     weight: 1,
-    unit: "g", // Changed default to grams
+    unit: defaultUnit, // Use the defaultUnit prop here
     stock: 0,
     isActive: true,
     priceIncludesGST: true
@@ -271,7 +272,7 @@ const AddProductDialog = ({ open, onOpenChange, product }: AddProductDialogProps
                 <div className="space-y-2">
                   <Label htmlFor="unit">Unit</Label>
                   <Select 
-                    value={formData.unit || "g"} 
+                    value={formData.unit || defaultUnit} 
                     onValueChange={(value) => handleSelectChange(value, "unit")}
                   >
                     <SelectTrigger>
