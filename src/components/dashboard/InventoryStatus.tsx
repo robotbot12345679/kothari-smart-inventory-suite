@@ -9,18 +9,24 @@ interface InventoryStatusProps {
   products: Product[];
 }
 
-// Color palette for product bars
+// Enhanced color palette for product bars with more variety
 const productColors = [
-  "bg-emerald-500", // Green
-  "bg-amber-500",   // Amber/Orange
-  "bg-blue-500",    // Blue
-  "bg-purple-500",  // Purple
-  "bg-rose-500",    // Rose
-  "bg-indigo-500",  // Indigo
-  "bg-cyan-500",    // Cyan
-  "bg-fuchsia-500", // Fuchsia
-  "bg-lime-500",    // Lime
-  "bg-teal-500",    // Teal
+  "bg-emerald-500",  // Green
+  "bg-amber-500",    // Amber/Orange
+  "bg-blue-500",     // Blue
+  "bg-purple-500",   // Purple
+  "bg-rose-500",     // Rose
+  "bg-indigo-500",   // Indigo
+  "bg-cyan-500",     // Cyan
+  "bg-fuchsia-500",  // Fuchsia
+  "bg-lime-500",     // Lime
+  "bg-teal-500",     // Teal
+  "bg-sky-500",      // Sky
+  "bg-orange-500",   // Orange
+  "bg-pink-500",     // Pink
+  "bg-yellow-500",   // Yellow
+  "bg-red-500",      // Red
+  "bg-violet-500",   // Violet
 ];
 
 const InventoryStatus: React.FC<InventoryStatusProps> = ({ products }) => {
@@ -36,7 +42,7 @@ const InventoryStatus: React.FC<InventoryStatusProps> = ({ products }) => {
       console.error("Error calculating stock percentage:", e);
     }
     
-    // Get color based on product index for variety
+    // Get color based on product id for consistent but varied colors
     const colorIndex = product.id % productColors.length;
     const statusColor = productColors[colorIndex];
     

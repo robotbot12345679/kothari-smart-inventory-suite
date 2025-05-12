@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -53,8 +53,8 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
 
   return (
     <Card className="card-hover">
-      <CardHeader>
-        <CardTitle className="flex justify-between cursor-pointer" onClick={handleChartClick}>
+      <CardHeader className="cursor-pointer" onClick={handleChartClick}>
+        <CardTitle className="flex justify-between">
           Sales Overview
           <span className="text-sm text-muted-foreground hover:text-primary underline">View Analytics</span>
         </CardTitle>

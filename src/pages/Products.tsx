@@ -151,6 +151,7 @@ const Products = () => {
         open={isAddProductOpen} 
         onOpenChange={setIsAddProductOpen}
         product={selectedProduct}
+        defaultUnit="g" // Set default unit to grams
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

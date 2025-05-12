@@ -41,7 +41,7 @@ const AddSalesDialog = () => {
     const manualOrder: Order = {
       id: uuidv4(),
       orderDate: new Date(date).toISOString(),
-      orderStatus: "Completed",
+      orderStatus: "Delivered", // Changed from "Completed" to "Delivered" to match the type
       paymentStatus: "Paid",
       paymentMethod: "Cash",
       items: [],
@@ -53,7 +53,6 @@ const AddSalesDialog = () => {
       customerPhone: "",
       shippingAddress: "",
       notes: "Manually added sales record",
-      manualEntry: true,
     };
 
     addOrder(manualOrder);
