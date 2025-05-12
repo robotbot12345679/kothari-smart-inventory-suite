@@ -1,0 +1,23 @@
+
+{
+  "appId": "com.kotharis.dryfruits.pos",
+  "productName": "Kothari's Dry Fruits POS",
+  "directories": {
+    "output": "dist_electron"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*"
+  ],
+  "mac": {
+    "category": "public.app-category.business",
+    "icon": "public/favicon.ico"
+  },
+  "win": {
+    "icon": "public/favicon.ico"
+  },
+  "linux": {
+    "icon": "public/favicon.ico",
+    "category": "Office"
+  }
+}
