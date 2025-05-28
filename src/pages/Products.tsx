@@ -1,11 +1,14 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Filter } from "lucide-react";
+import { Plus, Search, Filter, FileText, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import ProductCard from "@/components/products/ProductCard";
 import AddProductDialog from "@/components/products/AddProductDialog";
+import ImportProductsDialog from "@/components/products/ImportProductsDialog";
 import { useData } from "@/context/DataContext";
 import { useToast } from "@/components/ui/use-toast";
+import { exportToCSV, downloadCSV } from "@/lib/csv-exporter";
 import type { Product } from "@/types/pos";
 import { 
   Select,
@@ -29,6 +32,7 @@ const Products = () => {
   const { products, categories, deleteProduct } = useData();
   const { toast } = useToast();
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [isImportProductsOpen, setIsImportProductsOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -62,6 +66,58 @@ const Products = () => {
     setIsAddProductOpen(true);
   };
 
+  const handleImportProducts = () => {
+    setIsImportProductsOpen(true);
+  };
+
+  const handleExportProducts = () => {
+    if (products.length === 0) {
+      toast({
+        title: "No products to export",
+        description: "Add some products first before exporting.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Prepare product data for export with all details
+      const exportData = products.map(product => ({
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        category: product.category,
+        description: product.description || '',
+        barcode: product.barcode || '',
+        price: product.price,
+        stock: product.stock,
+        weight: product.weight,
+        unit: product.unit,
+        minimumStock: product.minimumStock || '',
+        expiryDate: product.expiryDate || '',
+        isActive: product.isActive ? 'Yes' : 'No',
+        priceIncludesGST: product.priceIncludesGST ? 'Yes' : 'No'
+      }));
+
+      const csvContent = exportToCSV(exportData);
+      const filename = `products_export_${new Date().toISOString().split('T')[0]}.csv`;
+      
+      downloadCSV(csvContent, filename);
+      
+      toast({
+        title: "Export Successful",
+        description: `Exported ${products.length} products to ${filename}`,
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export products. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
@@ -82,9 +138,17 @@ const Products = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Product Management</h1>
-        <Button onClick={handleAddNewProduct}>
-          <Plus className="mr-2 h-4 w-4" /> Add Product
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleExportProducts} variant="outline">
+            <Download className="mr-2 h-4 w-4" /> Export CSV
+          </Button>
+          <Button onClick={handleImportProducts} variant="outline">
+            <FileText className="mr-2 h-4 w-4" /> Import CSV
+          </Button>
+          <Button onClick={handleAddNewProduct}>
+            <Plus className="mr-2 h-4 w-4" /> Add Product
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
@@ -127,12 +191,17 @@ const Products = () => {
           <h3 className="text-lg font-semibold">No products found</h3>
           <p className="text-muted-foreground">
             {products.length === 0 
-              ? "Start by adding your first product" 
+              ? "Start by adding your first product or import products from CSV" 
               : "Try changing your search or filter criteria"}
           </p>
-          <Button onClick={handleAddNewProduct} className="mt-4">
-            <Plus className="mr-2 h-4 w-4" /> Add Product
-          </Button>
+          <div className="flex gap-4 justify-center mt-4">
+            <Button onClick={handleImportProducts} variant="outline">
+              <FileText className="mr-2 h-4 w-4" /> Import CSV
+            </Button>
+            <Button onClick={handleAddNewProduct}>
+              <Plus className="mr-2 h-4 w-4" /> Add Product
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 overflow-y-auto max-h-[calc(100vh-250px)]">
@@ -151,7 +220,12 @@ const Products = () => {
         open={isAddProductOpen} 
         onOpenChange={setIsAddProductOpen}
         product={selectedProduct}
-        defaultUnit="g" // Set default unit to grams
+        defaultUnit="g"
+      />
+
+      <ImportProductsDialog
+        open={isImportProductsOpen}
+        onOpenChange={setIsImportProductsOpen}
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
