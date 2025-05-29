@@ -47,12 +47,11 @@ const AddSalesDialog = () => {
       items: [],
       total: parseFloat(totalSales),
       subtotal: parseFloat(totalSales),
-      gst: 0, // Changed from 'tax' to 'gst' to match the Order type
+      gst: 0,
       customerName: "Manual Entry",
       customerEmail: "",
       customerPhone: "",
       shippingAddress: "",
-      notes: "Manually added sales record",
     };
 
     addOrder(manualOrder);
