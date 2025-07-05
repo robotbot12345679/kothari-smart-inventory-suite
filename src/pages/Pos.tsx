@@ -20,7 +20,8 @@ import {
   Save,
   Barcode,
   Package,
-  Share
+  Share,
+  Check
 } from "lucide-react";
 import {
   Dialog,
@@ -47,6 +48,7 @@ const Pos = () => {
   const [paymentModalOpen, setPaymentModalOpen] = useState<boolean>(false);
   const [barcodeModalOpen, setBarcodeModalOpen] = useState<boolean>(false);
   const [barcodeInput, setBarcodeInput] = useState<string>("");
+  const [scannedProducts, setScannedProducts] = useState<Product[]>([]);
   const [amountTendered, setAmountTendered] = useState<string>("");
   const [currentTab, setCurrentTab] = useState<string>("upi");
   const [customerInfo, setCustomerInfo] = useState({
@@ -156,15 +158,25 @@ const Pos = () => {
 
   const handleBarcodeSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!barcodeInput) return;
+    if (!barcodeInput.trim()) return;
     
-    const product = findProductByBarcode(barcodeInput);
+    const product = findProductByBarcode(barcodeInput.trim());
     if (product) {
-      addToCart(product);
-      toast({
-        title: "Product added",
-        description: `${product.name} has been added to the cart`
-      });
+      // Check if product is already in scanned products list
+      const existingProduct = scannedProducts.find(p => p.id === product.id);
+      if (!existingProduct) {
+        setScannedProducts(prev => [...prev, product]);
+        toast({
+          title: "Product scanned",
+          description: `${product.name} has been scanned and added to the list`
+        });
+      } else {
+        toast({
+          title: "Product already scanned",
+          description: `${product.name} is already in the scanned list`,
+          variant: "default"
+        });
+      }
     } else {
       toast({
         title: "Product not found",
@@ -173,6 +185,33 @@ const Pos = () => {
       });
     }
     
+    setBarcodeInput("");
+    // Keep the modal open - don't close it
+  };
+
+  const handleConfirmScannedProducts = () => {
+    // Add all scanned products to cart
+    scannedProducts.forEach(product => {
+      addToCart(product);
+    });
+    
+    toast({
+      title: "Products added to cart",
+      description: `${scannedProducts.length} products have been added to the cart`
+    });
+    
+    // Clear scanned products and close modal
+    setScannedProducts([]);
+    setBarcodeInput("");
+    setBarcodeModalOpen(false);
+  };
+
+  const handleRemoveScannedProduct = (productId: number) => {
+    setScannedProducts(prev => prev.filter(p => p.id !== productId));
+  };
+
+  const handleCloseBarcodeModal = () => {
+    setScannedProducts([]);
     setBarcodeInput("");
     setBarcodeModalOpen(false);
   };
@@ -692,38 +731,78 @@ const Pos = () => {
         </div>
       </div>
 
-      <Dialog open={barcodeModalOpen} onOpenChange={setBarcodeModalOpen}>
-        <DialogContent className="sm:max-w-[400px]">
+      <Dialog open={barcodeModalOpen} onOpenChange={handleCloseBarcodeModal}>
+        <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Scan Barcode</DialogTitle>
+            <DialogTitle>Scan Barcodes</DialogTitle>
             <DialogDescription>
-              Enter or scan product barcode to quickly add to cart
+              Scan multiple product barcodes and confirm to add them all to cart
             </DialogDescription>
           </DialogHeader>
           
-          <form onSubmit={handleBarcodeSearch} className="space-y-4">
-            <div className="flex flex-col items-center space-y-4">
-              <Barcode className="h-16 w-16 text-primary mb-2" />
-              <div className="w-full space-y-2">
-                <Label htmlFor="barcode-input">Barcode</Label>
-                <Input
-                  id="barcode-input"
-                  placeholder="Enter barcode number"
-                  value={barcodeInput}
-                  onChange={(e) => setBarcodeInput(e.target.value)}
-                  ref={barcodeInputRef}
-                  autoFocus
-                />
+          <div className="space-y-4">
+            <form onSubmit={handleBarcodeSearch} className="space-y-4">
+              <div className="flex flex-col items-center space-y-4">
+                <Barcode className="h-16 w-16 text-primary mb-2" />
+                <div className="w-full space-y-2">
+                  <Label htmlFor="barcode-input">Barcode</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="barcode-input"
+                      placeholder="Enter barcode number"
+                      value={barcodeInput}
+                      onChange={(e) => setBarcodeInput(e.target.value)}
+                      ref={barcodeInputRef}
+                      autoFocus
+                    />
+                    <Button type="submit" size="sm">
+                      Scan
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
+            </form>
+
+            {scannedProducts.length > 0 && (
+              <div className="space-y-2">
+                <Label>Scanned Products ({scannedProducts.length})</Label>
+                <div className="border rounded-lg p-2 max-h-48 overflow-y-auto">
+                  {scannedProducts.map((product) => (
+                    <div key={product.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{product.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          ₹{product.price} • SKU: {product.sku}
+                        </div>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleRemoveScannedProduct(product.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
             
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setBarcodeModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">Find Product</Button>
-            </DialogFooter>
-          </form>
+          <DialogFooter className="flex justify-between">
+            <Button type="button" variant="outline" onClick={handleCloseBarcodeModal}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmScannedProducts}
+              disabled={scannedProducts.length === 0}
+              className="gap-2"
+            >
+              <Check className="h-4 w-4" />
+              Add {scannedProducts.length} Products to Cart
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
