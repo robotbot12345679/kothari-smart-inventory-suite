@@ -40,7 +40,7 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
     
     // Initialize all hours (6 AM to 10 PM)
     for (let hour = 6; hour <= 22; hour++) {
-      const timeLabel = hour <= 12 ? `${hour}AM` : `${hour - 12}PM`;
+      let timeLabel = hour <= 12 ? `${hour}AM` : `${hour - 12}PM`;
       if (hour === 12) timeLabel = "12PM";
       hourlyData[timeLabel] = 0;
     }
@@ -49,7 +49,7 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
     todaysOrders.forEach((order) => {
       const orderHour = new Date(order.orderDate).getHours();
       if (orderHour >= 6 && orderHour <= 22) {
-        const timeLabel = orderHour <= 12 ? `${orderHour}AM` : `${orderHour - 12}PM`;
+        let timeLabel = orderHour <= 12 ? `${orderHour}AM` : `${orderHour - 12}PM`;
         const displayLabel = orderHour === 12 ? "12PM" : timeLabel;
         hourlyData[displayLabel] += order.total;
       }
