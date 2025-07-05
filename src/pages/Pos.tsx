@@ -39,6 +39,11 @@ import { useUniqueId } from "@/hooks/useUniqueId";
 import ProfessionalInvoice from "@/components/invoice/ProfessionalInvoice";
 import { sendInvoiceViaWhatsApp } from "@/services/WhatsAppService";
 
+// Add interface for scanned products with quantity
+interface ScannedProduct extends Product {
+  scannedQuantity: number;
+}
+
 const Pos = () => {
   const { products, categories, addOrder, findProductByBarcode, updateInventoryAfterSale } = useData();
   const { toast } = useToast();
@@ -48,7 +53,7 @@ const Pos = () => {
   const [paymentModalOpen, setPaymentModalOpen] = useState<boolean>(false);
   const [barcodeModalOpen, setBarcodeModalOpen] = useState<boolean>(false);
   const [barcodeInput, setBarcodeInput] = useState<string>("");
-  const [scannedProducts, setScannedProducts] = useState<Product[]>([]);
+  const [scannedProducts, setScannedProducts] = useState<ScannedProduct[]>([]);
   const [amountTendered, setAmountTendered] = useState<string>("");
   const [currentTab, setCurrentTab] = useState<string>("upi");
   const [customerInfo, setCustomerInfo] = useState({
@@ -163,18 +168,38 @@ const Pos = () => {
     const product = findProductByBarcode(barcodeInput.trim());
     if (product) {
       // Check if product is already in scanned products list
-      const existingProduct = scannedProducts.find(p => p.id === product.id);
-      if (!existingProduct) {
-        setScannedProducts(prev => [...prev, product]);
+      const existingProductIndex = scannedProducts.findIndex(p => p.id === product.id);
+      
+      if (existingProductIndex >= 0) {
+        // Product already exists, increase quantity
+        const updatedScannedProducts = [...scannedProducts];
+        const currentQuantity = updatedScannedProducts[existingProductIndex].scannedQuantity;
+        
+        // Check stock limit
+        if (currentQuantity >= product.stock) {
+          toast({
+            title: "Stock limit reached",
+            description: `Only ${product.stock} units available in stock for ${product.name}`,
+            variant: "destructive"
+          });
+        } else {
+          updatedScannedProducts[existingProductIndex].scannedQuantity += 1;
+          setScannedProducts(updatedScannedProducts);
+          toast({
+            title: "Product scanned",
+            description: `${product.name} quantity increased to ${updatedScannedProducts[existingProductIndex].scannedQuantity}`
+          });
+        }
+      } else {
+        // New product, add to list
+        const scannedProduct: ScannedProduct = {
+          ...product,
+          scannedQuantity: 1
+        };
+        setScannedProducts(prev => [...prev, scannedProduct]);
         toast({
           title: "Product scanned",
           description: `${product.name} has been scanned and added to the list`
-        });
-      } else {
-        toast({
-          title: "Product already scanned",
-          description: `${product.name} is already in the scanned list`,
-          variant: "default"
         });
       }
     } else {
@@ -190,14 +215,50 @@ const Pos = () => {
   };
 
   const handleConfirmScannedProducts = () => {
-    // Add all scanned products to cart
-    scannedProducts.forEach(product => {
-      addToCart(product);
+    // Add all scanned products to cart with their quantities
+    scannedProducts.forEach(scannedProduct => {
+      const existingItemIndex = cart.findIndex(item => item.id === scannedProduct.id);
+      
+      if (existingItemIndex >= 0) {
+        // Product already in cart, add the scanned quantity
+        const updatedCart = [...cart];
+        const newQuantity = updatedCart[existingItemIndex].quantity + scannedProduct.scannedQuantity;
+        
+        // Check stock limit
+        if (newQuantity <= scannedProduct.stock) {
+          updatedCart[existingItemIndex].quantity = newQuantity;
+          setCart(updatedCart);
+        } else {
+          // Add only what's available
+          const availableQuantity = scannedProduct.stock - updatedCart[existingItemIndex].quantity;
+          if (availableQuantity > 0) {
+            updatedCart[existingItemIndex].quantity = scannedProduct.stock;
+            setCart(updatedCart);
+            toast({
+              title: "Stock limit reached",
+              description: `Only ${availableQuantity} more units of ${scannedProduct.name} were added due to stock limit`,
+              variant: "destructive"
+            });
+          }
+        }
+      } else {
+        // Product not in cart, add as new item
+        const cartItem: CartItem = {
+          id: scannedProduct.id,
+          name: scannedProduct.name,
+          price: scannedProduct.price,
+          quantity: Math.min(scannedProduct.scannedQuantity, scannedProduct.stock),
+          unit: scannedProduct.unit,
+          weight: scannedProduct.weight
+        };
+        setCart(prev => [...prev, cartItem]);
+      }
     });
     
+    const totalItems = scannedProducts.reduce((sum, product) => sum + product.scannedQuantity, 0);
     toast({
       title: "Products added to cart",
-      description: `${scannedProducts.length} products have been added to the cart`
+      description: `${totalItems} items from ${scannedProducts.length} products have been added to the cart`
     });
     
     // Clear scanned products and close modal
@@ -208,6 +269,28 @@ const Pos = () => {
 
   const handleRemoveScannedProduct = (productId: number) => {
     setScannedProducts(prev => prev.filter(p => p.id !== productId));
+  };
+
+  const updateScannedProductQuantity = (productId: number, action: 'increase' | 'decrease') => {
+    setScannedProducts(prev => prev.map(product => {
+      if (product.id === productId) {
+        const newQuantity = action === 'increase' 
+          ? Math.min(product.scannedQuantity + 1, product.stock)
+          : Math.max(product.scannedQuantity - 1, 1);
+        
+        if (action === 'increase' && product.scannedQuantity >= product.stock) {
+          toast({
+            title: "Stock limit reached",
+            description: `Only ${product.stock} units available in stock`,
+            variant: "destructive"
+          });
+          return product;
+        }
+        
+        return { ...product, scannedQuantity: newQuantity };
+      }
+      return product;
+    }));
   };
 
   const handleCloseBarcodeModal = () => {
@@ -775,14 +858,35 @@ const Pos = () => {
                           ₹{product.price} • SKU: {product.sku}
                         </div>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleRemoveScannedProduct(product.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => updateScannedProductQuantity(product.id, 'decrease')}
+                          disabled={product.scannedQuantity <= 1}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-8 text-center text-sm font-medium">{product.scannedQuantity}</span>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => updateScannedProductQuantity(product.id, 'increase')}
+                          disabled={product.scannedQuantity >= product.stock}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleRemoveScannedProduct(product.id)}
+                          className="text-destructive hover:text-destructive h-6 w-6 p-0 ml-1"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -800,7 +904,7 @@ const Pos = () => {
               className="gap-2"
             >
               <Check className="h-4 w-4" />
-              Add {scannedProducts.length} Products to Cart
+              Add {scannedProducts.reduce((sum, p) => sum + p.scannedQuantity, 0)} Items to Cart
             </Button>
           </DialogFooter>
         </DialogContent>
