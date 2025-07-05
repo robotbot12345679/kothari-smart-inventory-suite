@@ -84,27 +84,9 @@ const Pos = () => {
   });
 
   const addToCart = (product: Product) => {
-    if (product.stock <= 0) {
-      toast({
-        title: "Cannot add product",
-        description: "This product is out of stock",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     const existingItemIndex = cart.findIndex(item => item.id === product.id);
     
     if (existingItemIndex >= 0) {
-      if (cart[existingItemIndex].quantity >= product.stock) {
-        toast({
-          title: "Stock limit reached",
-          description: `Only ${product.stock} units available in stock`,
-          variant: "destructive"
-        });
-        return;
-      }
-      
       const updatedCart = [...cart];
       updatedCart[existingItemIndex].quantity += 1;
       setCart(updatedCart);
@@ -141,17 +123,6 @@ const Pos = () => {
 
     const updatedCart = cart.map(item => {
       if (item.id === itemId) {
-        const product = products.find(p => p.id === item.id);
-        
-        if (action === 'increase' && product && item.quantity >= product.stock) {
-          toast({
-            title: "Stock limit reached",
-            description: `Only ${product.stock} units available in stock`,
-            variant: "destructive"
-          });
-          return item;
-        }
-        
         const newQuantity = action === 'increase' ? item.quantity + 1 : item.quantity - 1;
         return { ...item, quantity: Math.max(newQuantity, 0) };
       }
@@ -173,23 +144,12 @@ const Pos = () => {
       if (existingProductIndex >= 0) {
         // Product already exists, increase quantity
         const updatedScannedProducts = [...scannedProducts];
-        const currentQuantity = updatedScannedProducts[existingProductIndex].scannedQuantity;
-        
-        // Check stock limit
-        if (currentQuantity >= product.stock) {
-          toast({
-            title: "Stock limit reached",
-            description: `Only ${product.stock} units available in stock for ${product.name}`,
-            variant: "destructive"
-          });
-        } else {
-          updatedScannedProducts[existingProductIndex].scannedQuantity += 1;
-          setScannedProducts(updatedScannedProducts);
-          toast({
-            title: "Product scanned",
-            description: `${product.name} quantity increased to ${updatedScannedProducts[existingProductIndex].scannedQuantity}`
-          });
-        }
+        updatedScannedProducts[existingProductIndex].scannedQuantity += 1;
+        setScannedProducts(updatedScannedProducts);
+        toast({
+          title: "Product scanned",
+          description: `${product.name} quantity increased to ${updatedScannedProducts[existingProductIndex].scannedQuantity}`
+        });
       } else {
         // New product, add to list
         const scannedProduct: ScannedProduct = {
@@ -223,31 +183,15 @@ const Pos = () => {
         // Product already in cart, add the scanned quantity
         const updatedCart = [...cart];
         const newQuantity = updatedCart[existingItemIndex].quantity + scannedProduct.scannedQuantity;
-        
-        // Check stock limit
-        if (newQuantity <= scannedProduct.stock) {
-          updatedCart[existingItemIndex].quantity = newQuantity;
-          setCart(updatedCart);
-        } else {
-          // Add only what's available
-          const availableQuantity = scannedProduct.stock - updatedCart[existingItemIndex].quantity;
-          if (availableQuantity > 0) {
-            updatedCart[existingItemIndex].quantity = scannedProduct.stock;
-            setCart(updatedCart);
-            toast({
-              title: "Stock limit reached",
-              description: `Only ${availableQuantity} more units of ${scannedProduct.name} were added due to stock limit`,
-              variant: "destructive"
-            });
-          }
-        }
+        updatedCart[existingItemIndex].quantity = newQuantity;
+        setCart(updatedCart);
       } else {
         // Product not in cart, add as new item
         const cartItem: CartItem = {
           id: scannedProduct.id,
           name: scannedProduct.name,
           price: scannedProduct.price,
-          quantity: Math.min(scannedProduct.scannedQuantity, scannedProduct.stock),
+          quantity: scannedProduct.scannedQuantity,
           unit: scannedProduct.unit,
           weight: scannedProduct.weight
         };
@@ -275,17 +219,8 @@ const Pos = () => {
     setScannedProducts(prev => prev.map(product => {
       if (product.id === productId) {
         const newQuantity = action === 'increase' 
-          ? Math.min(product.scannedQuantity + 1, product.stock)
+          ? product.scannedQuantity + 1
           : Math.max(product.scannedQuantity - 1, 1);
-        
-        if (action === 'increase' && product.scannedQuantity >= product.stock) {
-          toast({
-            title: "Stock limit reached",
-            description: `Only ${product.stock} units available in stock`,
-            variant: "destructive"
-          });
-          return product;
-        }
         
         return { ...product, scannedQuantity: newQuantity };
       }
@@ -651,17 +586,15 @@ const Pos = () => {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="flex-1 overflow-y-auto p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredProducts.length > 0 ? (
               filteredProducts.map(product => (
                 <Card
                   key={product.id}
-                  className={`card-hover cursor-pointer overflow-hidden h-full flex flex-col ${
-                    product.stock <= 0 ? "opacity-50" : ""
-                  }`}
+                  className="card-hover cursor-pointer overflow-hidden h-80 flex flex-col"
                   onClick={() => addToCart(product)}
                 >
-                  <div className="aspect-square w-full overflow-hidden">
+                  <div className="h-48 w-full overflow-hidden">
                     {product.image ? (
                       <img 
                         src={product.image} 
@@ -670,36 +603,31 @@ const Pos = () => {
                         loading="lazy"
                         onError={(e) => {
                           const target = e.currentTarget;
-                          // Hide the broken image
                           target.style.display = 'none';
-                          
-                          // Create and display a placeholder
                           const container = target.parentElement;
-                          if (container) {
+                          if (container && !container.querySelector('.placeholder-icon')) {
                             container.classList.add("bg-muted", "flex", "items-center", "justify-center");
-                            
-                            // Only add the icon if it doesn't exist yet
-                            if (!container.querySelector('.placeholder-icon')) {
-                              const icon = document.createElement('div');
-                              icon.className = 'placeholder-icon';
-                              icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M20.91 8.84 8.56 2.23a1.93 1.93 0 0 0-1.81 0L3.1 4.13a2.12 2.12 0 0 0-.05 3.69l12.22 6.93a2 2 0 0 0 1.94 0L21 12.51a2.12 2.12 0 0 0-.09-3.67Z"></path><path d="m3.09 8.84 12.35-6.61a1.93 1.93 0 0 1 1.81 0l3.65 1.9a2.12 2.12 0 0 1 .1 3.69L8.73 14.75a2 2 0 0 1-1.94 0L3 12.51a2.12 2.12 0 0 1 .09-3.67Z"></path><line x1="12" y1="22" x2="12" y2="13"></line><path d="M20 13.5v3.37a2.06 2.06 0 0 1-1.11 1.83l-6 3.08a1.93 1.93 0 0 1-1.78 0l-6-3.08A2.06 2.06 0 0 1 4 16.87V13.5"></path></svg>';
-                              container.appendChild(icon);
-                            }
+                            const icon = document.createElement('div');
+                            icon.className = 'placeholder-icon';
+                            icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M20.91 8.84 8.56 2.23a1.93 1.93 0 0 0-1.81 0L3.1 4.13a2.12 2.12 0 0 0-.05 3.69l12.22 6.93a2 2 0 0 0 1.94 0L21 12.51a2.12 2.12 0 0 0-.09-3.67Z"></path><path d="m3.09 8.84 12.35-6.61a1.93 1.93 0 0 1 1.81 0l3.65 1.9a2.12 2.12 0 0 1 .1 3.69L8.73 14.75a2 2 0 0 1-1.94 0L3 12.51a2.12 2.12 0 0 1 .09-3.67Z"></path><line x1="12" y1="22" x2="12" y2="13"></line><path d="M20 13.5v3.37a2.06 2.06 0 0 1-1.11 1.83l-6 3.08a1.93 1.93 0 0 1-1.78 0l-6-3.08A2.06 2.06 0 0 1 4 16.87V13.5"></path></svg>';
+                            container.appendChild(icon);
                           }
                         }}
                       />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center bg-muted">
-                        <Package className="h-10 w-10 text-muted-foreground" />
+                        <Package className="h-12 w-12 text-muted-foreground" />
                       </div>
                     )}
                   </div>
-                  <CardContent className="p-3">
-                    <h3 className="font-semibold text-gray-800 truncate">{product.name}</h3>
-                    <p className="text-sm text-gray-500">{product.weight}{product.unit} • SKU: {product.sku}</p>
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="font-semibold text-[#c87137]">₹{product.price}</span>
-                      <span className="text-xs text-gray-600">{product.stock} in stock</span>
+                  <CardContent className="p-4 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-semibold text-gray-800 truncate text-lg">{product.name}</h3>
+                      <p className="text-sm text-gray-500 mb-2">{product.weight}{product.unit} • SKU: {product.sku}</p>
+                    </div>
+                    <div className="flex justify-between items-center mt-auto">
+                      <span className="font-semibold text-[#c87137] text-lg">₹{product.price}</span>
+                      <span className="text-sm text-gray-600">{product.stock} in stock</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -874,7 +802,6 @@ const Pos = () => {
                           size="sm"
                           className="h-6 w-6 p-0"
                           onClick={() => updateScannedProductQuantity(product.id, 'increase')}
-                          disabled={product.scannedQuantity >= product.stock}
                         >
                           <Plus className="h-3 w-3" />
                         </Button>

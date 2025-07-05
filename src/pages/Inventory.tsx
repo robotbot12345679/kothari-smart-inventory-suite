@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useData } from "@/context/DataContext";
+import UpdateStockDialog from "@/components/inventory/UpdateStockDialog";
 
 const Inventory = () => {
   const navigate = useNavigate();
@@ -186,6 +186,7 @@ const Inventory = () => {
                 <TableHead className="text-right">Price</TableHead>
                 <TableHead>Expiry Date</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -214,6 +215,9 @@ const Inventory = () => {
                       <Badge variant="outline" className={getStatusColor(stockStatus)}>
                         {stockStatus}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <UpdateStockDialog product={product} />
                     </TableCell>
                   </TableRow>
                 );
