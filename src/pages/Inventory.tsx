@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Plus, AlertTriangle, Clock } from "lucide-react";
+import { Search, Filter, Plus, AlertTriangle, Clock, Package } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -75,6 +75,7 @@ const Inventory = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
         <div className="flex items-center gap-2">
+          <UpdateStockDialog />
           <Button onClick={handleAddProduct}>
             <Plus className="h-4 w-4" />
             Add Product

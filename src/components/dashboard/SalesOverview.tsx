@@ -22,30 +22,48 @@ interface SalesOverviewProps {
 const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
   const navigate = useNavigate();
   
-  // Function to prepare chart data - aggregate sales by date
+  // Function to prepare chart data - aggregate sales by hour for today
   const prepareSalesData = () => {
-    const salesByDate = {};
-    
     if (!orders || !orders.length) return [];
     
-    // Group sales by date
-    orders.forEach((order) => {
-      const date = new Date(order.orderDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      if (!salesByDate[date]) {
-        salesByDate[date] = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todaysOrders = orders.filter(order => {
+      const orderDate = new Date(order.orderDate);
+      orderDate.setHours(0, 0, 0, 0);
+      return orderDate.getTime() === today.getTime();
+    });
+    
+    // Create hourly sales data
+    const hourlyData = {};
+    
+    // Initialize all hours (6 AM to 10 PM)
+    for (let hour = 6; hour <= 22; hour++) {
+      const timeLabel = hour <= 12 ? `${hour}AM` : `${hour - 12}PM`;
+      if (hour === 12) timeLabel = "12PM";
+      hourlyData[timeLabel] = 0;
+    }
+    
+    // Aggregate sales by hour
+    todaysOrders.forEach((order) => {
+      const orderHour = new Date(order.orderDate).getHours();
+      if (orderHour >= 6 && orderHour <= 22) {
+        const timeLabel = orderHour <= 12 ? `${orderHour}AM` : `${orderHour - 12}PM`;
+        const displayLabel = orderHour === 12 ? "12PM" : timeLabel;
+        hourlyData[displayLabel] += order.total;
       }
-      salesByDate[date] += order.total;
     });
     
     // Convert to array format for Recharts
-    return Object.keys(salesByDate).map((date) => ({
-      date,
-      sales: salesByDate[date],
-    })).slice(-7); // Last 7 days
+    return Object.keys(hourlyData).map((time) => ({
+      time,
+      sales: hourlyData[time],
+    }));
   };
   
   const salesData = prepareSalesData();
-  const hasData = salesData.length > 0;
+  const hasData = salesData.some(item => item.sales > 0);
 
   const handleChartClick = () => {
     navigate('/analytics');
@@ -58,7 +76,7 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
           Sales Overview
           <span className="text-sm text-muted-foreground hover:text-primary underline">View Analytics</span>
         </CardTitle>
-        <CardDescription>Daily sales performance</CardDescription>
+        <CardDescription>Today's hourly sales performance</CardDescription>
       </CardHeader>
       <CardContent className="pl-2">
         {hasData ? (
@@ -69,14 +87,21 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={salesData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" />
+                <XAxis 
+                  dataKey="time" 
+                  fontSize={10}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
                 <YAxis 
                   tickFormatter={(value) => `₹${value}`} 
                   tickCount={5}
+                  fontSize={10}
                 />
                 <Tooltip 
                   formatter={(value) => [`₹${value}`, 'Sales']}
-                  labelFormatter={(label) => `Date: ${label}`}
+                  labelFormatter={(label) => `Time: ${label}`}
                 />
                 <Bar 
                   dataKey="sales" 
@@ -90,7 +115,7 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
         ) : (
           <div className="h-[300px] flex flex-col items-center justify-center">
             <BarChart3 className="h-12 w-12 mb-2 opacity-50" />
-            <p>No sales data available yet</p>
+            <p>No sales data available for today</p>
             <Button 
               variant="outline" 
               onClick={() => navigate('/pos')} 
