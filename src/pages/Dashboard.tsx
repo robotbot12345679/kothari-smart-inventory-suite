@@ -35,10 +35,12 @@ const Dashboard = () => {
       pendingOrders: 0
     };
 
-    const activeProducts = products.filter(p => p.isActive)?.length || 0;
+    const activeProducts = products.filter(p => p.isActive !== false)?.length || 0;
+    
+    // Fix low stock calculation - count items where stock is less than or equal to minimum stock
     const lowStockItems = products.filter(p => {
-      if (!p.minimumStock) return false;
-      return p.stock < p.minimumStock;
+      const minStock = p.minimumStock || 10; // Default minimum stock to 10 if not set
+      return p.stock <= minStock;
     })?.length || 0;
 
     // Calculate total sales amount from orders
@@ -85,6 +87,15 @@ const Dashboard = () => {
     }
   }, [orders]);
 
+  // Calculate low stock products for insights
+  const lowStockProducts = useMemo(() => {
+    if (!products) return [];
+    return products.filter(p => {
+      const minStock = p.minimumStock || 10;
+      return p.stock <= minStock;
+    });
+  }, [products]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -118,6 +129,8 @@ const Dashboard = () => {
           lowStockItems={stats.lowStockItems}
           pendingOrders={stats.pendingOrders}
           activeProducts={stats.activeProducts}
+          lowStockProducts={lowStockProducts}
+          topSellingProducts={topSellingProducts}
         />
       </div>
 

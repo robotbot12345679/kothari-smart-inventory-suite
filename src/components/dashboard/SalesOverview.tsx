@@ -50,8 +50,8 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
       const orderHour = new Date(order.orderDate).getHours();
       if (orderHour >= 6 && orderHour <= 22) {
         let timeLabel = orderHour <= 12 ? `${orderHour}AM` : `${orderHour - 12}PM`;
-        const displayLabel = orderHour === 12 ? "12PM" : timeLabel;
-        hourlyData[displayLabel] += order.total;
+        if (orderHour === 12) timeLabel = "12PM";
+        hourlyData[timeLabel] += order.total;
       }
     });
     

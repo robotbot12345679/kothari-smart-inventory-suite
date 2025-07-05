@@ -49,22 +49,31 @@ const InventoryStatus: React.FC<InventoryStatusProps> = ({ products }) => {
     return { percentage: stockPercentage, statusColor };
   };
 
+  const handleViewAllInventory = () => {
+    navigate('/inventory');
+  };
+
   return (
-    <Card className="card-hover">
+    <Card className="card-hover cursor-pointer" onClick={handleViewAllInventory}>
       <CardHeader>
-        <CardTitle>Inventory Status</CardTitle>
-        <CardDescription>Stock levels</CardDescription>
+        <CardTitle className="flex justify-between items-center">
+          Inventory Status
+          <span className="text-sm text-muted-foreground hover:text-primary underline">
+            View All
+          </span>
+        </CardTitle>
+        <CardDescription>Stock levels (Top 10 products)</CardDescription>
       </CardHeader>
       <CardContent>
         {products && products.length > 0 ? (
           <div className="space-y-4">
-            {products.slice(0, 5).map((product) => {
+            {products.slice(0, 10).map((product) => {
               const { percentage, statusColor } = calculateStockPercentage(product);
               
               return (
                 <div key={product.id}>
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm font-medium">{product.name}</span>
+                    <span className="text-sm font-medium truncate">{product.name}</span>
                     <span className="text-sm">{percentage}%</span>
                   </div>
                   <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -76,6 +85,13 @@ const InventoryStatus: React.FC<InventoryStatusProps> = ({ products }) => {
                 </div>
               );
             })}
+            {products.length > 10 && (
+              <div className="text-center pt-2">
+                <Button variant="outline" size="sm" onClick={handleViewAllInventory}>
+                  View All {products.length} Products
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="py-6 text-center">
