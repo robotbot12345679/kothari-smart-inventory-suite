@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useData } from "@/context/DataContext";
 import UpdateStockDialog from "@/components/inventory/UpdateStockDialog";
+import AddStockButton from "@/components/inventory/AddStockButton";
 
 const Inventory = () => {
   const navigate = useNavigate();
