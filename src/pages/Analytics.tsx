@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,7 +56,7 @@ const Analytics = () => {
   } = useCustomerMetrics();
 
   const { orders, products } = useData();
-  const [period, setPeriod] = useState("30");
+  const [period, setPeriod] = useState("90");
 
   // Order count
   const orderCount = orders.length;
@@ -77,21 +76,21 @@ const Analytics = () => {
     return orders.filter(order => new Date(order.orderDate) >= startDate);
   };
 
-  // Payment distribution data
+  // Payment distribution data - now shows amounts instead of order counts
   const paymentDistribution: PaymentData[] = useMemo(() => {
     if (!orders || orders.length === 0) return [];
     
-    const paymentMethods: Record<string, number> = {};
+    const paymentAmounts: Record<string, number> = {};
     orders.forEach(order => {
       const method = order.paymentMethod || 'Cash';
-      paymentMethods[method] = (paymentMethods[method] || 0) + 1;
+      paymentAmounts[method] = (paymentAmounts[method] || 0) + order.total;
     });
     
     const colors = ['#c87137', '#8B5A2F', '#A0522D', '#CD853F', '#DEB887'];
     
-    return Object.entries(paymentMethods).map(([method, count], index) => ({
+    return Object.entries(paymentAmounts).map(([method, amount], index) => ({
       name: method,
-      value: count,
+      value: amount,
       color: colors[index % colors.length]
     }));
   }, [orders]);
@@ -305,7 +304,7 @@ const Analytics = () => {
             </div>
             <p className="text-xs text-muted-foreground">
               {paymentDistribution.length > 0 ? 
-                `${paymentDistribution.sort((a, b) => b.value - a.value)[0].value} orders` : 'No data'}
+                `₹${paymentDistribution.sort((a, b) => b.value - a.value)[0].value.toFixed(0)} total` : 'No data'}
             </p>
           </CardContent>
         </Card>
@@ -444,7 +443,7 @@ const Analytics = () => {
             <Card className="card-hover">
               <CardHeader>
                 <CardTitle>Payment Method Distribution</CardTitle>
-                <CardDescription>How customers prefer to pay</CardDescription>
+                <CardDescription>Revenue by payment method</CardDescription>
               </CardHeader>
               <CardContent className="h-[350px]">
                 {paymentDistribution.length > 0 ? (
@@ -456,13 +455,13 @@ const Analytics = () => {
                         cy="50%"
                         outerRadius={100}
                         dataKey="value"
-                        label={({ name, value, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, value, percent }) => `${name}: ₹${value.toFixed(0)} (${(percent * 100).toFixed(0)}%)`}
                       >
                         {paymentDistribution.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip formatter={(value) => [`₹${value}`, 'Amount']} />
                     </RechartsPieChart>
                   </ResponsiveContainer>
                 ) : (
@@ -480,23 +479,28 @@ const Analytics = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {paymentDistribution.map((method, index) => (
-                    <div key={index} className="flex justify-between items-center p-3 bg-muted/30 rounded-md">
-                      <div className="flex items-center gap-3">
-                        <div 
-                          className="w-4 h-4 rounded-full" 
-                          style={{ backgroundColor: method.color }}
-                        />
-                        <span className="font-medium">{method.name}</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-semibold">{method.value} orders</div>
-                        <div className="text-sm text-muted-foreground">
-                          {((method.value / orders.length) * 100).toFixed(1)}%
+                  {paymentDistribution.map((method, index) => {
+                    const totalRevenue = paymentDistribution.reduce((sum, m) => sum + m.value, 0);
+                    const percentage = totalRevenue > 0 ? (method.value / totalRevenue) * 100 : 0;
+                    
+                    return (
+                      <div key={index} className="flex justify-between items-center p-3 bg-muted/30 rounded-md">
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-4 h-4 rounded-full" 
+                            style={{ backgroundColor: method.color }}
+                          />
+                          <span className="font-medium">{method.name}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold">₹{method.value.toFixed(2)}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {percentage.toFixed(1)}%
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

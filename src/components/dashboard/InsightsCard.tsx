@@ -2,17 +2,9 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, TrendingUp, TrendingDown, AlertTriangle, Package, Users } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, AlertTriangle, Package, Users, Target, Clock, Award } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Product, Order } from "@/types/pos";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 interface InsightsCardProps {
   products: Product[];
@@ -52,7 +44,7 @@ const InsightsCard: React.FC<InsightsCardProps> = ({
       return orderDate >= previous7Days && orderDate < last7Days;
     }).reduce((sum, order) => sum + order.total, 0);
     
-    if (previousSales === 0) return recentSales > 0 ? 'up' : 'stable';
+    if (previousSales === 0) return recentSales > 0 ? { direction: 'up', percentage: '100' } : null;
     
     const change = ((recentSales - previousSales) / previousSales) * 100;
     return {
@@ -83,6 +75,9 @@ const InsightsCard: React.FC<InsightsCardProps> = ({
     };
   }, [orders]);
 
+  // Get top selling product
+  const topProduct = topSellingProducts.length > 0 ? topSellingProducts[0] : null;
+
   if (!products || products.length === 0) {
     return (
       <Card className="card-hover">
@@ -109,69 +104,85 @@ const InsightsCard: React.FC<InsightsCardProps> = ({
     <Card className="card-hover">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          Critical Stock Alert
-          <AlertTriangle className="h-4 w-4 text-red-500" />
+          Insights
+          <TrendingUp className="h-4 w-4 text-primary" />
         </CardTitle>
-        <CardDescription>
-          {lowStockItems > 0 ? `${lowStockItems} items below minimum stock level` : 'All items well stocked'}
-        </CardDescription>
+        <CardDescription>AI-powered business recommendations</CardDescription>
       </CardHeader>
       <CardContent>
-        {lowStockItems > 0 ? (
-          <div className="space-y-4">
-            <div className="max-h-[250px] overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Product</TableHead>
-                    <TableHead className="text-xs text-right">Current Stock</TableHead>
-                    <TableHead className="text-xs text-right">Min Stock</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lowStockProducts.slice(0, 10).map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="text-xs font-medium">
-                        <div className="truncate max-w-[120px]" title={product.name}>
-                          {product.name}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs text-right text-red-600">
-                        {product.stock} {product.unit}
-                      </TableCell>
-                      <TableCell className="text-xs text-right">
-                        {product.minimumStock || 10} {product.unit}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            
-            <div className="pt-2 border-t">
-              <p className="text-xs text-muted-foreground mb-2">
-                Products listed: {lowStockProducts.map(p => p.name).slice(0, 3).join(', ')}
+        <div className="space-y-3">
+          {/* Critical Stock Alert */}
+          {lowStockItems > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <AlertTriangle className="h-4 w-4 text-red-500" />
+                <span className="font-medium text-red-700 text-sm">Critical Stock Alert</span>
+              </div>
+              <p className="text-sm text-red-600">
+                {lowStockItems} items below minimum stock level: {lowStockProducts.slice(0, 3).map(p => p.name).join(', ')}
                 {lowStockProducts.length > 3 && ` and ${lowStockProducts.length - 3} more...`}
               </p>
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="w-full text-red-700 border-red-300 hover:bg-red-50"
+                className="mt-2 text-red-700 border-red-300 hover:bg-red-50 text-xs h-7"
                 onClick={() => navigate('/inventory')}
               >
-                Update Stock Levels
+                Update Stock
               </Button>
             </div>
-          </div>
-        ) : (
-          <div className="text-center py-6">
-            <Package className="h-8 w-8 mx-auto mb-2 text-green-500" />
-            <p className="text-sm text-green-700 font-medium">All items well stocked!</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {products.length} products are above minimum stock levels
+          )}
+
+          {/* Sales Trend */}
+          {salesTrend && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="h-4 w-4 text-blue-500" />
+                <span className="font-medium text-blue-700 text-sm">Sales Trend</span>
+              </div>
+              <p className="text-sm text-blue-600">
+                Sales {salesTrend.direction === 'up' ? 'increased' : salesTrend.direction === 'down' ? 'decreased' : 'remained stable'} by {salesTrend.percentage}% this week
+              </p>
+            </div>
+          )}
+
+          {/* Top Performer */}
+          {topProduct && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Award className="h-4 w-4 text-green-500" />
+                <span className="font-medium text-green-700 text-sm">Top Performer</span>
+              </div>
+              <p className="text-sm text-green-600">
+                "{topProduct.name}" is your bestseller with {topProduct.quantity} units sold
+              </p>
+            </div>
+          )}
+
+          {/* Customer Pattern */}
+          {purchasingPatterns && (
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock className="h-4 w-4 text-purple-500" />
+                <span className="font-medium text-purple-700 text-sm">Customer Pattern</span>
+              </div>
+              <p className="text-sm text-purple-600">
+                Peak ordering time is {purchasingPatterns.peakHour} - optimize staff scheduling
+              </p>
+            </div>
+          )}
+
+          {/* Inventory Health */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Package className="h-4 w-4 text-gray-500" />
+              <span className="font-medium text-gray-700 text-sm">Inventory Health</span>
+            </div>
+            <p className="text-sm text-gray-600">
+              {activeProducts} of {products.length} products active. {lowStockItems > 0 ? lowStockItems : 'No'} need restocking.
             </p>
           </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
