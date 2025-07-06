@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,27 @@ import {
   CartesianGrid,
   PieChart as RechartsPieChart,
   Cell,
+  Pie,
 } from "recharts";
+
+interface DailyAnalyticsData {
+  date: string;
+  sales: number;
+  orders: number;
+  productsSold: number;
+  paymentMethods: Record<string, number>;
+}
+
+interface SalesData {
+  date: string;
+  sales: number;
+}
+
+interface PaymentData {
+  name: string;
+  value: number;
+  color: string;
+}
 
 const Analytics = () => {
   const { 
@@ -57,10 +78,10 @@ const Analytics = () => {
   };
 
   // Payment distribution data
-  const paymentDistribution = useMemo(() => {
+  const paymentDistribution: PaymentData[] = useMemo(() => {
     if (!orders || orders.length === 0) return [];
     
-    const paymentMethods = {};
+    const paymentMethods: Record<string, number> = {};
     orders.forEach(order => {
       const method = order.paymentMethod || 'Cash';
       paymentMethods[method] = (paymentMethods[method] || 0) + 1;
@@ -76,8 +97,8 @@ const Analytics = () => {
   }, [orders]);
   
   // Prepare sales trend data with functional time range
-  const prepareSalesData = () => {
-    const salesByDate = {};
+  const prepareSalesData = (): SalesData[] => {
+    const salesByDate: Record<string, number> = {};
     
     if (!orders || !orders.length) return [];
     
@@ -112,10 +133,10 @@ const Analytics = () => {
   };
 
   // Daily analytics data
-  const dailyAnalytics = useMemo(() => {
+  const dailyAnalytics: DailyAnalyticsData[] = useMemo(() => {
     if (!orders || orders.length === 0) return [];
     
-    const dailyData = {};
+    const dailyData: Record<string, DailyAnalyticsData> = {};
     
     orders.forEach(order => {
       const date = new Date(order.orderDate).toLocaleDateString('en-IN');
