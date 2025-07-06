@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,12 +24,13 @@ import { useData } from "@/context/DataContext";
 import { useToast } from "@/components/ui/use-toast";
 import { Plus, Trash, Edit } from "lucide-react";
 import type { Product } from "@/types/pos";
+import { saveImageToPublic, getImageUrl, validateImageFile, deleteImage } from "@/utils/imageUtils";
 
 interface AddProductDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product?: Product | null;
-  defaultUnit?: 'g' | 'kg' | 'box' | 'pcs'; // Added defaultUnit prop
+  defaultUnit?: 'g' | 'kg' | 'box' | 'pcs';
 }
 
 const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g' }: AddProductDialogProps) => {
@@ -47,13 +47,14 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g' }: Ad
     image: "",
     price: 0,
     weight: 1,
-    unit: defaultUnit, // Use the defaultUnit prop here
+    unit: defaultUnit,
     stock: 0,
     isActive: true,
     priceIncludesGST: true
   });
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -77,7 +78,7 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g' }: Ad
         image: "",
         price: 0,
         weight: 1,
-        unit: "g", // Default to grams
+        unit: "g",
         stock: 0,
         isActive: true,
         priceIncludesGST: true,
@@ -101,16 +102,30 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g' }: Ad
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+      const file = e.target.files[0];
+      
+      try {
+        validateImageFile(file);
+        setSelectedFile(file);
+        
+        // Show preview immediately
+        const preview = URL.createObjectURL(file);
+        setFormData(prev => ({ ...prev, image: preview }));
+      } catch (error) {
+        toast({
+          title: "Invalid Image",
+          description: error instanceof Error ? error.message : "Please select a valid image file.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Add validation checks
     if (!formData.name || !formData.sku || !formData.category) {
       toast({
         title: "Validation Error",
@@ -120,7 +135,21 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g' }: Ad
       return;
     }
 
+    setIsUploading(true);
+
     try {
+      let imageFilename = formData.image || "";
+      
+      // Handle image upload if a new file is selected
+      if (selectedFile) {
+        imageFilename = await saveImageToPublic(selectedFile);
+        
+        // If editing and there was an old image, delete it
+        if (isEditing && product?.image && product.image !== imageFilename) {
+          deleteImage(product.image);
+        }
+      }
+
       let expiryDate: string | undefined = undefined;
       if (formData.expiryMonth) {
         const [year, month] = formData.expiryMonth.split('-').map(Number);
@@ -135,11 +164,11 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g' }: Ad
         category: formData.category!,
         description: formData.description || "",
         barcode: formData.barcode || "",
-        image: selectedFile ? URL.createObjectURL(selectedFile) : (formData.image || ""),
+        image: imageFilename,
         price: formData.price || 0,
         stock: formData.stock || 0,
         weight: formData.weight || 1,
-        unit: (formData.unit as 'g' | 'kg' | 'box' | 'pcs') || 'g', // Default to grams
+        unit: (formData.unit as 'g' | 'kg' | 'box' | 'pcs') || 'g',
         priceIncludesGST: true,
         expiryDate,
         minimumStock: formData.minimumStock,
@@ -165,9 +194,11 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g' }: Ad
       console.error("Error saving product:", error);
       toast({
         title: "Error",
-        description: "Failed to save product. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to save product. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -332,15 +363,18 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g' }: Ad
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
+                  disabled={isUploading}
                 />
-                {formData.image && !selectedFile && (
+                <p className="text-xs text-muted-foreground">
+                  Maximum file size: 15MB. Supported formats: JPEG, PNG, GIF, WebP
+                </p>
+                {formData.image && (
                   <div className="mt-2">
-                    <img src={formData.image} alt="Product" className="h-24 w-24 object-cover rounded-md" />
-                  </div>
-                )}
-                {selectedFile && (
-                  <div className="mt-2">
-                    <img src={URL.createObjectURL(selectedFile)} alt="Selected product" className="h-24 w-24 object-cover rounded-md" />
+                    <img 
+                      src={selectedFile ? formData.image : getImageUrl(formData.image)} 
+                      alt="Product preview" 
+                      className="h-24 w-24 object-cover rounded-md" 
+                    />
                   </div>
                 )}
               </div>
@@ -374,8 +408,8 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g' }: Ad
             <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">
-              {isEditing ? "Update Product" : "Save Product"}
+            <Button type="submit" disabled={isUploading}>
+              {isUploading ? "Uploading..." : isEditing ? "Update Product" : "Save Product"}
             </Button>
           </DialogFooter>
         </form>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Package } from "lucide-react";
 import type { Product } from "@/types/pos";
 import UpdateStockDialog from "../inventory/UpdateStockDialog";
+import { getImageUrl } from "@/utils/imageUtils";
 
 interface ProductCardProps {
   product: Product;
@@ -13,26 +14,25 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) => {
+  const imageUrl = getImageUrl(product.image);
+
   return (
     <Card className="overflow-hidden h-[350px] flex flex-col">
       <div className="h-[150px] relative">
-        {product.image ? (
+        {imageUrl ? (
           <img
-            src={product.image}
+            src={imageUrl}
             alt={product.name}
             className="w-full h-full object-cover"
             loading="lazy"
             onError={(e) => {
               const target = e.currentTarget;
-              // Hide the broken image
               target.style.display = 'none';
               
-              // Create and display a placeholder
               const container = target.parentElement;
               if (container) {
                 container.classList.add("bg-muted", "flex", "items-center", "justify-center");
                 
-                // Only add the icon if it doesn't exist yet
                 if (!container.querySelector('.placeholder-icon')) {
                   const icon = document.createElement('div');
                   icon.className = 'placeholder-icon';

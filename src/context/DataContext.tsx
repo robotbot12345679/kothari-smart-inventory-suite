@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Product, Category, Order, Customer, CartItem } from "@/types/pos";
 import { useToast } from "@/components/ui/use-toast";
+import { deleteImage } from "@/utils/imageUtils";
 
 interface DataContextType {
   products: Product[];
@@ -213,6 +214,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const deleteProduct = (id: number) => {
+    // Find the product to get its image filename
+    const productToDelete = products.find(product => product.id === id);
+    
+    // Delete the associated image if it exists
+    if (productToDelete?.image) {
+      deleteImage(productToDelete.image);
+    }
+    
     setProducts(prev => prev.filter(product => product.id !== id));
   };
 
