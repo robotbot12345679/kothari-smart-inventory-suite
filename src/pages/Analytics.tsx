@@ -24,6 +24,8 @@ import {
   PieChart as RechartsPieChart,
   Cell,
   Pie,
+  LineChart as RechartsLineChart,
+  Line,
 } from "recharts";
 
 interface DailyAnalyticsData {
@@ -56,7 +58,7 @@ const Analytics = () => {
   } = useCustomerMetrics();
 
   const { orders, products } = useData();
-  const [period, setPeriod] = useState("90");
+  const [period, setPeriod] = useState("90"); // Default to 90 days
 
   // Order count
   const orderCount = orders.length;
@@ -76,7 +78,7 @@ const Analytics = () => {
     return orders.filter(order => new Date(order.orderDate) >= startDate);
   };
 
-  // Payment distribution data - now shows amounts instead of order counts
+  // Payment distribution data - shows amounts instead of order counts
   const paymentDistribution: PaymentData[] = useMemo(() => {
     if (!orders || orders.length === 0) return [];
     
@@ -95,7 +97,7 @@ const Analytics = () => {
     }));
   }, [orders]);
   
-  // Prepare sales trend data with functional time range
+  // Prepare sales trend data with better formatting
   const prepareSalesData = (): SalesData[] => {
     const salesByDate: Record<string, number> = {};
     
@@ -109,26 +111,30 @@ const Analytics = () => {
     // Filter orders by selected period
     const periodOrders = orders.filter(order => new Date(order.orderDate) >= startDate);
     
+    // Initialize all dates in the period with 0 sales
+    for (let i = 0; i < periodDays; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      const dateKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      salesByDate[dateKey] = 0;
+    }
+    
     // Group sales by date
     periodOrders.forEach((order) => {
       const date = new Date(order.orderDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      if (!salesByDate[date]) {
-        salesByDate[date] = 0;
+      if (salesByDate.hasOwnProperty(date)) {
+        salesByDate[date] += order.total;
       }
-      salesByDate[date] += order.total;
     });
     
-    // Convert to array format for Recharts
-    return Object.keys(salesByDate)
+    // Convert to array format for Recharts and sort chronologically
+    return Object.entries(salesByDate)
+      .map(([date, sales]) => ({ date, sales }))
       .sort((a, b) => {
-        const dateA = new Date(a + ', ' + new Date().getFullYear());
-        const dateB = new Date(b + ', ' + new Date().getFullYear());
+        const dateA = new Date(a.date + ', ' + new Date().getFullYear());
+        const dateB = new Date(b.date + ', ' + new Date().getFullYear());
         return dateA.getTime() - dateB.getTime();
-      })
-      .map((date) => ({
-        date,
-        sales: salesByDate[date],
-      }));
+      });
   };
 
   // Daily analytics data
@@ -202,6 +208,7 @@ const Analytics = () => {
         </div>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -260,182 +267,66 @@ const Analytics = () => {
         </Card>
       </div>
 
-      {/* Second row of analytics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Products Sold</CardTitle>
-            <BarChart3 className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {periodOrders.reduce((sum, order) => 
-                sum + (order.items?.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0) || 0), 0
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">Units in last {period} days</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Items/Order</CardTitle>
-            <LineChart className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {periodOrders.length > 0 ? 
-                (periodOrders.reduce((sum, order) => 
-                  sum + (order.items?.length || 0), 0) / periodOrders.length).toFixed(1) : '0'}
-            </div>
-            <p className="text-xs text-muted-foreground">Items per order</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Top Payment Method</CardTitle>
-            <PieChart className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {paymentDistribution.length > 0 ? 
-                paymentDistribution.sort((a, b) => b.value - a.value)[0].name : 'Cash'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {paymentDistribution.length > 0 ? 
-                `₹${paymentDistribution.sort((a, b) => b.value - a.value)[0].value.toFixed(0)} total` : 'No data'}
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Peak Day</CardTitle>
-            <Calendar className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {dailyAnalytics.length > 0 ? 
-                dailyAnalytics.sort((a, b) => b.sales - a.sales)[0].date.split('/').slice(0, 2).join('/') : 'N/A'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {dailyAnalytics.length > 0 ? 
-                `₹${dailyAnalytics.sort((a, b) => b.sales - a.sales)[0].sales.toFixed(0)} sales` : 'No data'}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
       <Tabs defaultValue="sales" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 mb-4">
+        <TabsList className="grid w-full grid-cols-4 mb-4">
           <TabsTrigger value="sales">Sales Analytics</TabsTrigger>
           <TabsTrigger value="payments">Payment Analytics</TabsTrigger>
           <TabsTrigger value="inventory">Inventory Analytics</TabsTrigger>
-          <TabsTrigger value="daily">Daily Data</TabsTrigger>
           <TabsTrigger value="customers">Customer Insights</TabsTrigger>
         </TabsList>
         
         <TabsContent value="sales" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="card-hover md:col-span-2">
-              <CardHeader>
-                <CardTitle>Sales Trend</CardTitle>
-                <CardDescription>Daily sales over the selected period ({period} days)</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[350px]">
-                {salesData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={salesData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="date" />
-                      <YAxis 
-                        tickFormatter={(value) => `₹${value}`} 
-                        tickCount={5}
-                      />
-                      <Tooltip 
-                        formatter={(value) => [`₹${value}`, 'Sales']}
-                        labelFormatter={(label) => `Date: ${label}`}
-                      />
-                      <Bar 
-                        dataKey="sales" 
-                        name="Sales" 
-                        fill="#c87137" 
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-muted-foreground flex flex-col h-full items-center justify-center">
-                    <LineChart className="h-12 w-12 mb-2 opacity-50" />
-                    <p>No sales data available for the selected period</p>
-                    <p className="text-xs mt-2">Try adding missing sales data or changing the time period</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="card-hover">
-              <CardHeader>
-                <CardTitle>Top Selling Products</CardTitle>
-                <CardDescription>By revenue in the selected period</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <div className="space-y-4">
-                  {products.slice(0, 5).map((product, index) => (
-                    <div key={product.id} className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <div className="font-semibold text-muted-foreground">{index + 1}.</div>
-                        <div>
-                          <div className="font-medium">{product.name}</div>
-                          <div className="text-sm text-muted-foreground">₹{product.price ? product.price.toFixed(2) : 'No price'}</div>
-                        </div>
-                      </div>
-                      <div className="text-sm font-medium">
-                        {product.stock || 0} in stock
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {products.length === 0 && (
-                    <div className="text-center py-10">
-                      <p>No product data available</p>
-                    </div>
-                  )}
+          <Card className="card-hover">
+            <CardHeader>
+              <CardTitle>Sales Trend</CardTitle>
+              <CardDescription>Daily sales over the selected period ({period} days)</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[400px]">
+              {salesData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsLineChart data={salesData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="date" 
+                      fontSize={12}
+                      tick={{ fill: '#666' }}
+                      interval={Math.max(0, Math.floor(salesData.length / 8))}
+                    />
+                    <YAxis 
+                      tickFormatter={(value) => `₹${value.toLocaleString()}`} 
+                      fontSize={12}
+                      tick={{ fill: '#666' }}
+                      width={80}
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Sales']}
+                      labelFormatter={(label) => `Date: ${label}`}
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #ccc',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                    <Line 
+                      type="monotone"
+                      dataKey="sales" 
+                      stroke="#c87137" 
+                      strokeWidth={3}
+                      dot={{ fill: '#c87137', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: '#c87137', strokeWidth: 2 }}
+                    />
+                  </RechartsLineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-muted-foreground flex flex-col h-full items-center justify-center">
+                  <LineChart className="h-12 w-12 mb-2 opacity-50" />
+                  <p>No sales data available for the selected period</p>
+                  <p className="text-xs mt-2">Try adding missing sales data or changing the time period</p>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="card-hover">
-              <CardHeader>
-                <CardTitle>Sales by Category</CardTitle>
-                <CardDescription>Revenue distribution by product category</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <div className="space-y-4">
-                  {Array.from(new Set(products.map(p => p.category))).slice(0, 5).map((category, index) => (
-                    <div key={index} className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <div className="font-semibold text-muted-foreground">{index + 1}.</div>
-                        <div>
-                          <div className="font-medium">{category}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {products.filter(p => p.category === category).length} products
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {products.length === 0 && (
-                    <div className="text-center py-10">
-                      <p>No category data available</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="payments" className="space-y-4">
@@ -455,13 +346,21 @@ const Analytics = () => {
                         cy="50%"
                         outerRadius={100}
                         dataKey="value"
-                        label={({ name, value, percent }) => `${name}: ₹${value.toFixed(0)} (${(percent * 100).toFixed(0)}%)`}
+                        label={({ name, value, percent }) => `${name}: ₹${value.toLocaleString()} (${(percent * 100).toFixed(0)}%)`}
                       >
                         {paymentDistribution.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => [`₹${value}`, 'Amount']} />
+                      <Tooltip 
+                        formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Amount']}
+                        contentStyle={{
+                          backgroundColor: '#fff',
+                          border: '1px solid #ccc',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
                     </RechartsPieChart>
                   </ResponsiveContainer>
                 ) : (
@@ -475,7 +374,7 @@ const Analytics = () => {
             <Card className="card-hover">
               <CardHeader>
                 <CardTitle>Payment Methods Summary</CardTitle>
-                <CardDescription>Detailed breakdown by payment type</CardDescription>
+                <CardDescription>Amount breakdown by payment type</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -493,7 +392,7 @@ const Analytics = () => {
                           <span className="font-medium">{method.name}</span>
                         </div>
                         <div className="text-right">
-                          <div className="font-semibold">₹{method.value.toFixed(2)}</div>
+                          <div className="font-semibold">₹{method.value.toLocaleString()}</div>
                           <div className="text-sm text-muted-foreground">
                             {percentage.toFixed(1)}%
                           </div>
@@ -501,62 +400,18 @@ const Analytics = () => {
                       </div>
                     );
                   })}
+                  
+                  {paymentDistribution.length === 0 && (
+                    <div className="text-center py-10">
+                      <p className="text-muted-foreground">No payment data available</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="daily" className="space-y-4">
-          <Card className="card-hover">
-            <CardHeader>
-              <CardTitle>Daily Business Analytics</CardTitle>
-              <CardDescription>Day-wise breakdown of all business metrics</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="max-h-[500px] overflow-y-auto">
-                <div className="space-y-4">
-                  {dailyAnalytics.slice(0, 30).map((day, index) => (
-                    <div key={index} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-3">
-                        <h3 className="font-semibold text-lg">{day.date}</h3>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-primary">₹{day.sales.toFixed(0)}</div>
-                          <div className="text-sm text-muted-foreground">{day.orders} orders</div>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <div className="text-muted-foreground">Products Sold</div>
-                          <div className="font-semibold">{day.productsSold} units</div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground">Avg Order Value</div>
-                          <div className="font-semibold">₹{day.orders > 0 ? (day.sales / day.orders).toFixed(0) : '0'}</div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground">Payment Methods</div>
-                          <div className="font-semibold">
-                            {Object.entries(day.paymentMethods).map(([method, count]) => 
-                              `${method}: ${count}`
-                            ).join(', ') || 'No payments'}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground">Items/Order</div>
-                          <div className="font-semibold">
-                            {day.orders > 0 ? (day.productsSold / day.orders).toFixed(1) : '0'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
         
         <TabsContent value="inventory" className="space-y-4">
           <Card className="card-hover">
@@ -639,66 +494,6 @@ const Analytics = () => {
                     )}
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="ai" className="space-y-4">
-          <Card className="card-hover">
-            <CardHeader>
-              <CardTitle>AI-Powered Insights</CardTitle>
-              <CardDescription>Based on your actual store data</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {products.length > 0 ? (
-                  <>
-                    <div className="bg-muted/50 p-3 rounded-lg">
-                      <p className="font-medium text-sm text-primary">Inventory Optimization</p>
-                      <p className="text-sm mt-1">
-                        {products.filter(p => p.stock <= (p.minimumStock || 5)).length > 0 ? 
-                          `${products.filter(p => p.stock <= (p.minimumStock || 5)).length} products are running low on stock and need replenishment.` : 
-                          'All products are currently well-stocked.'}
-                      </p>
-                    </div>
-                    
-                    {orderCount > 0 && (
-                      <div className="bg-muted/50 p-3 rounded-lg">
-                        <p className="font-medium text-sm text-primary">Sales Performance</p>
-                        <p className="text-sm mt-1">
-                          Your average order value is ₹{averageOrderValue.toFixed(2)} with {orderCount} total orders.
-                        </p>
-                      </div>
-                    )}
-                    
-                    <div className="bg-muted/50 p-3 rounded-lg">
-                      <p className="font-medium text-sm text-primary">Product Recommendations</p>
-                      <p className="text-sm mt-1">
-                        {products.length > 0 ? 
-                          `Consider featuring ${products[0].name} more prominently as it appears to be a popular item.` :
-                          'Add more products to get personalized recommendations.'}
-                      </p>
-                    </div>
-                    
-                    {totalCustomers > 0 && (
-                      <div className="bg-muted/50 p-3 rounded-lg">
-                        <p className="font-medium text-sm text-primary">Customer Engagement</p>
-                        <p className="text-sm mt-1">
-                          {activeRate > 50 ? 
-                            `Your customer retention rate of ${activeRate.toFixed(1)}% is healthy. Consider a loyalty program to increase it further.` : 
-                            `Your customer retention rate of ${activeRate.toFixed(1)}% could be improved. Consider running a re-engagement campaign.`}
-                        </p>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">
-                      Add products and complete sales to get AI-powered insights for your business.
-                    </p>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
