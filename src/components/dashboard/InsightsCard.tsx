@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Plus, TrendingUp, TrendingDown, AlertTriangle, Package, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Product, Order } from "@/types/pos";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface InsightsCardProps {
   products: Product[];
@@ -101,121 +109,69 @@ const InsightsCard: React.FC<InsightsCardProps> = ({
     <Card className="card-hover">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          Insights
-          <TrendingUp className="h-4 w-4 text-blue-500" />
+          Critical Stock Alert
+          <AlertTriangle className="h-4 w-4 text-red-500" />
         </CardTitle>
-        <CardDescription>AI-powered business recommendations</CardDescription>
+        <CardDescription>
+          {lowStockItems > 0 ? `${lowStockItems} items below minimum stock level` : 'All items well stocked'}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          
-          {/* Low Stock Alert */}
-          {lowStockItems > 0 && (
-            <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
-              <div className="flex items-center gap-2 mb-1">
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-                <p className="font-medium text-sm text-red-800">Critical Stock Alert</p>
-              </div>
-              <p className="text-sm text-red-700">
-                {lowStockItems} item{lowStockItems > 1 ? 's' : ''} below minimum stock level
-                {lowStockProducts.length > 0 && `: ${lowStockProducts.slice(0, 2).map(p => p.name).join(', ')}${lowStockProducts.length > 2 ? '...' : ''}`}
+        {lowStockItems > 0 ? (
+          <div className="space-y-4">
+            <div className="max-h-[250px] overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Product</TableHead>
+                    <TableHead className="text-xs text-right">Current Stock</TableHead>
+                    <TableHead className="text-xs text-right">Min Stock</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {lowStockProducts.slice(0, 10).map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell className="text-xs font-medium">
+                        <div className="truncate max-w-[120px]" title={product.name}>
+                          {product.name}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs text-right text-red-600">
+                        {product.stock} {product.unit}
+                      </TableCell>
+                      <TableCell className="text-xs text-right">
+                        {product.minimumStock || 10} {product.unit}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            
+            <div className="pt-2 border-t">
+              <p className="text-xs text-muted-foreground mb-2">
+                Products listed: {lowStockProducts.map(p => p.name).slice(0, 3).join(', ')}
+                {lowStockProducts.length > 3 && ` and ${lowStockProducts.length - 3} more...`}
               </p>
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="mt-2 text-red-700 border-red-300 hover:bg-red-100"
+                className="w-full text-red-700 border-red-300 hover:bg-red-50"
                 onClick={() => navigate('/inventory')}
               >
-                Update Stock
+                Update Stock Levels
               </Button>
             </div>
-          )}
-
-          {/* Sales Trend Analysis */}
-          {salesTrend && typeof salesTrend === 'object' && (
-            <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
-              <div className="flex items-center gap-2 mb-1">
-                {salesTrend.direction === 'up' ? (
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                ) : salesTrend.direction === 'down' ? (
-                  <TrendingDown className="h-4 w-4 text-red-600" />
-                ) : (
-                  <TrendingUp className="h-4 w-4 text-blue-600" />
-                )}
-                <p className="font-medium text-sm text-blue-800">Sales Trend</p>
-              </div>
-              <p className="text-sm text-blue-700">
-                {salesTrend.direction === 'up' 
-                  ? `Sales increased by ${salesTrend.percentage}% this week`
-                  : salesTrend.direction === 'down'
-                  ? `Sales decreased by ${salesTrend.percentage}% this week`
-                  : 'Sales remained stable this week'
-                }
-              </p>
-            </div>
-          )}
-
-          {/* Top Product Performance */}
-          {topSellingProducts.length > 0 && (
-            <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
-              <div className="flex items-center gap-2 mb-1">
-                <Package className="h-4 w-4 text-green-600" />
-                <p className="font-medium text-sm text-green-800">Top Performer</p>
-              </div>
-              <p className="text-sm text-green-700">
-                "{topSellingProducts[0].name}" is your bestseller with {topSellingProducts[0].quantity} units sold
-              </p>
-            </div>
-          )}
-
-          {/* Purchasing Patterns */}
-          {purchasingPatterns && (
-            <div className="bg-purple-50 border border-purple-200 p-3 rounded-lg">
-              <div className="flex items-center gap-2 mb-1">
-                <Users className="h-4 w-4 text-purple-600" />
-                <p className="font-medium text-sm text-purple-800">Customer Pattern</p>
-              </div>
-              <p className="text-sm text-purple-700">
-                Peak ordering time is {purchasingPatterns.peakHour} - optimize staff scheduling
-              </p>
-            </div>
-          )}
-
-          {/* Pending Orders */}
-          {pendingOrders > 0 && (
-            <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg">
-              <div className="flex items-center gap-2 mb-1">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <p className="font-medium text-sm text-amber-800">Action Required</p>
-              </div>
-              <p className="text-sm text-amber-700">
-                {pendingOrders} order{pendingOrders > 1 ? 's' : ''} awaiting processing
-              </p>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="mt-2 text-amber-700 border-amber-300 hover:bg-amber-100"
-                onClick={() => navigate('/orders')}
-              >
-                Process Orders
-              </Button>
-            </div>
-          )}
-
-          {/* Inventory Health */}
-          {products.length > 0 && (
-            <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg">
-              <div className="flex items-center gap-2 mb-1">
-                <Package className="h-4 w-4 text-gray-600" />
-                <p className="font-medium text-sm text-gray-800">Inventory Health</p>
-              </div>
-              <p className="text-sm text-gray-700">
-                {activeProducts} of {products.length} products active. 
-                {lowStockItems === 0 ? ' All items well stocked.' : ` ${lowStockItems} need restocking.`}
-              </p>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="text-center py-6">
+            <Package className="h-8 w-8 mx-auto mb-2 text-green-500" />
+            <p className="text-sm text-green-700 font-medium">All items well stocked!</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {products.length} products are above minimum stock levels
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

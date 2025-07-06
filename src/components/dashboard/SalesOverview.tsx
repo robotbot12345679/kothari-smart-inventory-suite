@@ -22,52 +22,52 @@ interface SalesOverviewProps {
 const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
   const navigate = useNavigate();
   
-  // Function to prepare chart data - aggregate sales by hour for today
-  const prepareSalesData = () => {
+  // Function to prepare chart data - aggregate sales by day for current month
+  const prepareMonthlySalesData = () => {
     if (!orders || !orders.length) return [];
     
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
     
-    const todaysOrders = orders.filter(order => {
+    // Get orders from current month
+    const currentMonthOrders = orders.filter(order => {
       const orderDate = new Date(order.orderDate);
-      orderDate.setHours(0, 0, 0, 0);
-      return orderDate.getTime() === today.getTime();
+      return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
     });
     
-    // Create hourly sales data
-    const hourlyData = {};
+    // Create daily sales data for current month
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const dailyData = {};
     
-    // Initialize all hours (6 AM to 10 PM)
-    for (let hour = 6; hour <= 22; hour++) {
-      let timeLabel = hour <= 12 ? `${hour}AM` : `${hour - 12}PM`;
-      if (hour === 12) timeLabel = "12PM";
-      hourlyData[timeLabel] = 0;
+    // Initialize all days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateKey = `${day}`;
+      dailyData[dateKey] = 0;
     }
     
-    // Aggregate sales by hour
-    todaysOrders.forEach((order) => {
-      const orderHour = new Date(order.orderDate).getHours();
-      if (orderHour >= 6 && orderHour <= 22) {
-        let timeLabel = orderHour <= 12 ? `${orderHour}AM` : `${orderHour - 12}PM`;
-        if (orderHour === 12) timeLabel = "12PM";
-        hourlyData[timeLabel] += order.total;
-      }
+    // Aggregate sales by day
+    currentMonthOrders.forEach((order) => {
+      const orderDay = new Date(order.orderDate).getDate();
+      const dateKey = `${orderDay}`;
+      dailyData[dateKey] += order.total;
     });
     
     // Convert to array format for Recharts
-    return Object.keys(hourlyData).map((time) => ({
-      time,
-      sales: hourlyData[time],
+    return Object.keys(dailyData).map((day) => ({
+      day: `${day}`,
+      sales: dailyData[day],
     }));
   };
   
-  const salesData = prepareSalesData();
+  const salesData = prepareMonthlySalesData();
   const hasData = salesData.some(item => item.sales > 0);
 
   const handleChartClick = () => {
     navigate('/analytics');
   };
+
+  const currentMonthName = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
     <Card className="card-hover">
@@ -76,7 +76,7 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
           Sales Overview
           <span className="text-sm text-muted-foreground hover:text-primary underline">View Analytics</span>
         </CardTitle>
-        <CardDescription>Today's hourly sales performance</CardDescription>
+        <CardDescription>{currentMonthName} daily sales performance</CardDescription>
       </CardHeader>
       <CardContent className="pl-2">
         {hasData ? (
@@ -88,11 +88,9 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
               <BarChart data={salesData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis 
-                  dataKey="time" 
+                  dataKey="day" 
                   fontSize={10}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
+                  interval={Math.ceil(salesData.length / 10)}
                 />
                 <YAxis 
                   tickFormatter={(value) => `₹${value}`} 
@@ -101,7 +99,7 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
                 />
                 <Tooltip 
                   formatter={(value) => [`₹${value}`, 'Sales']}
-                  labelFormatter={(label) => `Time: ${label}`}
+                  labelFormatter={(label) => `Day ${label}`}
                 />
                 <Bar 
                   dataKey="sales" 
@@ -115,7 +113,7 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
         ) : (
           <div className="h-[300px] flex flex-col items-center justify-center">
             <BarChart3 className="h-12 w-12 mb-2 opacity-50" />
-            <p>No sales data available for today</p>
+            <p>No sales data available for {currentMonthName}</p>
             <Button 
               variant="outline" 
               onClick={() => navigate('/pos')} 

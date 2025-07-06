@@ -14,10 +14,15 @@ const CustomerInfo = ({
   customerEmail,
   shippingAddress
 }: CustomerInfoProps) => {
+  // Don't render anything if no customer name is provided
+  if (!customerName || customerName.trim() === '') {
+    return null;
+  }
+
   return (
     <div className="mb-8">
       <h3 className="text-gray-800 font-semibold mb-2">Bill To:</h3>
-      <p className="font-medium text-gray-900">{customerName || "Guest Customer"}</p>
+      <p className="font-medium text-gray-900">{customerName}</p>
       {customerPhone && <p className="text-gray-600">Phone: {customerPhone}</p>}
       {customerEmail && <p className="text-gray-600">Email: {customerEmail}</p>}
       {shippingAddress && <p className="text-gray-600">{shippingAddress}</p>}

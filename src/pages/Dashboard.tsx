@@ -32,7 +32,9 @@ const Dashboard = () => {
       totalSales: 0,
       activeProducts: 0,
       lowStockItems: 0,
-      pendingOrders: 0
+      pendingOrders: 0,
+      todaysSales: 0,
+      todaysOrders: 0
     };
 
     const activeProducts = products.filter(p => p.isActive !== false)?.length || 0;
@@ -51,11 +53,25 @@ const Dashboard = () => {
       order.orderStatus === 'Pending' || order.orderStatus === 'Processing'
     )?.length || 0;
 
+    // Calculate today's sales
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todaysOrders = orders.filter(order => {
+      const orderDate = new Date(order.orderDate);
+      orderDate.setHours(0, 0, 0, 0);
+      return orderDate.getTime() === today.getTime();
+    });
+
+    const todaysSales = todaysOrders.reduce((sum, order) => sum + order.total, 0) || 0;
+
     return {
       totalSales,
       activeProducts,
       lowStockItems,
-      pendingOrders
+      pendingOrders,
+      todaysSales,
+      todaysOrders: todaysOrders.length
     };
   }, [products, orders]);
 
@@ -118,6 +134,8 @@ const Dashboard = () => {
         lowStockItems={stats.lowStockItems}
         pendingOrders={stats.pendingOrders}
         totalOrders={orders?.length || 0}
+        todaysSales={stats.todaysSales}
+        todaysOrders={stats.todaysOrders}
       />
 
       {/* Charts and Insights */}

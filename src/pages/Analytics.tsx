@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart3, LineChart, PieChart, TrendingUp, Calendar, Download, RefreshCw } from "lucide-react";
@@ -21,6 +21,8 @@ import {
   Tooltip,
   Bar,
   CartesianGrid,
+  PieChart as RechartsPieChart,
+  Cell,
 } from "recharts";
 
 const Analytics = () => {
@@ -53,15 +55,42 @@ const Analytics = () => {
     
     return orders.filter(order => new Date(order.orderDate) >= startDate);
   };
+
+  // Payment distribution data
+  const paymentDistribution = useMemo(() => {
+    if (!orders || orders.length === 0) return [];
+    
+    const paymentMethods = {};
+    orders.forEach(order => {
+      const method = order.paymentMethod || 'Cash';
+      paymentMethods[method] = (paymentMethods[method] || 0) + 1;
+    });
+    
+    const colors = ['#c87137', '#8B5A2F', '#A0522D', '#CD853F', '#DEB887'];
+    
+    return Object.entries(paymentMethods).map(([method, count], index) => ({
+      name: method,
+      value: count,
+      color: colors[index % colors.length]
+    }));
+  }, [orders]);
   
-  // Prepare monthly sales data
+  // Prepare sales trend data with functional time range
   const prepareSalesData = () => {
     const salesByDate = {};
     
     if (!orders || !orders.length) return [];
     
+    const now = new Date();
+    const periodDays = parseInt(period);
+    const startDate = new Date();
+    startDate.setDate(now.getDate() - periodDays);
+    
+    // Filter orders by selected period
+    const periodOrders = orders.filter(order => new Date(order.orderDate) >= startDate);
+    
     // Group sales by date
-    orders.forEach((order) => {
+    periodOrders.forEach((order) => {
       const date = new Date(order.orderDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       if (!salesByDate[date]) {
         salesByDate[date] = 0;
@@ -72,8 +101,8 @@ const Analytics = () => {
     // Convert to array format for Recharts
     return Object.keys(salesByDate)
       .sort((a, b) => {
-        const dateA = new Date(a);
-        const dateB = new Date(b);
+        const dateA = new Date(a + ', ' + new Date().getFullYear());
+        const dateB = new Date(b + ', ' + new Date().getFullYear());
         return dateA.getTime() - dateB.getTime();
       })
       .map((date) => ({
@@ -81,6 +110,45 @@ const Analytics = () => {
         sales: salesByDate[date],
       }));
   };
+
+  // Daily analytics data
+  const dailyAnalytics = useMemo(() => {
+    if (!orders || orders.length === 0) return [];
+    
+    const dailyData = {};
+    
+    orders.forEach(order => {
+      const date = new Date(order.orderDate).toLocaleDateString('en-IN');
+      
+      if (!dailyData[date]) {
+        dailyData[date] = {
+          date,
+          sales: 0,
+          orders: 0,
+          productsSold: 0,
+          paymentMethods: {}
+        };
+      }
+      
+      dailyData[date].sales += order.total;
+      dailyData[date].orders += 1;
+      
+      // Count products sold
+      if (order.items) {
+        order.items.forEach(item => {
+          dailyData[date].productsSold += item.quantity || 0;
+        });
+      }
+      
+      // Payment method distribution
+      const method = order.paymentMethod || 'Cash';
+      dailyData[date].paymentMethods[method] = (dailyData[date].paymentMethods[method] || 0) + 1;
+    });
+    
+    return Object.values(dailyData).sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+  }, [orders]);
   
   const periodOrders = getOrdersForPeriod();
   const periodRevenue = periodOrders.reduce((sum, order) => sum + order.total, 0);
@@ -91,7 +159,7 @@ const Analytics = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
         <div className="flex items-center gap-2">
-          <Select defaultValue={period} onValueChange={setPeriod}>
+          <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Time Period" />
             </SelectTrigger>
@@ -100,7 +168,6 @@ const Analytics = () => {
               <SelectItem value="30">Last 30 Days</SelectItem>
               <SelectItem value="90">Last 90 Days</SelectItem>
               <SelectItem value="365">Last Year</SelectItem>
-              <SelectItem value="custom">Custom Range</SelectItem>
             </SelectContent>
           </Select>
           <AddSalesDialog />
@@ -173,13 +240,82 @@ const Analytics = () => {
         </Card>
       </div>
 
+      {/* Second row of analytics */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="card-hover">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Products Sold</CardTitle>
+            <BarChart3 className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {periodOrders.reduce((sum, order) => 
+                sum + (order.items?.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0) || 0), 0
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">Units in last {period} days</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="card-hover">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avg Items/Order</CardTitle>
+            <LineChart className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {periodOrders.length > 0 ? 
+                (periodOrders.reduce((sum, order) => 
+                  sum + (order.items?.length || 0), 0) / periodOrders.length).toFixed(1) : '0'}
+            </div>
+            <p className="text-xs text-muted-foreground">Items per order</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="card-hover">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Top Payment Method</CardTitle>
+            <PieChart className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {paymentDistribution.length > 0 ? 
+                paymentDistribution.sort((a, b) => b.value - a.value)[0].name : 'Cash'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {paymentDistribution.length > 0 ? 
+                `${paymentDistribution.sort((a, b) => b.value - a.value)[0].value} orders` : 'No data'}
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="card-hover">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Peak Day</CardTitle>
+            <Calendar className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {dailyAnalytics.length > 0 ? 
+                dailyAnalytics.sort((a, b) => b.sales - a.sales)[0].date.split('/').slice(0, 2).join('/') : 'N/A'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {dailyAnalytics.length > 0 ? 
+                `₹${dailyAnalytics.sort((a, b) => b.sales - a.sales)[0].sales.toFixed(0)} sales` : 'No data'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
       <Tabs defaultValue="sales" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-4">
+        <TabsList className="grid w-full grid-cols-5 mb-4">
           <TabsTrigger value="sales">Sales Analytics</TabsTrigger>
+          <TabsTrigger value="payments">Payment Analytics</TabsTrigger>
           <TabsTrigger value="inventory">Inventory Analytics</TabsTrigger>
+          <TabsTrigger value="daily">Daily Data</TabsTrigger>
           <TabsTrigger value="customers">Customer Insights</TabsTrigger>
-          <TabsTrigger value="ai">AI Recommendations</TabsTrigger>
         </TabsList>
+        
         <TabsContent value="sales" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <Card className="card-hover md:col-span-2">
@@ -280,6 +416,121 @@ const Analytics = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="payments" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="card-hover">
+              <CardHeader>
+                <CardTitle>Payment Method Distribution</CardTitle>
+                <CardDescription>How customers prefer to pay</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[350px]">
+                {paymentDistribution.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPieChart>
+                      <Pie
+                        data={paymentDistribution}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        dataKey="value"
+                        label={({ name, value, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {paymentDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">No payment data available</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="card-hover">
+              <CardHeader>
+                <CardTitle>Payment Methods Summary</CardTitle>
+                <CardDescription>Detailed breakdown by payment type</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {paymentDistribution.map((method, index) => (
+                    <div key={index} className="flex justify-between items-center p-3 bg-muted/30 rounded-md">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-4 h-4 rounded-full" 
+                          style={{ backgroundColor: method.color }}
+                        />
+                        <span className="font-medium">{method.name}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold">{method.value} orders</div>
+                        <div className="text-sm text-muted-foreground">
+                          {((method.value / orders.length) * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="daily" className="space-y-4">
+          <Card className="card-hover">
+            <CardHeader>
+              <CardTitle>Daily Business Analytics</CardTitle>
+              <CardDescription>Day-wise breakdown of all business metrics</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="max-h-[500px] overflow-y-auto">
+                <div className="space-y-4">
+                  {dailyAnalytics.slice(0, 30).map((day, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="font-semibold text-lg">{day.date}</h3>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-primary">₹{day.sales.toFixed(0)}</div>
+                          <div className="text-sm text-muted-foreground">{day.orders} orders</div>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <div className="text-muted-foreground">Products Sold</div>
+                          <div className="font-semibold">{day.productsSold} units</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Avg Order Value</div>
+                          <div className="font-semibold">₹{day.orders > 0 ? (day.sales / day.orders).toFixed(0) : '0'}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Payment Methods</div>
+                          <div className="font-semibold">
+                            {Object.entries(day.paymentMethods).map(([method, count]) => 
+                              `${method}: ${count}`
+                            ).join(', ') || 'No payments'}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Items/Order</div>
+                          <div className="font-semibold">
+                            {day.orders > 0 ? (day.productsSold / day.orders).toFixed(1) : '0'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="inventory" className="space-y-4">
