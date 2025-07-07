@@ -5,7 +5,8 @@ import {
   TrendingUp, 
   Package, 
   AlertTriangle,
-  Calendar
+  Calendar,
+  CalendarDays
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -17,6 +18,8 @@ interface StatsCardsProps {
   totalOrders: number;
   todaysSales: number;
   todaysOrders: number;
+  monthlySales: number;
+  monthlyOrders: number;
 }
 
 const StatsCards: React.FC<StatsCardsProps> = ({ 
@@ -26,12 +29,15 @@ const StatsCards: React.FC<StatsCardsProps> = ({
   pendingOrders,
   totalOrders,
   todaysSales,
-  todaysOrders
+  todaysOrders,
+  monthlySales,
+  monthlyOrders
 }) => {
   const navigate = useNavigate();
+  const currentMonth = new Date().toLocaleDateString('en-US', { month: 'long' });
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
       <Card className="card-hover">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Today's Sales</CardTitle>
@@ -41,6 +47,19 @@ const StatsCards: React.FC<StatsCardsProps> = ({
           <div className="text-2xl font-bold">₹{todaysSales.toLocaleString()}</div>
           <p className="text-xs text-muted-foreground mt-1">
             From {todaysOrders || 0} orders today
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className="card-hover">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">{currentMonth} Sales</CardTitle>
+          <CalendarDays className="h-4 w-4 text-primary" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">₹{monthlySales.toLocaleString()}</div>
+          <p className="text-xs text-muted-foreground mt-1">
+            From {monthlyOrders || 0} orders this month
           </p>
         </CardContent>
       </Card>

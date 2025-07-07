@@ -22,13 +22,14 @@ interface SalesOverviewProps {
 const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
   const navigate = useNavigate();
   
-  // Function to prepare chart data - aggregate sales by day for current month
+  // Function to prepare chart data - aggregate sales by day for current month (only up to current date)
   const prepareMonthlySalesData = () => {
     if (!orders || !orders.length) return [];
     
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
+    const currentDay = currentDate.getDate();
     
     // Get orders from current month
     const currentMonthOrders = orders.filter(order => {
@@ -36,12 +37,11 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
       return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
     });
     
-    // Create daily sales data for current month
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    // Create daily sales data for current month (only up to current date)
     const dailyData = {};
     
-    // Initialize all days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
+    // Initialize only the days that have passed so far
+    for (let day = 1; day <= currentDay; day++) {
       const dateKey = `${day}`;
       dailyData[dateKey] = 0;
     }
@@ -50,7 +50,10 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
     currentMonthOrders.forEach((order) => {
       const orderDay = new Date(order.orderDate).getDate();
       const dateKey = `${orderDay}`;
-      dailyData[dateKey] += order.total;
+      // Only include if the day has passed or is today
+      if (orderDay <= currentDay) {
+        dailyData[dateKey] += order.total;
+      }
     });
     
     // Convert to array format for Recharts
@@ -68,6 +71,7 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
   };
 
   const currentMonthName = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const currentDay = new Date().getDate();
 
   return (
     <Card className="card-hover">
@@ -76,7 +80,7 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
           Sales Overview
           <span className="text-sm text-muted-foreground hover:text-primary underline">View Analytics</span>
         </CardTitle>
-        <CardDescription>{currentMonthName} daily sales performance</CardDescription>
+        <CardDescription>{currentMonthName} daily sales (up to day {currentDay})</CardDescription>
       </CardHeader>
       <CardContent className="pl-2">
         {hasData ? (
@@ -90,7 +94,7 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
                 <XAxis 
                   dataKey="day" 
                   fontSize={10}
-                  interval={Math.ceil(salesData.length / 10)}
+                  interval={0}
                 />
                 <YAxis 
                   tickFormatter={(value) => `₹${value}`} 
@@ -106,6 +110,7 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
                   name="Sales" 
                   fill="#c87137" 
                   radius={[4, 4, 0, 0]}
+                  maxBarSize={30}
                 />
               </BarChart>
             </ResponsiveContainer>

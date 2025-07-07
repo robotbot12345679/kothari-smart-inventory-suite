@@ -34,7 +34,9 @@ const Dashboard = () => {
       lowStockItems: 0,
       pendingOrders: 0,
       todaysSales: 0,
-      todaysOrders: 0
+      todaysOrders: 0,
+      monthlySales: 0,
+      monthlyOrders: 0
     };
 
     const activeProducts = products.filter(p => p.isActive !== false)?.length || 0;
@@ -65,13 +67,26 @@ const Dashboard = () => {
 
     const todaysSales = todaysOrders.reduce((sum, order) => sum + order.total, 0) || 0;
 
+    // Calculate this month's sales
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    
+    const thisMonthOrders = orders.filter(order => {
+      const orderDate = new Date(order.orderDate);
+      return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
+    });
+
+    const monthlySales = thisMonthOrders.reduce((sum, order) => sum + order.total, 0) || 0;
+
     return {
       totalSales,
       activeProducts,
       lowStockItems,
       pendingOrders,
       todaysSales,
-      todaysOrders: todaysOrders.length
+      todaysOrders: todaysOrders.length,
+      monthlySales,
+      monthlyOrders: thisMonthOrders.length
     };
   }, [products, orders]);
 
@@ -136,6 +151,8 @@ const Dashboard = () => {
         totalOrders={orders?.length || 0}
         todaysSales={stats.todaysSales}
         todaysOrders={stats.todaysOrders}
+        monthlySales={stats.monthlySales}
+        monthlyOrders={stats.monthlyOrders}
       />
 
       {/* Charts and Insights */}
