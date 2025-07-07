@@ -1,3 +1,4 @@
+
 export const compressImage = (file: File, maxSizeMB: number = 15): Promise<string> => {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
@@ -50,6 +51,45 @@ export const compressImage = (file: File, maxSizeMB: number = 15): Promise<strin
     img.onerror = () => reject(new Error('Failed to load image'));
     img.src = URL.createObjectURL(file);
   });
+};
+
+export const validateImageFile = (file: File): void => {
+  const maxSize = 15 * 1024 * 1024; // 15MB
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+  
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('Invalid file type. Please select a JPEG, PNG, GIF, or WebP image.');
+  }
+  
+  if (file.size > maxSize) {
+    throw new Error('File size too large. Please select an image under 15MB.');
+  }
+};
+
+export const saveImageToPublic = async (file: File): Promise<string> => {
+  try {
+    validateImageFile(file);
+    
+    // Compress the image
+    const compressedDataUrl = await compressImage(file, 15);
+    
+    // Generate a unique filename
+    const timestamp = Date.now();
+    const randomId = Math.random().toString(36).substring(2);
+    const imageId = `${timestamp}_${randomId}`;
+    
+    // Save to storage
+    await saveImageToStorage(compressedDataUrl, imageId);
+    
+    return imageId;
+  } catch (error) {
+    console.error('Error saving image:', error);
+    throw error;
+  }
+};
+
+export const deleteImage = (imageId: string): void => {
+  deleteImageFromStorage(imageId);
 };
 
 export const saveImageToStorage = (imageData: string, imageId: string): Promise<void> => {
