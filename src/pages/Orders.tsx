@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -100,7 +99,7 @@ const Orders = () => {
           <p>Date: ${format(new Date(order.orderDate), 'PPP')}</p>
         </div>
         <div class="order-info">
-          <p><strong>Customer:</strong> ${order.customerName || 'Guest'}</p>
+          ${order.customerName ? `<p><strong>Customer:</strong> ${order.customerName}</p>` : ''}
           ${order.customerPhone ? `<p><strong>Phone:</strong> ${order.customerPhone}</p>` : ''}
           ${order.customerEmail ? `<p><strong>Email:</strong> ${order.customerEmail}</p>` : ''}
         </div>
@@ -284,7 +283,7 @@ const Orders = () => {
                 filteredOrders.map((order) => (
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">{order.id}</TableCell>
-                    <TableCell>{order.customerName || 'Guest'}</TableCell>
+                    <TableCell>{order.customerName || '-'}</TableCell>
                     <TableCell>
                       {format(new Date(order.orderDate), 'PP')}
                     </TableCell>

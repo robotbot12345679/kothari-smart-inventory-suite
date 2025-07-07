@@ -24,8 +24,6 @@ import {
   PieChart as RechartsPieChart,
   Cell,
   Pie,
-  LineChart as RechartsLineChart,
-  Line,
 } from "recharts";
 
 interface DailyAnalyticsData {
@@ -58,7 +56,7 @@ const Analytics = () => {
   } = useCustomerMetrics();
 
   const { orders, products } = useData();
-  const [period, setPeriod] = useState("90"); // Default to 90 days
+  const [period, setPeriod] = useState("30"); // Changed back to 30 days
 
   // Order count
   const orderCount = orders.length;
@@ -284,7 +282,7 @@ const Analytics = () => {
             <CardContent className="h-[400px]">
               {salesData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <RechartsLineChart data={salesData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <BarChart data={salesData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis 
                       dataKey="date" 
@@ -308,19 +306,18 @@ const Analytics = () => {
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                       }}
                     />
-                    <Line 
-                      type="monotone"
+                    <Bar 
                       dataKey="sales" 
-                      stroke="#c87137" 
-                      strokeWidth={3}
-                      dot={{ fill: '#c87137', strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6, stroke: '#c87137', strokeWidth: 2 }}
+                      name="Sales" 
+                      fill="#c87137" 
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={20}
                     />
-                  </RechartsLineChart>
+                  </BarChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="text-muted-foreground flex flex-col h-full items-center justify-center">
-                  <LineChart className="h-12 w-12 mb-2 opacity-50" />
+                  <BarChart3 className="h-12 w-12 mb-2 opacity-50" />
                   <p>No sales data available for the selected period</p>
                   <p className="text-xs mt-2">Try adding missing sales data or changing the time period</p>
                 </div>
