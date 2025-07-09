@@ -80,46 +80,58 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   ];
 
   return (
-    <div
-      className={cn(
-        "bg-sidebar-background border-r border-sidebar-border text-sidebar-foreground transition-all duration-300 z-50",
-        "fixed inset-y-0 left-0 w-64",
-        open ? "translate-x-0" : "-translate-x-full"
-      )}
-    >
-      <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
-        <div className="flex items-center">
-          <img
-            src="/lovable-uploads/00972147-e824-453d-8b6d-dc558e1cb95e.png"
-            alt="Logo"
-            className="h-8 w-auto mr-2"
-          />
-          <span className="text-lg font-semibold">Kothari's</span>
-        </div>
-        <button
+    <>
+      {/* Mobile overlay */}
+      {open && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setOpen(false)}
-          className="p-1 rounded-full hover:bg-sidebar-accent"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
+        />
+      )}
+      
+      {/* Sidebar */}
+      <div
+        className={cn(
+          "bg-sidebar-background border-r border-sidebar-border text-sidebar-foreground transition-all duration-300 z-50",
+          "lg:relative lg:translate-x-0", // Always visible on desktop
+          "fixed inset-y-0 left-0", // Fixed position on mobile
+          open ? "translate-x-0 w-64" : "-translate-x-full w-0 lg:w-64" // Show/hide based on state
+        )}
+      >
+        <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
+          <div className="flex items-center">
+            <img
+              src="/lovable-uploads/00972147-e824-453d-8b6d-dc558e1cb95e.png"
+              alt="Logo"
+              className="h-8 w-auto mr-2"
+            />
+            <span className="text-lg font-semibold">Kothari's</span>
+          </div>
+          <button
+            onClick={() => setOpen(false)}
+            className="p-1 rounded-full hover:bg-sidebar-accent lg:hidden"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
-      <div className="overflow-y-auto h-[calc(100vh-4rem)]">
-        <nav className="p-3">
-          <ul className="space-y-1">
-            {sidebarItems.map((item) => (
-              <SidebarItem
-                key={item.path}
-                icon={item.icon}
-                label={item.label}
-                path={item.path}
-                isActive={location.pathname === item.path}
-              />
-            ))}
-          </ul>
-        </nav>
+        <div className="overflow-y-auto h-[calc(100vh-4rem)]">
+          <nav className="p-3">
+            <ul className="space-y-1">
+              {sidebarItems.map((item) => (
+                <SidebarItem
+                  key={item.path}
+                  icon={item.icon}
+                  label={item.label}
+                  path={item.path}
+                  isActive={location.pathname === item.path}
+                />
+              ))}
+            </ul>
+          </nav>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
