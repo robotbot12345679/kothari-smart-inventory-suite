@@ -19,7 +19,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
   const { setTheme } = useTheme();
 
   return (
-    <header className="sticky top-0 z-30 w-full border-b bg-background">
+    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background">
       <div className="flex h-16 items-center px-4 md:px-6">
         <Button
           variant="ghost"

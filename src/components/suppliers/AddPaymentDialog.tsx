@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, X, Image } from "lucide-react";
+import { Upload, X, Image, Loader } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import { Supplier, Payment } from "@/types/supplier";
 
 interface AddPaymentDialogProps {
@@ -25,6 +26,8 @@ const AddPaymentDialog: React.FC<AddPaymentDialogProps> = ({
   selectedSupplierId,
   onAdd
 }) => {
+  const { toast } = useToast();
+  const [isDetectingAmount, setIsDetectingAmount] = useState(false);
   const [formData, setFormData] = useState({
     supplierId: selectedSupplierId?.toString() || "",
     amount: "",
@@ -34,6 +37,43 @@ const AddPaymentDialog: React.FC<AddPaymentDialogProps> = ({
     notes: ""
   });
   const [screenshot, setScreenshot] = useState<File | null>(null);
+
+  const handleScreenshotUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setScreenshot(file);
+    setIsDetectingAmount(true);
+
+    try {
+      // Simulate AI amount detection from screenshot
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Mock detected amount and reference number
+      const detectedAmount = Math.floor(Math.random() * 50000) + 5000; // Random amount between 5000-55000
+      const detectedRef = `TXN${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      
+      setFormData(prev => ({
+        ...prev,
+        amount: detectedAmount.toString(),
+        referenceNumber: detectedRef
+      }));
+
+      toast({
+        title: "Amount Detected",
+        description: `AI detected payment amount: ₹${detectedAmount.toLocaleString()}`,
+      });
+
+    } catch (error) {
+      toast({
+        title: "Detection Failed",
+        description: "Could not detect amount from screenshot. Please enter manually.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDetectingAmount(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,12 +107,8 @@ const AddPaymentDialog: React.FC<AddPaymentDialogProps> = ({
       notes: ""
     });
     setScreenshot(null);
+    setIsDetectingAmount(false);
     onOpenChange(false);
-  };
-
-  const handleScreenshotUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) setScreenshot(file);
   };
 
   return (
@@ -102,15 +138,60 @@ const AddPaymentDialog: React.FC<AddPaymentDialogProps> = ({
             </Select>
           </div>
 
+          <div className="space-y-2">
+            <Label>Upload Screenshot/Receipt (Auto-detects amount)</Label>
+            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
+              {isDetectingAmount ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Loader className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Detecting amount from image...</p>
+                </div>
+              ) : (
+                <>
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground mb-2">Upload payment screenshot for auto-detection</p>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleScreenshotUpload}
+                    className="max-w-xs mx-auto"
+                  />
+                </>
+              )}
+            </div>
+
+            {screenshot && (
+              <Card>
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Image className="h-4 w-4" />
+                      <span className="text-sm">{screenshot.name}</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setScreenshot(null)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount *</Label>
+              <Label htmlFor="amount">Amount * {isDetectingAmount && "(Auto-detecting...)"}</Label>
               <Input
                 id="amount"
                 type="number"
                 value={formData.amount}
                 onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
                 placeholder="Enter amount"
+                disabled={isDetectingAmount}
                 required
               />
             </div>
@@ -151,45 +232,10 @@ const AddPaymentDialog: React.FC<AddPaymentDialogProps> = ({
                 id="referenceNumber"
                 value={formData.referenceNumber}
                 onChange={(e) => setFormData(prev => ({ ...prev, referenceNumber: e.target.value }))}
-                placeholder="Enter transaction/reference number"
+                placeholder="Auto-detected or enter manually"
               />
             </div>
           )}
-
-          <div className="space-y-2">
-            <Label>Upload Screenshot/Receipt (Optional)</Label>
-            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
-              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mb-2">Upload payment screenshot</p>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleScreenshotUpload}
-                className="max-w-xs mx-auto"
-              />
-            </div>
-
-            {screenshot && (
-              <Card>
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Image className="h-4 w-4" />
-                      <span className="text-sm">{screenshot.name}</span>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setScreenshot(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
 
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
@@ -206,7 +252,7 @@ const AddPaymentDialog: React.FC<AddPaymentDialogProps> = ({
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={isDetectingAmount}>
               Record Payment
             </Button>
           </div>

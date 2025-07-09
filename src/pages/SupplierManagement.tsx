@@ -21,6 +21,8 @@ const SupplierManagement = () => {
     addSupplier,
     addPurchaseBill,
     addPayment,
+    deletePurchaseBill,
+    deletePayment,
     getSupplierAnalytics
   } = useSupplierData();
 
@@ -68,7 +70,7 @@ const SupplierManagement = () => {
             className="gap-2"
           >
             <Upload className="h-4 w-4" />
-            Upload Bill/Receipt
+            Upload Documents
           </Button>
         </div>
       </div>
@@ -168,11 +170,13 @@ const SupplierManagement = () => {
             <TabsContent value="bills" className="space-y-4">
               <PurchaseBillsList 
                 bills={purchaseBills.filter(bill => bill.supplierId === selectedSupplier)}
+                onDelete={deletePurchaseBill}
               />
             </TabsContent>
             <TabsContent value="payments" className="space-y-4">
               <PaymentsList 
                 payments={payments.filter(payment => payment.supplierId === selectedSupplier)}
+                onDelete={deletePayment}
               />
             </TabsContent>
           </Tabs>

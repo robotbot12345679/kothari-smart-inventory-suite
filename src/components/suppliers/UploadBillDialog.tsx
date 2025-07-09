@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, FileText, X } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Upload, FileText, X, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Supplier, PurchaseBill, PurchaseItem } from "@/types/supplier";
 
@@ -26,7 +27,8 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
 }) => {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadType, setUploadType] = useState<'bills' | 'ledgers'>('bills');
   const [extractedData, setExtractedData] = useState<any>(null);
   const [formData, setFormData] = useState({
     supplierId: "",
@@ -39,40 +41,61 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
   });
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
 
-    setSelectedFile(file);
+    setSelectedFiles(files);
     setIsProcessing(true);
 
     try {
-      // Simulate AI processing (in real implementation, this would call an AI service)
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Simulate enhanced AI processing for multiple files
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Mock extracted data
+      // Mock more comprehensive extracted data
       const mockExtractedData = {
-        supplierName: "Kailash Kirana",
-        billNumber: `INV-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+        supplierName: "ABC Suppliers Pvt Ltd",
+        originalBillNumber: "INV/2024/001234", // Preserve original number
         billDate: new Date().toISOString().split('T')[0],
         items: [
           {
-            productName: "Premium Almonds",
-            quantity: 10,
+            productName: "Premium Basmati Rice",
+            quantity: 25,
             unit: "kg",
-            pricePerUnit: 800,
-            totalPrice: 8000
+            pricePerUnit: 120,
+            totalPrice: 3000
           },
           {
-            productName: "Cashews",
-            quantity: 5,
+            productName: "Organic Almonds",
+            quantity: 10,
             unit: "kg", 
-            pricePerUnit: 1200,
-            totalPrice: 6000
+            pricePerUnit: 850,
+            totalPrice: 8500
+          },
+          {
+            productName: "Cashew Nuts (W240)",
+            quantity: 5,
+            unit: "kg",
+            pricePerUnit: 1400,
+            totalPrice: 7000
+          },
+          {
+            productName: "Dates (Medjool)",
+            quantity: 8,
+            unit: "kg",
+            pricePerUnit: 650,
+            totalPrice: 5200
+          },
+          {
+            productName: "Pistachios",
+            quantity: 3,
+            unit: "kg",
+            pricePerUnit: 2200,
+            totalPrice: 6600
           }
         ],
-        subtotal: 14000,
-        gst: 2520,
-        total: 16520
+        subtotal: 30300,
+        gst: 5454,
+        total: 35754
       };
 
       setExtractedData(mockExtractedData);
@@ -84,7 +107,7 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
       
       setFormData({
         supplierId: supplier?.id.toString() || "",
-        billNumber: mockExtractedData.billNumber,
+        billNumber: mockExtractedData.originalBillNumber, // Use original bill number
         billDate: mockExtractedData.billDate,
         items: mockExtractedData.items,
         subtotal: mockExtractedData.subtotal,
@@ -93,19 +116,57 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
       });
 
       toast({
-        title: "File Processed",
-        description: "AI has extracted the bill information. Please review and confirm.",
+        title: "Files Processed Successfully",
+        description: `AI extracted data from ${files.length} file(s). ${mockExtractedData.items.length} items detected.`,
       });
 
     } catch (error) {
       toast({
         title: "Processing Failed",
-        description: "Failed to process the file. Please try again.",
+        description: "Failed to process the files. Please try again.",
         variant: "destructive"
       });
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const addItem = () => {
+    setFormData(prev => ({
+      ...prev,
+      items: [...prev.items, {
+        productName: "",
+        quantity: 0,
+        unit: "kg",
+        pricePerUnit: 0,
+        totalPrice: 0
+      }]
+    }));
+  };
+
+  const removeItem = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateItem = (index: number, field: keyof PurchaseItem, value: any) => {
+    setFormData(prev => {
+      const newItems = [...prev.items];
+      newItems[index] = { ...newItems[index], [field]: value };
+      
+      // Auto-calculate total price
+      if (field === 'quantity' || field === 'pricePerUnit') {
+        newItems[index].totalPrice = newItems[index].quantity * newItems[index].pricePerUnit;
+      }
+      
+      return { ...prev, items: newItems };
+    });
   };
 
   const handleSubmit = () => {
@@ -124,13 +185,13 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
     const bill: Omit<PurchaseBill, 'id' | 'createdDate'> = {
       supplierId: supplier.id,
       supplierName: supplier.name,
-      billNumber: formData.billNumber,
+      billNumber: formData.billNumber, // Keep original bill number
       billDate: formData.billDate,
       items: formData.items,
       subtotal: formData.subtotal,
       gst: formData.gst,
       total: formData.total,
-      uploadedFile: selectedFile?.name,
+      uploadedFile: selectedFiles.map(f => f.name).join(', '),
       extractedData,
       status: 'Pending'
     };
@@ -140,7 +201,7 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
   };
 
   const handleClose = () => {
-    setSelectedFile(null);
+    setSelectedFiles([]);
     setExtractedData(null);
     setFormData({
       supplierId: "",
@@ -156,141 +217,238 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Upload Purchase Bill / Receipt</DialogTitle>
+          <DialogTitle>Upload Documents</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* File Upload Section */}
-          <div className="space-y-4">
-            <Label>Upload File (PDF, Excel, Image, Screenshot, ZIP)</Label>
-            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
-              <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Drag and drop your files here, or click to browse
-                </p>
-                <Input
-                  type="file"
-                  accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png,.zip"
-                  onChange={handleFileUpload}
-                  className="max-w-xs mx-auto"
-                />
-              </div>
-            </div>
+        <Tabs value={uploadType} onValueChange={(value: any) => setUploadType(value)} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="bills">Purchase Bills</TabsTrigger>
+            <TabsTrigger value="ledgers">Ledgers</TabsTrigger>
+          </TabsList>
 
-            {selectedFile && (
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      <span className="text-sm font-medium">{selectedFile.name}</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedFile(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {isProcessing && (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                <p className="text-sm text-muted-foreground">Processing with AI...</p>
-              </div>
-            )}
-          </div>
-
-          {/* Extracted/Manual Data Section */}
-          {(extractedData || !selectedFile) && (
+          <TabsContent value="bills" className="space-y-6">
+            {/* File Upload Section */}
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <Label>Upload Bills (PDF, Excel, Image, Screenshot, ZIP - Multiple files supported)</Label>
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+                <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <div className="space-y-2">
-                  <Label>Supplier</Label>
-                  <Select 
-                    value={formData.supplierId} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, supplierId: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select supplier" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {suppliers.filter(s => s.isActive).map(supplier => (
-                        <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                          {supplier.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Bill Number</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Drag and drop your files here, or click to browse (Multiple files allowed)
+                  </p>
                   <Input
-                    value={formData.billNumber}
-                    onChange={(e) => setFormData(prev => ({ ...prev, billNumber: e.target.value }))}
-                    placeholder="Enter bill number"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Bill Date</Label>
-                  <Input
-                    type="date"
-                    value={formData.billDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, billDate: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Total Amount</Label>
-                  <Input
-                    type="number"
-                    value={formData.total}
-                    onChange={(e) => setFormData(prev => ({ ...prev, total: parseFloat(e.target.value) || 0 }))}
-                    placeholder="Enter total amount"
+                    type="file"
+                    accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png,.zip"
+                    onChange={handleFileUpload}
+                    multiple
+                    className="max-w-xs mx-auto"
                   />
                 </div>
               </div>
 
-              {/* Items Section */}
-              {formData.items.length > 0 && (
+              {selectedFiles.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Extracted Items</Label>
-                  <div className="border rounded-lg p-4 space-y-2 max-h-40 overflow-y-auto">
-                    {formData.items.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center p-2 bg-muted/50 rounded">
-                        <div>
-                          <span className="font-medium">{item.productName}</span>
-                          <span className="text-sm text-muted-foreground ml-2">
-                            {item.quantity} {item.unit} × ₹{item.pricePerUnit}
-                          </span>
-                        </div>
-                        <span className="font-medium">₹{item.totalPrice}</span>
-                      </div>
+                  <Label>Selected Files ({selectedFiles.length})</Label>
+                  <div className="grid gap-2">
+                    {selectedFiles.map((file, index) => (
+                      <Card key={index}>
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4" />
+                              <span className="text-sm font-medium">{file.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                              </span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFile(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} disabled={!formData.supplierId || isProcessing}>
-              Save Bill
-            </Button>
-          </div>
+              {isProcessing && (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                  <p className="text-sm text-muted-foreground">Processing with Enhanced AI Scanner...</p>
+                </div>
+              )}
+            </div>
+
+            {/* Extracted/Manual Data Section */}
+            {(extractedData || !selectedFiles.length) && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Supplier</Label>
+                    <Select 
+                      value={formData.supplierId} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, supplierId: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select supplier" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {suppliers.filter(s => s.isActive).map(supplier => (
+                          <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                            {supplier.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Bill Number (Original)</Label>
+                    <Input
+                      value={formData.billNumber}
+                      onChange={(e) => setFormData(prev => ({ ...prev, billNumber: e.target.value }))}
+                      placeholder="Original bill number will be preserved"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Bill Date</Label>
+                    <Input
+                      type="date"
+                      value={formData.billDate}
+                      onChange={(e) => setFormData(prev => ({ ...prev, billDate: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Total Amount</Label>
+                    <Input
+                      type="number"
+                      value={formData.total}
+                      onChange={(e) => setFormData(prev => ({ ...prev, total: parseFloat(e.target.value) || 0 }))}
+                      placeholder="Enter total amount"
+                    />
+                  </div>
+                </div>
+
+                {/* Items Section */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Items</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addItem}
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Item
+                    </Button>
+                  </div>
+                  
+                  {formData.items.length > 0 && (
+                    <div className="border rounded-lg p-4 space-y-3 max-h-60 overflow-y-auto">
+                      {formData.items.map((item, index) => (
+                        <div key={index} className="grid grid-cols-6 gap-2 items-end p-3 bg-muted/50 rounded">
+                          <div>
+                            <Label className="text-xs">Product</Label>
+                            <Input
+                              value={item.productName}
+                              onChange={(e) => updateItem(index, 'productName', e.target.value)}
+                              placeholder="Product name"
+                              className="h-8"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Qty</Label>
+                            <Input
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
+                              className="h-8"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Unit</Label>
+                            <Input
+                              value={item.unit}
+                              onChange={(e) => updateItem(index, 'unit', e.target.value)}
+                              className="h-8"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Rate</Label>
+                            <Input
+                              type="number"
+                              value={item.pricePerUnit}
+                              onChange={(e) => updateItem(index, 'pricePerUnit', parseFloat(e.target.value) || 0)}
+                              className="h-8"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Total</Label>
+                            <Input
+                              type="number"
+                              value={item.totalPrice}
+                              readOnly
+                              className="h-8 bg-muted"
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeItem(index)}
+                            className="h-8"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="ledgers" className="space-y-6">
+            <div className="space-y-4">
+              <Label>Upload Ledgers (PDF, Excel, Image, Screenshot, ZIP)</Label>
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+                <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Upload supplier ledgers for account reconciliation
+                  </p>
+                  <Input
+                    type="file"
+                    accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png,.zip"
+                    multiple
+                    className="max-w-xs mx-auto"
+                  />
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Action Buttons */}
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={!formData.supplierId || isProcessing}>
+            Save {uploadType === 'bills' ? 'Bills' : 'Ledgers'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

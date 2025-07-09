@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { 
@@ -52,6 +53,19 @@ export const useSupplierData = () => {
     return newSupplier;
   };
 
+  const deleteSupplier = (supplierId: number) => {
+    setSuppliers(prev => prev.filter(s => s.id !== supplierId));
+    // Also delete related bills and payments
+    setPurchaseBills(prev => prev.filter(b => b.supplierId !== supplierId));
+    setPayments(prev => prev.filter(p => p.supplierId !== supplierId));
+    setProductPriceHistory(prev => prev.filter(p => p.supplierId !== supplierId));
+    
+    toast({
+      title: "Supplier Deleted",
+      description: "Supplier and all related data has been deleted.",
+    });
+  };
+
   const addPurchaseBill = (bill: Omit<PurchaseBill, 'id' | 'createdDate'>) => {
     const newBill: PurchaseBill = {
       ...bill,
@@ -81,6 +95,16 @@ export const useSupplierData = () => {
     return newBill;
   };
 
+  const deletePurchaseBill = (billId: string) => {
+    setPurchaseBills(prev => prev.filter(b => b.id !== billId));
+    setProductPriceHistory(prev => prev.filter(p => p.billId !== billId));
+    
+    toast({
+      title: "Bill Deleted",
+      description: "Purchase bill has been deleted successfully.",
+    });
+  };
+
   const addPayment = (payment: Omit<Payment, 'id' | 'createdDate'>) => {
     const newPayment: Payment = {
       ...payment,
@@ -95,6 +119,15 @@ export const useSupplierData = () => {
     });
     
     return newPayment;
+  };
+
+  const deletePayment = (paymentId: string) => {
+    setPayments(prev => prev.filter(p => p.id !== paymentId));
+    
+    toast({
+      title: "Payment Deleted",
+      description: "Payment has been deleted successfully.",
+    });
   };
 
   const getSupplierAnalytics = (supplierId: number): SupplierAnalytics => {
@@ -165,8 +198,11 @@ export const useSupplierData = () => {
     payments,
     productPriceHistory,
     addSupplier,
+    deleteSupplier,
     addPurchaseBill,
+    deletePurchaseBill,
     addPayment,
+    deletePayment,
     getSupplierAnalytics,
     getProductComparison
   };

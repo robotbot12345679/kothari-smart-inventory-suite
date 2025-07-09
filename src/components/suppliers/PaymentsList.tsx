@@ -2,15 +2,30 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CreditCard, Calendar, DollarSign, Image } from "lucide-react";
+import { CreditCard, Calendar, DollarSign, Image, Trash2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import { Payment } from "@/types/supplier";
 
 interface PaymentsListProps {
   payments: Payment[];
+  onDelete?: (paymentId: string) => void;
 }
 
-const PaymentsList: React.FC<PaymentsListProps> = ({ payments }) => {
+const PaymentsList: React.FC<PaymentsListProps> = ({ payments, onDelete }) => {
+  const { toast } = useToast();
+
+  const handleDelete = (paymentId: string, amount: number) => {
+    if (window.confirm(`Are you sure you want to delete payment of ₹${amount.toLocaleString()}?`)) {
+      onDelete?.(paymentId);
+      toast({
+        title: "Payment Deleted",
+        description: `Payment of ₹${amount.toLocaleString()} has been deleted successfully.`,
+      });
+    }
+  };
+
   if (payments.length === 0) {
     return (
       <Card>
@@ -48,6 +63,7 @@ const PaymentsList: React.FC<PaymentsListProps> = ({ payments }) => {
               <TableHead>Mode</TableHead>
               <TableHead>Reference</TableHead>
               <TableHead>Receipt</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -83,6 +99,18 @@ const PaymentsList: React.FC<PaymentsListProps> = ({ payments }) => {
                       <Image className="h-3 w-3" />
                       Screenshot
                     </div>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(payment.id, payment.amount)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   )}
                 </TableCell>
               </TableRow>

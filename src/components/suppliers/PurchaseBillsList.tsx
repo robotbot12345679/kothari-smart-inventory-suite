@@ -2,15 +2,30 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Calendar, DollarSign } from "lucide-react";
+import { FileText, Calendar, DollarSign, Trash2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import { PurchaseBill } from "@/types/supplier";
 
 interface PurchaseBillsListProps {
   bills: PurchaseBill[];
+  onDelete?: (billId: string) => void;
 }
 
-const PurchaseBillsList: React.FC<PurchaseBillsListProps> = ({ bills }) => {
+const PurchaseBillsList: React.FC<PurchaseBillsListProps> = ({ bills, onDelete }) => {
+  const { toast } = useToast();
+
+  const handleDelete = (billId: string, billNumber: string) => {
+    if (window.confirm(`Are you sure you want to delete bill ${billNumber}?`)) {
+      onDelete?.(billId);
+      toast({
+        title: "Bill Deleted",
+        description: `Bill ${billNumber} has been deleted successfully.`,
+      });
+    }
+  };
+
   if (bills.length === 0) {
     return (
       <Card>
@@ -47,6 +62,7 @@ const PurchaseBillsList: React.FC<PurchaseBillsListProps> = ({ bills }) => {
               <TableHead>Items</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -85,6 +101,18 @@ const PurchaseBillsList: React.FC<PurchaseBillsListProps> = ({ bills }) => {
                   <Badge className={getStatusColor(bill.status)}>
                     {bill.status}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  {onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(bill.id, bill.billNumber || bill.id.substring(0, 8))}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
