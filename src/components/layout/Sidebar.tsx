@@ -13,11 +13,9 @@ import {
   Truck,
   Box,
   FileText,
-  Menu,
   X,
   Building2,
 } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
@@ -49,7 +47,6 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
       >
         <Icon className="mr-3 h-5 w-5" />
         <span>{label}</span>
-        {/* Show notifications indicator */}
         {label === "Bills" && (
           <span className="ml-auto bg-primary text-white text-xs font-medium px-1.5 py-0.5 rounded-full">
             New
@@ -67,7 +64,6 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
 
 const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   const location = useLocation();
-  const isMobile = useIsMobile();
 
   const sidebarItems = [
     { icon: Home, label: "Dashboard", path: "/dashboard" },
@@ -83,19 +79,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
 
-  if (isMobile && !open) {
-    return null;
-  }
-
   return (
     <div
       className={cn(
         "bg-sidebar-background border-r border-sidebar-border text-sidebar-foreground transition-all duration-300 z-50",
-        isMobile
-          ? "fixed inset-y-0 left-0 w-64 shadow-lg"
-          : open
-          ? "w-64 fixed inset-y-0 left-0"
-          : "w-0 hidden"
+        open ? "w-64 fixed inset-y-0 left-0" : "w-0 hidden"
       )}
     >
       <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
@@ -107,14 +95,12 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
           />
           <span className="text-lg font-semibold">Kothari's</span>
         </div>
-        {isMobile && (
-          <button
-            onClick={() => setOpen(false)}
-            className="p-1 rounded-full hover:bg-sidebar-accent"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        )}
+        <button
+          onClick={() => setOpen(false)}
+          className="p-1 rounded-full hover:bg-sidebar-accent lg:hidden"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
       <div className="overflow-y-auto h-[calc(100vh-4rem)]">

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { ThemeProvider } from '@/components/theme-provider';
 import MainLayout from './components/layout/MainLayout';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
@@ -19,9 +20,9 @@ import { DataProvider } from './context/DataContext';
 
 const App = () => {
   return (
-    <DataProvider>
-      <Router>
-        <div>
+    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+      <DataProvider>
+        <Router>
           <MainLayout>
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" />} />
@@ -40,9 +41,9 @@ const App = () => {
               <Route path="/product-comparison" element={<ProductComparison />} />
             </Routes>
           </MainLayout>
-        </div>
-      </Router>
-    </DataProvider>
+        </Router>
+      </DataProvider>
+    </ThemeProvider>
   );
 };
 
