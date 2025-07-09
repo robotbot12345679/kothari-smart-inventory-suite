@@ -13,6 +13,8 @@ import Analytics from './pages/Analytics';
 import Shipping from './pages/Shipping';
 import Inventory from './pages/Inventory';
 import BillsReport from './pages/BillsReport';
+import SupplierManagement from './pages/SupplierManagement';
+import ProductComparison from './pages/ProductComparison';
 import { DataProvider } from './context/DataContext';
 
 const App = () => {
@@ -34,6 +36,8 @@ const App = () => {
               <Route path="/shipping" element={<Shipping />} />
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/bills" element={<BillsReport />} />
+              <Route path="/suppliers" element={<SupplierManagement />} />
+              <Route path="/product-comparison" element={<ProductComparison />} />
             </Routes>
           </MainLayout>
         </div>

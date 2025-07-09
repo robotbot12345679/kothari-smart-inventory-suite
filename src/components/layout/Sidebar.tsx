@@ -15,6 +15,7 @@ import {
   FileText,
   Menu,
   X,
+  Building2,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,11 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
             New
           </span>
         )}
+        {label === "Suppliers" && (
+          <span className="ml-auto bg-green-600 text-white text-xs font-medium px-1.5 py-0.5 rounded-full">
+            New
+          </span>
+        )}
       </Link>
     </li>
   );
@@ -72,6 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
     { icon: BarChart, label: "Analytics", path: "/analytics" },
     { icon: Truck, label: "Shipping", path: "/shipping" },
     { icon: Box, label: "Inventory", path: "/inventory" },
+    { icon: Building2, label: "Suppliers", path: "/suppliers" },
     { icon: FileText, label: "Bills", path: "/bills" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];

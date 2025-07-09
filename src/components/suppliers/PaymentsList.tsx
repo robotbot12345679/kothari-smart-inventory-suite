@@ -1,0 +1,97 @@
+
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CreditCard, Calendar, DollarSign, Image } from "lucide-react";
+import { Payment } from "@/types/supplier";
+
+interface PaymentsListProps {
+  payments: Payment[];
+}
+
+const PaymentsList: React.FC<PaymentsListProps> = ({ payments }) => {
+  if (payments.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <CreditCard className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <p className="text-muted-foreground">No payments found</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const getPaymentModeColor = (mode: string) => {
+    switch (mode) {
+      case 'Cash': return 'bg-blue-100 text-blue-800';
+      case 'Online': return 'bg-green-100 text-green-800';
+      case 'Cheque': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CreditCard className="h-5 w-5" />
+          Payments ({payments.length})
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Mode</TableHead>
+              <TableHead>Reference</TableHead>
+              <TableHead>Receipt</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {payments.map((payment) => (
+              <TableRow key={payment.id}>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3 text-muted-foreground" />
+                    {new Date(payment.paymentDate).toLocaleDateString('en-IN')}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1 font-medium">
+                    <DollarSign className="h-3 w-3 text-green-600" />
+                    ₹{payment.amount.toLocaleString()}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge className={getPaymentModeColor(payment.paymentMode)}>
+                    {payment.paymentMode}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {payment.referenceNumber && (
+                    <span className="text-sm font-mono">
+                      {payment.referenceNumber}
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {payment.screenshot && (
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <Image className="h-3 w-3" />
+                      Screenshot
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default PaymentsList;
