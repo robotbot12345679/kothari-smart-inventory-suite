@@ -1,6 +1,6 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Product, Category, Order, Customer, CartItem } from "@/types/pos";
-import { useToast } from "@/components/ui/use-toast";
 import { deleteImage } from "@/utils/imageUtils";
 
 interface DataContextType {
@@ -28,6 +28,7 @@ interface DataContextType {
   logout: () => void;
   currentUser: { email: string; name: string } | null;
   updateOrderPaymentStatus: (orderId: string, updatedOrder: Order) => void;
+  showToast: (title: string, description: string, variant?: "default" | "destructive") => void;
 }
 
 interface UserAccount {
@@ -39,13 +40,18 @@ interface UserAccount {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
   const [currentUser, setCurrentUser] = useState<{ email: string; name: string } | null>(null);
+  
+  // Toast function that can be passed down without using hooks
+  const showToast = (title: string, description: string, variant: "default" | "destructive" = "default") => {
+    console.log(`Toast: ${title} - ${description}`);
+    // For now, we'll use console.log. In a real app, you'd integrate with your toast system here
+  };
 
   useEffect(() => {
     const savedProducts = localStorage.getItem("products");
@@ -99,10 +105,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return product;
     }));
     
-    toast({
-      title: "Stock Updated",
-      description: `Inventory stock has been updated successfully.`,
-    });
+    showToast("Stock Updated", "Inventory stock has been updated successfully.");
   };
 
   const updateInventoryAfterSale = (cartItems: CartItem[]) => {
@@ -122,25 +125,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const createAccount = (email: string, name: string, password: string): boolean => {
-    // Check if email already exists
     if (userAccounts.some(account => account.email === email)) {
-      toast({
-        title: "Account Creation Failed",
-        description: "An account with this email already exists.",
-        variant: "destructive"
-      });
+      showToast("Account Creation Failed", "An account with this email already exists.", "destructive");
       return false;
     }
 
-    // Create new account
     const newAccount = { email, name, password };
     setUserAccounts(prev => [...prev, newAccount]);
     setCurrentUser({ email, name });
     
-    toast({
-      title: "Account Created",
-      description: `Welcome, ${name}! Your account has been created successfully.`,
-    });
+    showToast("Account Created", `Welcome, ${name}! Your account has been created successfully.`);
     return true;
   };
 
@@ -149,28 +143,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     if (account) {
       setCurrentUser({ email: account.email, name: account.name });
-      
-      toast({
-        title: "Login Successful",
-        description: `Welcome back, ${account.name}!`,
-      });
+      showToast("Login Successful", `Welcome back, ${account.name}!`);
       return true;
     } else {
-      toast({
-        title: "Login Failed",
-        description: "Invalid email or password.",
-        variant: "destructive"
-      });
+      showToast("Login Failed", "Invalid email or password.", "destructive");
       return false;
     }
   };
 
   const logout = () => {
     setCurrentUser(null);
-    toast({
-      title: "Logged Out",
-      description: "You have been logged out successfully.",
-    });
+    showToast("Logged Out", "You have been logged out successfully.");
   };
 
   const addProduct = (product: Product) => {
@@ -180,7 +163,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         product.id = maxId + 1;
       }
       
-      // Ensure product has all required fields
       if (!product.weight) {
         product.weight = 1;
       }
@@ -189,35 +171,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         product.unit = 'kg';
       }
       
-      // Ensure price includes GST
       product.priceIncludesGST = true;
       
       setProducts(prev => [...prev, product]);
-      toast({
-        title: "Success",
-        description: `Product "${product.name}" has been added.`,
-      });
+      showToast("Success", `Product "${product.name}" has been added.`);
     } catch (error) {
       console.error("Error adding product:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add product. Please try again.",
-        variant: "destructive"
-      });
+      showToast("Error", "Failed to add product. Please try again.", "destructive");
     }
   };
 
   const updateProduct = (id: number, updatedProduct: Product) => {
-    // Ensure price includes GST flag is preserved
     updatedProduct.priceIncludesGST = true;
     setProducts(prev => prev.map(product => product.id === id ? updatedProduct : product));
   };
 
   const deleteProduct = (id: number) => {
-    // Find the product to get its image filename
     const productToDelete = products.find(product => product.id === id);
     
-    // Delete the associated image if it exists
     if (productToDelete?.image) {
       deleteImage(productToDelete.image);
     }
@@ -241,22 +212,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addOrder = (order: Order) => {
     setOrders(prev => [...prev, order]);
     
-    // Automatically update inventory when order is added
     if (order.items && order.items.length > 0) {
       updateInventoryAfterSale(order.items);
     }
   };
 
   const updateOrder = (id: string, updatedOrder: Order) => {
-    // Get the old order to calculate stock differences if needed
     const oldOrder = orders.find(order => order.id === id);
     
     setOrders(prev => prev.map(order => order.id === id ? updatedOrder : order));
     
-    // Handle inventory updates if the order items changed
     if (oldOrder && updatedOrder.items) {
-      // This is a simplified approach - in a real app, you'd need to track 
-      // which items were added/removed/changed quantity
       updateInventoryAfterSale(updatedOrder.items);
     }
   };
@@ -272,37 +238,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         customer.id = maxId + 1;
       }
       setCustomers(prev => [...prev, customer]);
-      toast({
-        title: "Success",
-        description: `Customer "${customer.name}" has been added.`,
-      });
+      showToast("Success", `Customer "${customer.name}" has been added.`);
     } catch (error) {
       console.error("Error adding customer:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add customer. Please try again.",
-        variant: "destructive"
-      });
+      showToast("Error", "Failed to add customer. Please try again.", "destructive");
     }
   };
 
   const updateCustomer = (id: number, updatedCustomer: Customer) => {
     setCustomers(prev => prev.map(customer => customer.id === id ? updatedCustomer : customer));
-    toast({
-      title: "Success",
-      description: `Customer "${updatedCustomer.name}" has been updated.`,
-    });
+    showToast("Success", `Customer "${updatedCustomer.name}" has been updated.`);
   };
 
   const deleteCustomer = (id: number) => {
     setCustomers(prev => prev.filter(customer => customer.id !== id));
-    toast({
-      title: "Success",
-      description: "Customer has been deleted.",
-    });
+    showToast("Success", "Customer has been deleted.");
   };
 
-  // Add a new function to update order payment status
   const updateOrderPaymentStatus = (orderId: string, updatedOrder: Order) => {
     setOrders((prevOrders) => {
       return prevOrders.map((order) => {
@@ -316,7 +268,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     });
     
-    // Save to localStorage
     const updatedOrders = orders.map((order) => {
       if (order.id === orderId) {
         return {
@@ -355,7 +306,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       logout,
       currentUser,
-      updateOrderPaymentStatus
+      updateOrderPaymentStatus,
+      showToast
     }}>
       {children}
     </DataContext.Provider>
