@@ -83,7 +83,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
     <div
       className={cn(
         "bg-sidebar-background border-r border-sidebar-border text-sidebar-foreground transition-all duration-300 z-50",
-        open ? "w-64 fixed inset-y-0 left-0" : "w-0 hidden"
+        "fixed inset-y-0 left-0 w-64",
+        open ? "translate-x-0" : "-translate-x-full"
       )}
     >
       <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
@@ -97,7 +98,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
         </div>
         <button
           onClick={() => setOpen(false)}
-          className="p-1 rounded-full hover:bg-sidebar-accent lg:hidden"
+          className="p-1 rounded-full hover:bg-sidebar-accent"
         >
           <X className="h-5 w-5" />
         </button>

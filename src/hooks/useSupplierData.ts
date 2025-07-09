@@ -26,35 +26,6 @@ export const useSupplierData = () => {
     if (savedPurchaseBills) setPurchaseBills(JSON.parse(savedPurchaseBills));
     if (savedPayments) setPayments(JSON.parse(savedPayments));
     if (savedPriceHistory) setProductPriceHistory(JSON.parse(savedPriceHistory));
-
-    // Add default suppliers if none exist
-    if (!savedSuppliers || JSON.parse(savedSuppliers).length === 0) {
-      const defaultSuppliers: Supplier[] = [
-        {
-          id: 1,
-          name: "Kailash Kirana",
-          contactPerson: "Kailash Kumar",
-          phone: "+91 98765 43210",
-          email: "kailash@example.com",
-          address: "Main Market, Delhi",
-          gstNumber: "07AABCU9603R1ZX",
-          createdDate: new Date().toISOString(),
-          isActive: true
-        },
-        {
-          id: 2,
-          name: "Yashvi Traders",
-          contactPerson: "Yashvi Sharma",
-          phone: "+91 87654 32109",
-          email: "yashvi@example.com",
-          address: "Commercial Street, Mumbai",
-          gstNumber: "27AABCU9603R1ZY",
-          createdDate: new Date().toISOString(),
-          isActive: true
-        }
-      ];
-      setSuppliers(defaultSuppliers);
-    }
   }, []);
 
   // Save data to localStorage whenever state changes
