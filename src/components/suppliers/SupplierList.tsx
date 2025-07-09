@@ -3,21 +3,28 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Phone, Mail } from "lucide-react";
+import { Building2, Phone, Mail, Trash2 } from "lucide-react";
 import { Supplier } from "@/types/supplier";
 
 interface SupplierListProps {
   suppliers: Supplier[];
   selectedSupplier: number | null;
   onSelectSupplier: (id: number) => void;
+  onDeleteSupplier: (supplierId: number) => void;
 }
 
 const SupplierList: React.FC<SupplierListProps> = ({
   suppliers,
   selectedSupplier,
-  onSelectSupplier
+  onSelectSupplier,
+  onDeleteSupplier
 }) => {
   const activeSuppliers = suppliers.filter(s => s.isActive);
+
+  const handleDeleteClick = (e: React.MouseEvent, supplierId: number) => {
+    e.stopPropagation(); // Prevent card selection when delete button is clicked
+    onDeleteSupplier(supplierId);
+  };
 
   return (
     <div className="space-y-4">
@@ -52,7 +59,17 @@ const SupplierList: React.FC<SupplierListProps> = ({
                   <Building2 className="h-5 w-5 text-primary" />
                   <h3 className="font-semibold text-lg">{supplier.name}</h3>
                 </div>
-                <Badge variant="secondary">Active</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">Active</Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => handleDeleteClick(e, supplier.id)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               
               {supplier.contactPerson && (
