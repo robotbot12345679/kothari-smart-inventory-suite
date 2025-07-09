@@ -1,16 +1,15 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, FileText, X, Plus, Trash2 } from "lucide-react";
+import { Upload, FileText, X, Plus, Trash2, Loader } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Supplier, PurchaseBill, PurchaseItem } from "@/types/supplier";
+import { aiDetectionService } from "@/services/AIDetectionService";
 
 interface UploadBillDialogProps {
   open: boolean;
@@ -48,82 +47,67 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
     setIsProcessing(true);
 
     try {
-      // Simulate enhanced AI processing for multiple files
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Mock more comprehensive extracted data
-      const mockExtractedData = {
-        supplierName: "ABC Suppliers Pvt Ltd",
-        originalBillNumber: "INV/2024/001234", // Preserve original number
-        billDate: new Date().toISOString().split('T')[0],
-        items: [
-          {
-            productName: "Premium Basmati Rice",
-            quantity: 25,
-            unit: "kg",
-            pricePerUnit: 120,
-            totalPrice: 3000
-          },
-          {
-            productName: "Organic Almonds",
-            quantity: 10,
-            unit: "kg", 
-            pricePerUnit: 850,
-            totalPrice: 8500
-          },
-          {
-            productName: "Cashew Nuts (W240)",
-            quantity: 5,
-            unit: "kg",
-            pricePerUnit: 1400,
-            totalPrice: 7000
-          },
-          {
-            productName: "Dates (Medjool)",
-            quantity: 8,
-            unit: "kg",
-            pricePerUnit: 650,
-            totalPrice: 5200
-          },
-          {
-            productName: "Pistachios",
-            quantity: 3,
-            unit: "kg",
-            pricePerUnit: 2200,
-            totalPrice: 6600
-          }
-        ],
-        subtotal: 30300,
-        gst: 5454,
-        total: 35754
-      };
+      if (files.length === 1) {
+        // Single file processing
+        const detectedData = await aiDetectionService.detectBillData(files[0]);
+        
+        setExtractedData(detectedData);
+        
+        // Find supplier by name
+        const supplier = suppliers.find(s => 
+          s.name.toLowerCase().includes(detectedData.supplierName.toLowerCase()) ||
+          detectedData.supplierName.toLowerCase().includes(s.name.toLowerCase())
+        );
+        
+        setFormData({
+          supplierId: supplier?.id.toString() || "",
+          billNumber: detectedData.billNumber,
+          billDate: detectedData.billDate,
+          items: detectedData.items,
+          subtotal: detectedData.subtotal,
+          gst: detectedData.gst,
+          total: detectedData.total
+        });
 
-      setExtractedData(mockExtractedData);
-      
-      // Find supplier by name
-      const supplier = suppliers.find(s => 
-        s.name.toLowerCase().includes(mockExtractedData.supplierName.toLowerCase())
-      );
-      
-      setFormData({
-        supplierId: supplier?.id.toString() || "",
-        billNumber: mockExtractedData.originalBillNumber, // Use original bill number
-        billDate: mockExtractedData.billDate,
-        items: mockExtractedData.items,
-        subtotal: mockExtractedData.subtotal,
-        gst: mockExtractedData.gst,
-        total: mockExtractedData.total
-      });
+        toast({
+          title: "Enhanced AI Detection Complete",
+          description: `Detected ${detectedData.items.length} items from ${files[0].name}. Bill: ${detectedData.billNumber}`,
+        });
+      } else {
+        // Multiple files processing
+        const allDetectedData = await aiDetectionService.detectMultipleBills(files);
+        
+        // For multiple files, we'll process the first one and show summary
+        if (allDetectedData.length > 0) {
+          const firstBill = allDetectedData[0];
+          setExtractedData(firstBill);
+          
+          const supplier = suppliers.find(s => 
+            s.name.toLowerCase().includes(firstBill.supplierName.toLowerCase())
+          );
+          
+          setFormData({
+            supplierId: supplier?.id.toString() || "",
+            billNumber: firstBill.billNumber,
+            billDate: firstBill.billDate,
+            items: firstBill.items,
+            subtotal: firstBill.subtotal,
+            gst: firstBill.gst,
+            total: firstBill.total
+          });
+        }
 
-      toast({
-        title: "Files Processed Successfully",
-        description: `AI extracted data from ${files.length} file(s). ${mockExtractedData.items.length} items detected.`,
-      });
+        toast({
+          title: "Bulk Processing Complete",
+          description: `Successfully processed ${allDetectedData.length} out of ${files.length} files.`,
+        });
+      }
 
     } catch (error) {
+      console.error('AI Detection failed:', error);
       toast({
-        title: "Processing Failed",
-        description: "Failed to process the files. Please try again.",
+        title: "Enhanced AI Detection Failed",
+        description: "Failed to process the files. Please check the files and try again.",
         variant: "destructive"
       });
     } finally {
@@ -160,7 +144,6 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
       const newItems = [...prev.items];
       newItems[index] = { ...newItems[index], [field]: value };
       
-      // Auto-calculate total price
       if (field === 'quantity' || field === 'pricePerUnit') {
         newItems[index].totalPrice = newItems[index].quantity * newItems[index].pricePerUnit;
       }
@@ -185,7 +168,7 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
     const bill: Omit<PurchaseBill, 'id' | 'createdDate'> = {
       supplierId: supplier.id,
       supplierName: supplier.name,
-      billNumber: formData.billNumber, // Keep original bill number
+      billNumber: formData.billNumber,
       billDate: formData.billDate,
       items: formData.items,
       subtotal: formData.subtotal,
@@ -219,7 +202,7 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Upload Documents</DialogTitle>
+          <DialogTitle>Upload Documents - Enhanced AI Detection</DialogTitle>
         </DialogHeader>
 
         <Tabs value={uploadType} onValueChange={(value: any) => setUploadType(value)} className="w-full">
@@ -229,23 +212,36 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
           </TabsList>
 
           <TabsContent value="bills" className="space-y-6">
-            {/* File Upload Section */}
             <div className="space-y-4">
               <Label>Upload Bills (PDF, Excel, Image, Screenshot, ZIP - Multiple files supported)</Label>
               <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
-                <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Drag and drop your files here, or click to browse (Multiple files allowed)
-                  </p>
-                  <Input
-                    type="file"
-                    accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png,.zip"
-                    onChange={handleFileUpload}
-                    multiple
-                    className="max-w-xs mx-auto"
-                  />
-                </div>
+                {isProcessing ? (
+                  <div className="flex flex-col items-center gap-4">
+                    <Loader className="h-12 w-12 animate-spin text-primary" />
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Enhanced AI Processing...</p>
+                      <p className="text-xs text-muted-foreground">
+                        Analyzing {selectedFiles.length} file(s) for complete bill data extraction
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        Drag and drop your files here, or click to browse (Multiple files allowed)
+                      </p>
+                      <Input
+                        type="file"
+                        accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png,.zip"
+                        onChange={handleFileUpload}
+                        multiple
+                        className="max-w-xs mx-auto"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               {selectedFiles.length > 0 && (
@@ -277,16 +273,9 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
                   </div>
                 </div>
               )}
-
-              {isProcessing && (
-                <div className="text-center py-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                  <p className="text-sm text-muted-foreground">Processing with Enhanced AI Scanner...</p>
-                </div>
-              )}
             </div>
 
-            {/* Extracted/Manual Data Section */}
+            {/* Enhanced extracted data display */}
             {(extractedData || !selectedFiles.length) && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -310,11 +299,11 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Bill Number (Original)</Label>
+                    <Label>Bill Number (Preserved from original)</Label>
                     <Input
                       value={formData.billNumber}
                       onChange={(e) => setFormData(prev => ({ ...prev, billNumber: e.target.value }))}
-                      placeholder="Original bill number will be preserved"
+                      placeholder="Original bill number preserved"
                     />
                   </div>
 
@@ -333,15 +322,15 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
                       type="number"
                       value={formData.total}
                       onChange={(e) => setFormData(prev => ({ ...prev, total: parseFloat(e.target.value) || 0 }))}
-                      placeholder="Enter total amount"
+                      placeholder="Total amount"
                     />
                   </div>
                 </div>
 
-                {/* Items Section */}
+                {/* Enhanced items section */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label>Items</Label>
+                    <Label>Detected Items ({formData.items.length})</Label>
                     <Button
                       type="button"
                       variant="outline"
@@ -441,7 +430,6 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
           </TabsContent>
         </Tabs>
 
-        {/* Action Buttons */}
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={handleClose}>
             Cancel

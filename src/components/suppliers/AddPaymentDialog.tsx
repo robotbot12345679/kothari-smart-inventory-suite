@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Upload, X, Image, Loader } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Supplier, Payment } from "@/types/supplier";
+import { aiDetectionService } from "@/services/AIDetectionService";
 
 interface AddPaymentDialogProps {
   open: boolean;
@@ -46,28 +47,27 @@ const AddPaymentDialog: React.FC<AddPaymentDialogProps> = ({
     setIsDetectingAmount(true);
 
     try {
-      // Simulate AI amount detection from screenshot
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock detected amount and reference number
-      const detectedAmount = Math.floor(Math.random() * 50000) + 5000; // Random amount between 5000-55000
-      const detectedRef = `TXN${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      console.log('Starting enhanced payment detection...');
+      const detectedData = await aiDetectionService.detectPaymentData(file);
       
       setFormData(prev => ({
         ...prev,
-        amount: detectedAmount.toString(),
-        referenceNumber: detectedRef
+        amount: detectedData.amount.toString(),
+        paymentDate: detectedData.date,
+        referenceNumber: detectedData.referenceNumber || "",
+        paymentMode: (detectedData.paymentMode as any) || "Online"
       }));
 
       toast({
-        title: "Amount Detected",
-        description: `AI detected payment amount: ₹${detectedAmount.toLocaleString()}`,
+        title: "Enhanced AI Detection Complete",
+        description: `Detected payment: ₹${detectedData.amount.toLocaleString()} on ${new Date(detectedData.date).toLocaleDateString()}`,
       });
 
     } catch (error) {
+      console.error('Enhanced payment detection failed:', error);
       toast({
-        title: "Detection Failed",
-        description: "Could not detect amount from screenshot. Please enter manually.",
+        title: "Enhanced Detection Failed",
+        description: "Could not detect payment details from screenshot. Please enter manually.",
         variant: "destructive"
       });
     } finally {
@@ -115,7 +115,7 @@ const AddPaymentDialog: React.FC<AddPaymentDialogProps> = ({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Record Payment</DialogTitle>
+          <DialogTitle>Record Payment - Enhanced AI Detection</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -139,17 +139,18 @@ const AddPaymentDialog: React.FC<AddPaymentDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label>Upload Screenshot/Receipt (Auto-detects amount)</Label>
+            <Label>Upload Payment Screenshot/Receipt (Enhanced Auto-detection)</Label>
             <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
               {isDetectingAmount ? (
                 <div className="flex flex-col items-center gap-2">
                   <Loader className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground">Detecting amount from image...</p>
+                  <p className="text-sm text-muted-foreground">Enhanced AI analyzing payment details...</p>
+                  <p className="text-xs text-muted-foreground">Detecting amount, date, and reference number</p>
                 </div>
               ) : (
                 <>
                   <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground mb-2">Upload payment screenshot for auto-detection</p>
+                  <p className="text-sm text-muted-foreground mb-2">Upload payment screenshot for enhanced auto-detection</p>
                   <Input
                     type="file"
                     accept="image/*"
