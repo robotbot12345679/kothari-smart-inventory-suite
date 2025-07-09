@@ -103,16 +103,14 @@ const PurchaseBillsList: React.FC<PurchaseBillsListProps> = ({ bills, onDelete }
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {onDelete && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(bill.id, bill.billNumber || bill.id.substring(0, 8))}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(bill.id, bill.billNumber || bill.id.substring(0, 8))}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

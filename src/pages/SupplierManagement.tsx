@@ -23,6 +23,7 @@ const SupplierManagement = () => {
     addPayment,
     deletePurchaseBill,
     deletePayment,
+    deleteSupplier,
     getSupplierAnalytics
   } = useSupplierData();
 
@@ -50,6 +51,23 @@ const SupplierManagement = () => {
 
   const handleProductComparison = () => {
     window.open('/product-comparison', '_blank');
+  };
+
+  const handleDeleteBill = (billId: string) => {
+    deletePurchaseBill(billId);
+  };
+
+  const handleDeletePayment = (paymentId: string) => {
+    deletePayment(paymentId);
+  };
+
+  const handleDeleteSupplier = (supplierId: number) => {
+    if (window.confirm('Are you sure you want to delete this supplier? This will also delete all related bills and payments.')) {
+      deleteSupplier(supplierId);
+      if (selectedSupplier === supplierId) {
+        setSelectedSupplier(null);
+      }
+    }
   };
 
   return (
@@ -150,6 +168,7 @@ const SupplierManagement = () => {
           suppliers={suppliers}
           selectedSupplier={selectedSupplier}
           onSelectSupplier={setSelectedSupplier}
+          onDeleteSupplier={handleDeleteSupplier}
         />
       </div>
 
@@ -170,13 +189,13 @@ const SupplierManagement = () => {
             <TabsContent value="bills" className="space-y-4">
               <PurchaseBillsList 
                 bills={purchaseBills.filter(bill => bill.supplierId === selectedSupplier)}
-                onDelete={deletePurchaseBill}
+                onDelete={handleDeleteBill}
               />
             </TabsContent>
             <TabsContent value="payments" className="space-y-4">
               <PaymentsList 
                 payments={payments.filter(payment => payment.supplierId === selectedSupplier)}
-                onDelete={deletePayment}
+                onDelete={handleDeletePayment}
               />
             </TabsContent>
           </Tabs>
