@@ -1,15 +1,16 @@
-
 import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Upload, BarChart3, Building2, FileText, CreditCard } from "lucide-react";
+import { Plus, Upload, BarChart3, Building2, FileText, CreditCard, DollarSign, Receipt } from "lucide-react";
 import { useSupplierData } from "@/hooks/useSupplierData";
 import SupplierList from "@/components/suppliers/SupplierList";
 import SupplierStats from "@/components/suppliers/SupplierStats";
 import UploadBillDialog from "@/components/suppliers/UploadBillDialog";
 import AddSupplierDialog from "@/components/suppliers/AddSupplierDialog";
 import AddPaymentDialog from "@/components/suppliers/AddPaymentDialog";
+import ManualAddPaymentDialog from "@/components/suppliers/ManualAddPaymentDialog";
+import ManualAddBillDialog from "@/components/suppliers/ManualAddBillDialog";
 import PurchaseBillsList from "@/components/suppliers/PurchaseBillsList";
 import PaymentsList from "@/components/suppliers/PaymentsList";
 
@@ -31,6 +32,8 @@ const SupplierManagement = () => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [addSupplierDialogOpen, setAddSupplierDialogOpen] = useState(false);
   const [addPaymentDialogOpen, setAddPaymentDialogOpen] = useState(false);
+  const [manualAddPaymentDialogOpen, setManualAddPaymentDialogOpen] = useState(false);
+  const [manualAddBillDialogOpen, setManualAddBillDialogOpen] = useState(false);
 
   // Calculate overall statistics
   const overallStats = useMemo(() => {
@@ -172,6 +175,41 @@ const SupplierManagement = () => {
         />
       </div>
 
+      {/* Quick Add Actions */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="card-hover cursor-pointer" onClick={() => setManualAddBillDialogOpen(true)}>
+          <CardContent className="p-4 text-center">
+            <Receipt className="h-8 w-8 mx-auto mb-2 text-primary" />
+            <h3 className="font-semibold">Add Bill Manually</h3>
+            <p className="text-sm text-muted-foreground">Quick bill entry</p>
+          </CardContent>
+        </Card>
+
+        <Card className="card-hover cursor-pointer" onClick={() => setManualAddPaymentDialogOpen(true)}>
+          <CardContent className="p-4 text-center">
+            <DollarSign className="h-8 w-8 mx-auto mb-2 text-green-600" />
+            <h3 className="font-semibold">Add Payment Manually</h3>
+            <p className="text-sm text-muted-foreground">Quick payment entry</p>
+          </CardContent>
+        </Card>
+
+        <Card className="card-hover cursor-pointer" onClick={() => setUploadDialogOpen(true)}>
+          <CardContent className="p-4 text-center">
+            <Upload className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+            <h3 className="font-semibold">Upload Documents</h3>
+            <p className="text-sm text-muted-foreground">AI detection</p>
+          </CardContent>
+        </Card>
+
+        <Card className="card-hover cursor-pointer" onClick={() => setAddSupplierDialogOpen(true)}>
+          <CardContent className="p-4 text-center">
+            <Building2 className="h-8 w-8 mx-auto mb-2 text-purple-600" />
+            <h3 className="font-semibold">Add Supplier</h3>
+            <p className="text-sm text-muted-foreground">New supplier</p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Selected Supplier Details */}
       {selectedSupplier && (
         <div className="space-y-6">
@@ -222,6 +260,21 @@ const SupplierManagement = () => {
         suppliers={suppliers}
         selectedSupplierId={selectedSupplier}
         onAdd={addPayment}
+      />
+
+      <ManualAddPaymentDialog 
+        open={manualAddPaymentDialogOpen}
+        onOpenChange={setManualAddPaymentDialogOpen}
+        suppliers={suppliers}
+        selectedSupplierId={selectedSupplier}
+        onAdd={addPayment}
+      />
+
+      <ManualAddBillDialog 
+        open={manualAddBillDialogOpen}
+        onOpenChange={setManualAddBillDialogOpen}
+        suppliers={suppliers}
+        onAdd={addPurchaseBill}
       />
     </div>
   );
