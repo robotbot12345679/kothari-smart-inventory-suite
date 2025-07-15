@@ -11,6 +11,7 @@ import AddSupplierDialog from "@/components/suppliers/AddSupplierDialog";
 import AddPaymentDialog from "@/components/suppliers/AddPaymentDialog";
 import ManualAddPaymentDialog from "@/components/suppliers/ManualAddPaymentDialog";
 import ManualAddBillDialog from "@/components/suppliers/ManualAddBillDialog";
+import QuickAddBillDialog from "@/components/suppliers/QuickAddBillDialog";
 import PurchaseBillsList from "@/components/suppliers/PurchaseBillsList";
 import PaymentsList from "@/components/suppliers/PaymentsList";
 
@@ -34,8 +35,8 @@ const SupplierManagement = () => {
   const [addPaymentDialogOpen, setAddPaymentDialogOpen] = useState(false);
   const [manualAddPaymentDialogOpen, setManualAddPaymentDialogOpen] = useState(false);
   const [manualAddBillDialogOpen, setManualAddBillDialogOpen] = useState(false);
+  const [quickAddBillDialogOpen, setQuickAddBillDialogOpen] = useState(false);
 
-  // Calculate overall statistics
   const overallStats = useMemo(() => {
     const totalPurchases = purchaseBills.reduce((sum, bill) => sum + bill.total, 0);
     const totalPayments = payments.reduce((sum, payment) => sum + payment.amount, 0);
@@ -70,6 +71,32 @@ const SupplierManagement = () => {
       if (selectedSupplier === supplierId) {
         setSelectedSupplier(null);
       }
+    }
+  };
+
+  const handleAddSupplierWithPendingAmount = (supplier: any, pendingAmount: number) => {
+    const newSupplier = addSupplier(supplier);
+    
+    // Add a bill for the pending amount
+    if (pendingAmount > 0) {
+      const pendingBill = {
+        supplierId: newSupplier.id,
+        supplierName: newSupplier.name,
+        billNumber: `PENDING-${Date.now()}`,
+        billDate: new Date().toISOString().split('T')[0],
+        items: [{
+          productName: "Opening Balance",
+          quantity: 1,
+          unit: "amount",
+          pricePerUnit: pendingAmount,
+          totalPrice: pendingAmount
+        }],
+        subtotal: pendingAmount,
+        gst: 0,
+        total: pendingAmount,
+        status: 'Pending' as const
+      };
+      addPurchaseBill(pendingBill);
     }
   };
 
@@ -176,26 +203,34 @@ const SupplierManagement = () => {
       </div>
 
       {/* Quick Add Actions */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <Card className="card-hover cursor-pointer" onClick={() => setQuickAddBillDialogOpen(true)}>
+          <CardContent className="p-4 text-center">
+            <Receipt className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+            <h3 className="font-semibold">Quick Add Bill</h3>
+            <p className="text-sm text-muted-foreground">Just total amount</p>
+          </CardContent>
+        </Card>
+
         <Card className="card-hover cursor-pointer" onClick={() => setManualAddBillDialogOpen(true)}>
           <CardContent className="p-4 text-center">
             <Receipt className="h-8 w-8 mx-auto mb-2 text-primary" />
-            <h3 className="font-semibold">Add Bill Manually</h3>
-            <p className="text-sm text-muted-foreground">Quick bill entry</p>
+            <h3 className="font-semibold">Detailed Bill</h3>
+            <p className="text-sm text-muted-foreground">With items</p>
           </CardContent>
         </Card>
 
         <Card className="card-hover cursor-pointer" onClick={() => setManualAddPaymentDialogOpen(true)}>
           <CardContent className="p-4 text-center">
             <DollarSign className="h-8 w-8 mx-auto mb-2 text-green-600" />
-            <h3 className="font-semibold">Add Payment Manually</h3>
-            <p className="text-sm text-muted-foreground">Quick payment entry</p>
+            <h3 className="font-semibold">Add Payment</h3>
+            <p className="text-sm text-muted-foreground">Manual entry</p>
           </CardContent>
         </Card>
 
         <Card className="card-hover cursor-pointer" onClick={() => setUploadDialogOpen(true)}>
           <CardContent className="p-4 text-center">
-            <Upload className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+            <Upload className="h-8 w-8 mx-auto mb-2 text-amber-600" />
             <h3 className="font-semibold">Upload Documents</h3>
             <p className="text-sm text-muted-foreground">AI detection</p>
           </CardContent>
@@ -205,7 +240,7 @@ const SupplierManagement = () => {
           <CardContent className="p-4 text-center">
             <Building2 className="h-8 w-8 mx-auto mb-2 text-purple-600" />
             <h3 className="font-semibold">Add Supplier</h3>
-            <p className="text-sm text-muted-foreground">New supplier</p>
+            <p className="text-sm text-muted-foreground">With pending amount</p>
           </CardContent>
         </Card>
       </div>
@@ -252,6 +287,7 @@ const SupplierManagement = () => {
         open={addSupplierDialogOpen}
         onOpenChange={setAddSupplierDialogOpen}
         onAdd={addSupplier}
+        onAddWithPendingAmount={handleAddSupplierWithPendingAmount}
       />
 
       <AddPaymentDialog 
@@ -274,6 +310,14 @@ const SupplierManagement = () => {
         open={manualAddBillDialogOpen}
         onOpenChange={setManualAddBillDialogOpen}
         suppliers={suppliers}
+        onAdd={addPurchaseBill}
+      />
+
+      <QuickAddBillDialog 
+        open={quickAddBillDialogOpen}
+        onOpenChange={setQuickAddBillDialogOpen}
+        suppliers={suppliers}
+        selectedSupplierId={selectedSupplier}
         onAdd={addPurchaseBill}
       />
     </div>

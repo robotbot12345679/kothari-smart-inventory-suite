@@ -11,12 +11,14 @@ interface AddSupplierDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAdd: (supplier: Omit<Supplier, 'id' | 'createdDate'>) => void;
+  onAddWithPendingAmount?: (supplier: Omit<Supplier, 'id' | 'createdDate'>, pendingAmount: number) => void;
 }
 
 const AddSupplierDialog: React.FC<AddSupplierDialogProps> = ({
   open,
   onOpenChange,
-  onAdd
+  onAdd,
+  onAddWithPendingAmount
 }) => {
   const [formData, setFormData] = useState({
     name: "",
@@ -25,6 +27,7 @@ const AddSupplierDialog: React.FC<AddSupplierDialogProps> = ({
     email: "",
     address: "",
     gstNumber: "",
+    pendingAmount: 0,
     isActive: true
   });
 
@@ -32,7 +35,22 @@ const AddSupplierDialog: React.FC<AddSupplierDialogProps> = ({
     e.preventDefault();
     if (!formData.name.trim()) return;
 
-    onAdd(formData);
+    const supplierData = {
+      name: formData.name,
+      contactPerson: formData.contactPerson,
+      phone: formData.phone,
+      email: formData.email,
+      address: formData.address,
+      gstNumber: formData.gstNumber,
+      isActive: formData.isActive
+    };
+
+    if (onAddWithPendingAmount && formData.pendingAmount > 0) {
+      onAddWithPendingAmount(supplierData, formData.pendingAmount);
+    } else {
+      onAdd(supplierData);
+    }
+
     setFormData({
       name: "",
       contactPerson: "",
@@ -40,6 +58,7 @@ const AddSupplierDialog: React.FC<AddSupplierDialogProps> = ({
       email: "",
       address: "",
       gstNumber: "",
+      pendingAmount: 0,
       isActive: true
     });
     onOpenChange(false);
@@ -102,6 +121,17 @@ const AddSupplierDialog: React.FC<AddSupplierDialogProps> = ({
               value={formData.gstNumber}
               onChange={(e) => setFormData(prev => ({ ...prev, gstNumber: e.target.value }))}
               placeholder="Enter GST number"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="pendingAmount">Initial Pending Amount (₹)</Label>
+            <Input
+              id="pendingAmount"
+              type="number"
+              value={formData.pendingAmount}
+              onChange={(e) => setFormData(prev => ({ ...prev, pendingAmount: parseFloat(e.target.value) || 0 }))}
+              placeholder="Enter pending amount (optional)"
             />
           </div>
 
