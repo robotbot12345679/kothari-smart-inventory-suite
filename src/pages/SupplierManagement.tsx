@@ -1,19 +1,23 @@
+
 import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Upload, BarChart3, Building2, FileText, CreditCard, DollarSign, Receipt } from "lucide-react";
 import { useSupplierData } from "@/hooks/useSupplierData";
+import { formatCurrency } from "@/utils/indianNumberFormat";
 import SupplierList from "@/components/suppliers/SupplierList";
 import SupplierStats from "@/components/suppliers/SupplierStats";
 import UploadBillDialog from "@/components/suppliers/UploadBillDialog";
 import AddSupplierDialog from "@/components/suppliers/AddSupplierDialog";
+import EditSupplierDialog from "@/components/suppliers/EditSupplierDialog";
 import AddPaymentDialog from "@/components/suppliers/AddPaymentDialog";
 import ManualAddPaymentDialog from "@/components/suppliers/ManualAddPaymentDialog";
 import ManualAddBillDialog from "@/components/suppliers/ManualAddBillDialog";
 import QuickAddBillDialog from "@/components/suppliers/QuickAddBillDialog";
 import PurchaseBillsList from "@/components/suppliers/PurchaseBillsList";
 import PaymentsList from "@/components/suppliers/PaymentsList";
+import { Supplier } from "@/types/supplier";
 
 const SupplierManagement = () => {
   const {
@@ -21,6 +25,7 @@ const SupplierManagement = () => {
     purchaseBills,
     payments,
     addSupplier,
+    updateSupplier,
     addPurchaseBill,
     addPayment,
     deletePurchaseBill,
@@ -32,6 +37,8 @@ const SupplierManagement = () => {
   const [selectedSupplier, setSelectedSupplier] = useState<number | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [addSupplierDialogOpen, setAddSupplierDialogOpen] = useState(false);
+  const [editSupplierDialogOpen, setEditSupplierDialogOpen] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [addPaymentDialogOpen, setAddPaymentDialogOpen] = useState(false);
   const [manualAddPaymentDialogOpen, setManualAddPaymentDialogOpen] = useState(false);
   const [manualAddBillDialogOpen, setManualAddBillDialogOpen] = useState(false);
@@ -72,6 +79,15 @@ const SupplierManagement = () => {
         setSelectedSupplier(null);
       }
     }
+  };
+
+  const handleEditSupplier = (supplier: Supplier) => {
+    setEditingSupplier(supplier);
+    setEditSupplierDialogOpen(true);
+  };
+
+  const handleUpdateSupplier = (id: number, updatedSupplier: Omit<Supplier, 'id' | 'createdDate'>) => {
+    updateSupplier(id, updatedSupplier);
   };
 
   const handleAddSupplierWithPendingAmount = (supplier: any, pendingAmount: number) => {
@@ -131,7 +147,7 @@ const SupplierManagement = () => {
             <FileText className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{overallStats.totalPurchases.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{formatCurrency(overallStats.totalPurchases)}</div>
             <p className="text-xs text-muted-foreground mt-1">
               From {overallStats.totalBills} bills
             </p>
@@ -144,7 +160,7 @@ const SupplierManagement = () => {
             <CreditCard className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{overallStats.totalPayments.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{formatCurrency(overallStats.totalPayments)}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {overallStats.totalPaymentsCount} payments made
             </p>
@@ -158,7 +174,7 @@ const SupplierManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">
-              ₹{overallStats.pendingAmount.toLocaleString()}
+              {formatCurrency(overallStats.pendingAmount)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Outstanding payments
@@ -199,6 +215,7 @@ const SupplierManagement = () => {
           selectedSupplier={selectedSupplier}
           onSelectSupplier={setSelectedSupplier}
           onDeleteSupplier={handleDeleteSupplier}
+          onEditSupplier={handleEditSupplier}
         />
       </div>
 
@@ -288,6 +305,13 @@ const SupplierManagement = () => {
         onOpenChange={setAddSupplierDialogOpen}
         onAdd={addSupplier}
         onAddWithPendingAmount={handleAddSupplierWithPendingAmount}
+      />
+
+      <EditSupplierDialog 
+        open={editSupplierDialogOpen}
+        onOpenChange={setEditSupplierDialogOpen}
+        supplier={editingSupplier}
+        onUpdate={handleUpdateSupplier}
       />
 
       <AddPaymentDialog 

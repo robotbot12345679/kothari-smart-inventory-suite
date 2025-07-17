@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Phone, Mail, Trash2 } from "lucide-react";
+import { Building2, Phone, Mail, Trash2, Edit } from "lucide-react";
 import { Supplier } from "@/types/supplier";
 
 interface SupplierListProps {
@@ -11,19 +11,26 @@ interface SupplierListProps {
   selectedSupplier: number | null;
   onSelectSupplier: (id: number) => void;
   onDeleteSupplier: (supplierId: number) => void;
+  onEditSupplier: (supplier: Supplier) => void;
 }
 
 const SupplierList: React.FC<SupplierListProps> = ({
   suppliers,
   selectedSupplier,
   onSelectSupplier,
-  onDeleteSupplier
+  onDeleteSupplier,
+  onEditSupplier
 }) => {
   const activeSuppliers = suppliers.filter(s => s.isActive);
 
   const handleDeleteClick = (e: React.MouseEvent, supplierId: number) => {
-    e.stopPropagation(); // Prevent card selection when delete button is clicked
+    e.stopPropagation();
     onDeleteSupplier(supplierId);
+  };
+
+  const handleEditClick = (e: React.MouseEvent, supplier: Supplier) => {
+    e.stopPropagation();
+    onEditSupplier(supplier);
   };
 
   return (
@@ -61,6 +68,14 @@ const SupplierList: React.FC<SupplierListProps> = ({
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary">Active</Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => handleEditClick(e, supplier)}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"

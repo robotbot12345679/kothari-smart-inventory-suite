@@ -11,6 +11,7 @@ import {
   Plus
 } from "lucide-react";
 import { Supplier, SupplierAnalytics } from "@/types/supplier";
+import { formatCurrency } from "@/utils/indianNumberFormat";
 
 interface SupplierStatsProps {
   supplier: Supplier;
@@ -40,7 +41,7 @@ const SupplierStats: React.FC<SupplierStatsProps> = ({
             <ShoppingCart className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{analytics.totalPurchases.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{formatCurrency(analytics.totalPurchases)}</div>
             <p className="text-xs text-muted-foreground mt-1">
               From {analytics.billCount} bills
             </p>
@@ -53,7 +54,7 @@ const SupplierStats: React.FC<SupplierStatsProps> = ({
             <CreditCard className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{analytics.totalPayments.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{formatCurrency(analytics.totalPayments)}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {analytics.paymentCount} payments made
             </p>
@@ -67,7 +68,7 @@ const SupplierStats: React.FC<SupplierStatsProps> = ({
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${analytics.pendingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
-              ₹{analytics.pendingAmount.toLocaleString()}
+              {formatCurrency(analytics.pendingAmount)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {analytics.pendingAmount > 0 ? 'Outstanding' : 'All cleared'}

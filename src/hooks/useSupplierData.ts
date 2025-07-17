@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useMemo } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Supplier, 
   PurchaseBill, 
@@ -51,6 +50,38 @@ export const useSupplierData = () => {
     });
     
     return newSupplier;
+  };
+
+  const updateSupplier = (id: number, updatedSupplier: Omit<Supplier, 'id' | 'createdDate'>) => {
+    setSuppliers(prev => prev.map(supplier => 
+      supplier.id === id 
+        ? { ...supplier, ...updatedSupplier }
+        : supplier
+    ));
+    
+    // Update supplier name in related bills and payments
+    setPurchaseBills(prev => prev.map(bill => 
+      bill.supplierId === id 
+        ? { ...bill, supplierName: updatedSupplier.name }
+        : bill
+    ));
+    
+    setPayments(prev => prev.map(payment => 
+      payment.supplierId === id 
+        ? { ...payment, supplierName: updatedSupplier.name }
+        : payment
+    ));
+    
+    setProductPriceHistory(prev => prev.map(history => 
+      history.supplierId === id 
+        ? { ...history, supplierName: updatedSupplier.name }
+        : history
+    ));
+    
+    toast({
+      title: "Supplier Updated",
+      description: `${updatedSupplier.name} has been updated successfully.`,
+    });
   };
 
   const deleteSupplier = (supplierId: number) => {
@@ -198,6 +229,7 @@ export const useSupplierData = () => {
     payments,
     productPriceHistory,
     addSupplier,
+    updateSupplier,
     deleteSupplier,
     addPurchaseBill,
     deletePurchaseBill,
