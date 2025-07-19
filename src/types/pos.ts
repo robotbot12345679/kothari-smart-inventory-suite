@@ -37,10 +37,8 @@ export interface CartItem {
 export interface Customer {
   id: number;
   name: string;
-  email: string;
+  email?: string;
   phone: string;
-  city: string;
-  state: string;
   totalOrders: number;
   totalSpent: number;
   lastOrderDate?: string;

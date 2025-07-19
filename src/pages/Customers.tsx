@@ -37,21 +37,18 @@ const Customers = () => {
   const { customers, addCustomer, updateCustomer, deleteCustomer, orders } = useData();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [locationFilter, setLocationFilter] = useState("all");
   const [newCustomer, setNewCustomer] = useState<Partial<Customer>>({});
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
 
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = searchQuery === "" || 
       customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (customer.email && customer.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
       customer.phone.includes(searchQuery);
     
     const matchesStatus = statusFilter === "all" || customer.status === statusFilter;
-    const matchesLocation = locationFilter === "all" || 
-      customer.city.toLowerCase() === locationFilter.toLowerCase();
     
-    return matchesSearch && matchesStatus && matchesLocation;
+    return matchesSearch && matchesStatus;
   });
 
   const activeCustomers = customers.filter(c => c.status === 'Active').length;
@@ -64,14 +61,12 @@ const Customers = () => {
     : 0;
 
   const handleAddCustomer = () => {
-    if (newCustomer.name && newCustomer.email && newCustomer.phone) {
+    if (newCustomer.name && newCustomer.phone) {
       addCustomer({
         id: 0, // Will be set by addCustomer function
         name: newCustomer.name,
         email: newCustomer.email,
         phone: newCustomer.phone,
-        city: newCustomer.city || '',
-        state: newCustomer.state || '',
         totalOrders: 0,
         totalSpent: 0,
         status: 'Active'
@@ -91,8 +86,8 @@ const Customers = () => {
 
   const getStatusColor = (status: string) => {
     return status === 'Active' 
-      ? "bg-green-100 text-green-800 hover:bg-green-100"
-      : "bg-gray-100 text-gray-800 hover:bg-gray-100";
+      ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50";
   };
 
   return (
@@ -164,44 +159,30 @@ const Customers = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">Name *</Label>
               <Input
                 id="name"
                 value={newCustomer.name || ''}
                 onChange={e => setNewCustomer(prev => ({ ...prev, name: e.target.value }))}
+                required
               />
             </div>
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="phone">Phone *</Label>
+              <Input
+                id="phone"
+                value={newCustomer.phone || ''}
+                onChange={e => setNewCustomer(prev => ({ ...prev, phone: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Email (Optional)</Label>
               <Input
                 id="email"
                 type="email"
                 value={newCustomer.email || ''}
                 onChange={e => setNewCustomer(prev => ({ ...prev, email: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                value={newCustomer.phone || ''}
-                onChange={e => setNewCustomer(prev => ({ ...prev, phone: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="city">City</Label>
-              <Input
-                id="city"
-                value={newCustomer.city || ''}
-                onChange={e => setNewCustomer(prev => ({ ...prev, city: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="state">State</Label>
-              <Input
-                id="state"
-                value={newCustomer.state || ''}
-                onChange={e => setNewCustomer(prev => ({ ...prev, state: e.target.value }))}
               />
             </div>
           </div>
@@ -241,17 +222,6 @@ const Customers = () => {
                 <SelectItem value="Inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={locationFilter} onValueChange={setLocationFilter}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Location" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
-                {[...new Set(customers.map(c => c.city).filter(Boolean))].map(city => (
-                  <SelectItem key={city} value={city}>{city}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </div>
 
@@ -261,7 +231,6 @@ const Customers = () => {
               <TableRow>
                 <TableHead>Customer</TableHead>
                 <TableHead>Contact</TableHead>
-                <TableHead>Location</TableHead>
                 <TableHead className="text-right">Orders</TableHead>
                 <TableHead className="text-right">Total Spent</TableHead>
                 <TableHead>Last Order</TableHead>
@@ -281,7 +250,9 @@ const Customers = () => {
                       </Avatar>
                       <div>
                         <div className="font-medium">{customer.name}</div>
-                        <div className="text-sm text-muted-foreground">{customer.email}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {customer.email || 'No email'}
+                        </div>
                       </div>
                     </div>
                   </TableCell>
@@ -291,14 +262,13 @@ const Customers = () => {
                         <Phone className="h-3 w-3 text-muted-foreground" />
                         {customer.phone}
                       </div>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Mail className="h-3 w-3 text-muted-foreground" />
-                        {customer.email}
-                      </div>
+                      {customer.email && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Mail className="h-3 w-3 text-muted-foreground" />
+                          {customer.email}
+                        </div>
+                      )}
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    {customer.city}, {customer.state}
                   </TableCell>
                   <TableCell className="text-right">{customer.totalOrders}</TableCell>
                   <TableCell className="text-right">₹{customer.totalSpent.toLocaleString()}</TableCell>
