@@ -9,6 +9,7 @@ export interface Supplier {
   gstNumber?: string;
   createdDate: string;
   isActive: boolean;
+  pendingAmountAdjustment?: number;
 }
 
 export interface PurchaseItem {

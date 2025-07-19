@@ -28,7 +28,8 @@ const EditSupplierDialog: React.FC<EditSupplierDialogProps> = ({
     email: "",
     address: "",
     gstNumber: "",
-    isActive: true
+    isActive: true,
+    pendingAmountAdjustment: 0
   });
 
   useEffect(() => {
@@ -40,7 +41,8 @@ const EditSupplierDialog: React.FC<EditSupplierDialogProps> = ({
         email: supplier.email || "",
         address: supplier.address || "",
         gstNumber: supplier.gstNumber || "",
-        isActive: supplier.isActive
+        isActive: supplier.isActive,
+        pendingAmountAdjustment: supplier.pendingAmountAdjustment || 0
       });
     }
   }, [supplier]);
@@ -56,7 +58,8 @@ const EditSupplierDialog: React.FC<EditSupplierDialogProps> = ({
       email: formData.email,
       address: formData.address,
       gstNumber: formData.gstNumber,
-      isActive: formData.isActive
+      isActive: formData.isActive,
+      pendingAmountAdjustment: formData.pendingAmountAdjustment
     });
 
     onOpenChange(false);
@@ -130,6 +133,18 @@ const EditSupplierDialog: React.FC<EditSupplierDialogProps> = ({
               onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
               placeholder="Enter address"
               rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-pendingAmount">Pending Amount Adjustment</Label>
+            <Input
+              id="edit-pendingAmount"
+              type="number"
+              step="0.01"
+              value={formData.pendingAmountAdjustment}
+              onChange={(e) => setFormData(prev => ({ ...prev, pendingAmountAdjustment: parseFloat(e.target.value) || 0 }))}
+              placeholder="Enter adjustment amount"
             />
           </div>
 
