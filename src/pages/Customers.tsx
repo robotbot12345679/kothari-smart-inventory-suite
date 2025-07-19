@@ -104,7 +104,7 @@ const Customers = () => {
             <FileDown className="h-4 w-4" />
             Export
           </Button>
-          <Button className="gap-1">
+          <Button className="gap-1" onClick={() => setIsAddCustomerOpen(true)}>
             <UserPlus className="h-4 w-4" />
             Add Customer
           </Button>
@@ -231,27 +231,25 @@ const Customers = () => {
               <Filter className="h-4 w-4" />
               Filter
             </Button>
-            <Select defaultValue="all">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
-            <Select defaultValue="all">
+            <Select value={locationFilter} onValueChange={setLocationFilter}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Location" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Locations</SelectItem>
-                <SelectItem value="mumbai">Mumbai</SelectItem>
-                <SelectItem value="delhi">Delhi</SelectItem>
-                <SelectItem value="ahmedabad">Ahmedabad</SelectItem>
-                <SelectItem value="hyderabad">Hyderabad</SelectItem>
-                <SelectItem value="others">Others</SelectItem>
+                {[...new Set(customers.map(c => c.city).filter(Boolean))].map(city => (
+                  <SelectItem key={city} value={city}>{city}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -305,7 +303,10 @@ const Customers = () => {
                   <TableCell className="text-right">{customer.totalOrders}</TableCell>
                   <TableCell className="text-right">₹{customer.totalSpent.toLocaleString()}</TableCell>
                   <TableCell>
-                    {new Date(customer.lastOrderDate).toLocaleDateString('en-IN')}
+                    {customer.lastOrderDate 
+                      ? new Date(customer.lastOrderDate).toLocaleDateString('en-IN') 
+                      : 'No orders yet'
+                    }
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={getStatusColor(customer.status)}>
@@ -313,9 +314,19 @@ const Customers = () => {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
-                      View
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => {/* Edit functionality */}}>
+                        Edit
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => deleteCustomer(customer.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -325,17 +336,8 @@ const Customers = () => {
         
         <div className="p-4 border-t flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing <span className="font-medium">1</span> to <span className="font-medium">8</span> of{" "}
-            <span className="font-medium">182</span> customers
+            Showing <span className="font-medium">{filteredCustomers.length}</span> customers
           </p>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" disabled>
-              Previous
-            </Button>
-            <Button variant="outline" size="sm">
-              Next
-            </Button>
-          </div>
         </div>
       </div>
     </div>
