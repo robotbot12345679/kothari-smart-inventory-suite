@@ -137,14 +137,14 @@ const EditSupplierDialog: React.FC<EditSupplierDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-pendingAmount">Pending Amount Adjustment</Label>
+            <Label htmlFor="edit-pendingAmount">Pending Amount</Label>
             <Input
               id="edit-pendingAmount"
               type="number"
               step="0.01"
               value={formData.pendingAmountAdjustment}
               onChange={(e) => setFormData(prev => ({ ...prev, pendingAmountAdjustment: parseFloat(e.target.value) || 0 }))}
-              placeholder="Enter adjustment amount"
+              placeholder="Enter total pending amount"
             />
           </div>
 
