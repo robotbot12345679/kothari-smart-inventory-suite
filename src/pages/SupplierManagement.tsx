@@ -47,7 +47,24 @@ const SupplierManagement = () => {
   const overallStats = useMemo(() => {
     const totalPurchases = purchaseBills.reduce((sum, bill) => sum + bill.total, 0);
     const totalPayments = payments.reduce((sum, payment) => sum + payment.amount, 0);
-    const pendingAmount = totalPurchases - totalPayments;
+    
+    // Calculate pending amount including manual adjustments from suppliers
+    let pendingAmount = totalPurchases - totalPayments;
+    
+    // Add manual pending amount adjustments from suppliers
+    suppliers.forEach(supplier => {
+      if (supplier.pendingAmountAdjustment !== undefined) {
+        // If supplier has manual pending adjustment, use it instead of calculated amount for that supplier
+        const supplierBills = purchaseBills.filter(bill => bill.supplierId === supplier.id);
+        const supplierPayments = payments.filter(payment => payment.supplierId === supplier.id);
+        const supplierCalculatedPending = supplierBills.reduce((sum, bill) => sum + bill.total, 0) - 
+                                        supplierPayments.reduce((sum, payment) => sum + payment.amount, 0);
+        
+        // Replace calculated pending with manual adjustment
+        pendingAmount = pendingAmount - supplierCalculatedPending + supplier.pendingAmountAdjustment;
+      }
+    });
+    
     const activeSuppliers = suppliers.filter(s => s.isActive).length;
 
     return {
