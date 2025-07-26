@@ -32,6 +32,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useData } from "@/context/DataContext";
 import { Label } from "@/components/ui/label";
 import { Customer } from "@/types/pos";
+import EditCustomerDialog from "@/components/customers/EditCustomerDialog";
 
 const Customers = () => {
   const { customers, addCustomer, updateCustomer, deleteCustomer, orders } = useData();
@@ -40,6 +41,8 @@ const Customers = () => {
   
   const [newCustomer, setNewCustomer] = useState<Partial<Customer>>({});
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
 
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = searchQuery === "" || 
@@ -77,6 +80,15 @@ const Customers = () => {
       setNewCustomer({});
       setIsAddCustomerOpen(false);
     }
+  };
+
+  const handleEditCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsEditCustomerOpen(true);
+  };
+
+  const handleDeleteCustomer = (customer: Customer) => {
+    deleteCustomer(customer.id);
   };
 
   const getInitials = (name: string) => {
@@ -208,6 +220,13 @@ const Customers = () => {
         </DialogContent>
       </Dialog>
 
+      <EditCustomerDialog
+        open={isEditCustomerOpen}
+        onOpenChange={setIsEditCustomerOpen}
+        customer={selectedCustomer}
+        onDelete={handleDeleteCustomer}
+      />
+
       <div className="bg-white rounded-lg shadow dark:bg-gray-800">
         <div className="p-4 border-b flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="relative w-full md:w-96">
@@ -297,19 +316,13 @@ const Customers = () => {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => {/* Edit functionality */}}>
-                        Edit
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => deleteCustomer(customer.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        Delete
-                      </Button>
-                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleEditCustomer(customer)}
+                    >
+                      Edit
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
