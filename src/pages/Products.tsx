@@ -172,16 +172,18 @@ const Products = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Product Management</h1>
         <div className="flex gap-2">
-          {selectedProducts.size > 0 && (
-            <Button onClick={handleBulkDelete} variant="destructive">
-              <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedProducts.size})
-            </Button>
-          )}
           <Button onClick={handleExportProducts} variant="outline">
             <Download className="mr-2 h-4 w-4" /> Export CSV
           </Button>
           <Button onClick={handleImportProducts} variant="outline">
             <FileText className="mr-2 h-4 w-4" /> Import CSV
+          </Button>
+          <Button 
+            onClick={handleBulkDelete} 
+            variant="destructive"
+            disabled={selectedProducts.size === 0}
+          >
+            <Trash2 className="mr-2 h-4 w-4" /> Delete {selectedProducts.size > 0 ? `(${selectedProducts.size})` : ''}
           </Button>
           <Button onClick={handleAddNewProduct}>
             <Plus className="mr-2 h-4 w-4" /> Add Product
