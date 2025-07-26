@@ -2,6 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Edit, Trash2, Package } from "lucide-react";
 import type { Product } from "@/types/pos";
 import UpdateStockDialog from "../inventory/UpdateStockDialog";
@@ -11,14 +12,25 @@ interface ProductCardProps {
   product: Product;
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
+  isSelected?: boolean;
+  onSelect?: (productId: number, isSelected: boolean) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete, isSelected = false, onSelect }) => {
   const imageUrl = getImageUrl(product.image);
 
   return (
-    <Card className="overflow-hidden h-[350px] flex flex-col">
+    <Card className={`overflow-hidden h-[350px] flex flex-col ${isSelected ? 'ring-2 ring-primary' : ''}`}>
       <div className="h-[150px] relative">
+        {onSelect && (
+          <div className="absolute top-2 left-2 z-10">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) => onSelect(product.id, !!checked)}
+              className="bg-white/80 border-2"
+            />
+          </div>
+        )}
         {imageUrl ? (
           <img
             src={imageUrl}

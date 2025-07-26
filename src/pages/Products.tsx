@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Filter, FileText, Download } from "lucide-react";
+import { Plus, Search, Filter, FileText, Download, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import ProductCard from "@/components/products/ProductCard";
 import AddProductDialog from "@/components/products/AddProductDialog";
@@ -38,6 +38,7 @@ const Products = () => {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
 
   const handleEditProduct = (product: Product) => {
     setSelectedProduct(product);
@@ -50,14 +51,46 @@ const Products = () => {
   };
 
   const confirmDelete = () => {
-    if (productToDelete) {
-      deleteProduct(productToDelete.id);
-      toast({
-        title: "Product Deleted",
-        description: `${productToDelete.name} has been deleted.`,
+    if (selectedProducts.size > 0) {
+      selectedProducts.forEach(productId => {
+        deleteProduct(productId);
       });
+      toast({
+        title: "Products Deleted",
+        description: `${selectedProducts.size} product(s) have been deleted.`,
+      });
+      setSelectedProducts(new Set());
       setIsDeleteDialogOpen(false);
-      setProductToDelete(null);
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedProducts.size === 0) {
+      toast({
+        title: "No products selected",
+        description: "Please select products to delete.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleProductSelect = (productId: number, isSelected: boolean) => {
+    const newSelected = new Set(selectedProducts);
+    if (isSelected) {
+      newSelected.add(productId);
+    } else {
+      newSelected.delete(productId);
+    }
+    setSelectedProducts(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProducts.size === filteredProducts.length) {
+      setSelectedProducts(new Set());
+    } else {
+      setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
     }
   };
 
@@ -139,6 +172,11 @@ const Products = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Product Management</h1>
         <div className="flex gap-2">
+          {selectedProducts.size > 0 && (
+            <Button onClick={handleBulkDelete} variant="destructive">
+              <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedProducts.size})
+            </Button>
+          )}
           <Button onClick={handleExportProducts} variant="outline">
             <Download className="mr-2 h-4 w-4" /> Export CSV
           </Button>
@@ -163,6 +201,16 @@ const Products = () => {
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {filteredProducts.length > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleSelectAll}
+              className="gap-1"
+            >
+              {selectedProducts.size === filteredProducts.length ? "Deselect All" : "Select All"}
+            </Button>
+          )}
           <Button variant="outline" size="sm" className="gap-1">
             <Filter className="h-4 w-4" />
             Filter
@@ -211,6 +259,8 @@ const Products = () => {
               product={product}
               onEdit={handleEditProduct}
               onDelete={handleDeleteProduct}
+              isSelected={selectedProducts.has(product.id)}
+              onSelect={handleProductSelect}
             />
           ))}
         </div>
@@ -233,7 +283,7 @@ const Products = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete {productToDelete?.name}. This action cannot be undone.
+              This will permanently delete {selectedProducts.size} selected product(s). This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
