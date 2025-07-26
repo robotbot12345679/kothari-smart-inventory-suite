@@ -39,6 +39,7 @@ const Products = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
+  const [isBulkDeleteMode, setIsBulkDeleteMode] = useState(false);
 
   const handleEditProduct = (product: Product) => {
     setSelectedProduct(product);
@@ -51,7 +52,15 @@ const Products = () => {
   };
 
   const confirmDelete = () => {
-    if (selectedProducts.size > 0) {
+    if (productToDelete) {
+      deleteProduct(productToDelete.id);
+      toast({
+        title: "Product Deleted",
+        description: `${productToDelete.name} has been deleted.`,
+      });
+      setProductToDelete(null);
+      setIsDeleteDialogOpen(false);
+    } else if (selectedProducts.size > 0) {
       selectedProducts.forEach(productId => {
         deleteProduct(productId);
       });
@@ -60,20 +69,22 @@ const Products = () => {
         description: `${selectedProducts.size} product(s) have been deleted.`,
       });
       setSelectedProducts(new Set());
+      setIsBulkDeleteMode(false);
       setIsDeleteDialogOpen(false);
     }
   };
 
-  const handleBulkDelete = () => {
-    if (selectedProducts.size === 0) {
-      toast({
-        title: "No products selected",
-        description: "Please select products to delete.",
-        variant: "destructive"
-      });
-      return;
+  const handleToggleBulkDelete = () => {
+    if (!isBulkDeleteMode) {
+      setIsBulkDeleteMode(true);
+      setSelectedProducts(new Set());
+    } else {
+      if (selectedProducts.size === 0) {
+        setIsBulkDeleteMode(false);
+        return;
+      }
+      setIsDeleteDialogOpen(true);
     }
-    setIsDeleteDialogOpen(true);
   };
 
   const handleProductSelect = (productId: number, isSelected: boolean) => {
@@ -179,11 +190,11 @@ const Products = () => {
             <FileText className="mr-2 h-4 w-4" /> Import CSV
           </Button>
           <Button 
-            onClick={handleBulkDelete} 
-            variant="destructive"
-            disabled={selectedProducts.size === 0}
+            onClick={handleToggleBulkDelete} 
+            variant={isBulkDeleteMode ? "destructive" : "outline"}
           >
-            <Trash2 className="mr-2 h-4 w-4" /> Delete {selectedProducts.size > 0 ? `(${selectedProducts.size})` : ''}
+            <Trash2 className="mr-2 h-4 w-4" /> 
+            {isBulkDeleteMode ? (selectedProducts.size > 0 ? `Delete (${selectedProducts.size})` : 'Cancel') : 'Delete'}
           </Button>
           <Button onClick={handleAddNewProduct}>
             <Plus className="mr-2 h-4 w-4" /> Add Product
@@ -203,7 +214,7 @@ const Products = () => {
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {filteredProducts.length > 0 && (
+          {isBulkDeleteMode && filteredProducts.length > 0 && (
             <Button 
               variant="outline" 
               size="sm" 
@@ -263,6 +274,7 @@ const Products = () => {
               onDelete={handleDeleteProduct}
               isSelected={selectedProducts.has(product.id)}
               onSelect={handleProductSelect}
+              showCheckbox={isBulkDeleteMode}
             />
           ))}
         </div>
@@ -285,7 +297,10 @@ const Products = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete {selectedProducts.size} selected product(s). This action cannot be undone.
+              {productToDelete 
+                ? `This will permanently delete "${productToDelete.name}". This action cannot be undone.`
+                : `This will permanently delete ${selectedProducts.size} selected product(s). This action cannot be undone.`
+              }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

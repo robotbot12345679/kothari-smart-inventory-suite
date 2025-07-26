@@ -14,15 +14,16 @@ interface ProductCardProps {
   onDelete: (product: Product) => void;
   isSelected?: boolean;
   onSelect?: (productId: number, isSelected: boolean) => void;
+  showCheckbox?: boolean;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete, isSelected = false, onSelect }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete, isSelected = false, onSelect, showCheckbox = false }) => {
   const imageUrl = getImageUrl(product.image);
 
   return (
     <Card className={`overflow-hidden h-[350px] flex flex-col ${isSelected ? 'ring-2 ring-primary' : ''}`}>
       <div className="h-[150px] relative">
-        {onSelect && (
+        {showCheckbox && onSelect && (
           <div className="absolute top-2 left-2 z-10">
             <Checkbox
               checked={isSelected}
