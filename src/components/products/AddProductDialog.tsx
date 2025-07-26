@@ -31,9 +31,10 @@ interface AddProductDialogProps {
   onOpenChange: (open: boolean) => void;
   product?: Product | null;
   defaultUnit?: 'g' | 'kg' | 'box' | 'pcs';
+  onDelete?: (product: Product) => void;
 }
 
-const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g' }: AddProductDialogProps) => {
+const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDelete }: AddProductDialogProps) => {
   const { categories, addProduct, updateProduct } = useData();
   const { toast } = useToast();
   const isEditing = !!product;
@@ -408,6 +409,16 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g' }: Ad
             <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
+            {isEditing && onDelete && product && (
+              <Button 
+                type="button" 
+                variant="destructive" 
+                onClick={() => onDelete(product)}
+                disabled={isUploading}
+              >
+                <Trash className="mr-2 h-4 w-4" /> Delete
+              </Button>
+            )}
             <Button type="submit" disabled={isUploading}>
               {isUploading ? "Uploading..." : isEditing ? "Update Product" : "Save Product"}
             </Button>

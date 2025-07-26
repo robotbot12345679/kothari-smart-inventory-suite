@@ -285,6 +285,7 @@ const Products = () => {
         onOpenChange={setIsAddProductOpen}
         product={selectedProduct}
         defaultUnit="g"
+        onDelete={handleDeleteProduct}
       />
 
       <ImportProductsDialog
