@@ -73,6 +73,7 @@ const Customers = () => {
         phone: newCustomer.phone,
         city: '',
         state: '',
+        birthday: newCustomer.birthday,
         totalOrders: 0,
         totalSpent: 0,
         status: 'Active'
@@ -110,7 +111,30 @@ const Customers = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
         <div className="flex items-center gap-2">
-          <Button className="gap-1" variant="outline">
+          <Button 
+            className="gap-1" 
+            variant="outline"
+            onClick={() => {
+              const csvHeaders = ['Name', 'Phone', 'Email', 'City', 'State', 'Birthday', 'Total Orders', 'Total Spent', 'Last Order Date', 'Status'];
+              const csvData = customers.map(customer => ({
+                'Name': customer.name,
+                'Phone': customer.phone,
+                'Email': customer.email || '',
+                'City': customer.city || '',
+                'State': customer.state || '',
+                'Birthday': customer.birthday || '',
+                'Total Orders': customer.totalOrders,
+                'Total Spent': customer.totalSpent,
+                'Last Order Date': customer.lastOrderDate ? new Date(customer.lastOrderDate).toLocaleDateString('en-IN') : '',
+                'Status': customer.status
+              }));
+              
+              import('@/lib/csv-exporter').then(({ exportToCSV, downloadCSV }) => {
+                const csvContent = exportToCSV(csvData, csvHeaders);
+                downloadCSV(csvContent, `customers-${new Date().toISOString().split('T')[0]}.csv`);
+              });
+            }}
+          >
             <FileDown className="h-4 w-4" />
             Export
           </Button>
@@ -208,6 +232,16 @@ const Customers = () => {
                 className="mt-1 border-2 border-muted focus:border-primary"
                 value={newCustomer.email || ''}
                 onChange={e => setNewCustomer(prev => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="birthday" className="text-sm font-medium">Birthday (Optional)</Label>
+              <Input
+                id="birthday"
+                type="date"
+                className="mt-1 border-2 border-muted focus:border-primary"
+                value={newCustomer.birthday || ''}
+                onChange={e => setNewCustomer(prev => ({ ...prev, birthday: e.target.value }))}
               />
             </div>
           </div>

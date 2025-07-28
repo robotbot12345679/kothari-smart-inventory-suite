@@ -113,10 +113,10 @@ const BillsReport = () => {
     setShowInvoicePreview(true);
   };
 
-  // Function to download receipts
+  // Function to download receipts directly
   const downloadReceipt = (order: Order) => {
-    setSelectedOrder(order);
-    setShowInvoicePreview(true);
+    // Directly trigger PDF creation in a new window for download
+    createPrintableInvoice(order);
   };
 
   // Function to handle sharing invoice via WhatsApp

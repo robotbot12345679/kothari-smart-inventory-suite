@@ -35,6 +35,7 @@ const EditCustomerDialog = ({ open, onOpenChange, customer, onDelete }: EditCust
         phone: customer.phone,
         city: customer.city,
         state: customer.state,
+        birthday: customer.birthday,
         status: customer.status
       });
     }
@@ -59,6 +60,7 @@ const EditCustomerDialog = ({ open, onOpenChange, customer, onDelete }: EditCust
       phone: formData.phone,
       city: formData.city || '',
       state: formData.state || '',
+      birthday: formData.birthday,
       status: formData.status || 'Active'
     };
 
@@ -151,6 +153,17 @@ const EditCustomerDialog = ({ open, onOpenChange, customer, onDelete }: EditCust
                 onChange={e => setFormData(prev => ({ ...prev, state: e.target.value }))}
               />
             </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="birthday" className="text-sm font-medium">Birthday (Optional)</Label>
+            <Input
+              id="birthday"
+              type="date"
+              className="mt-1"
+              value={formData.birthday || ''}
+              onChange={e => setFormData(prev => ({ ...prev, birthday: e.target.value }))}
+            />
           </div>
           
           <DialogFooter className="flex justify-between">

@@ -74,7 +74,7 @@ const Pos = () => {
     }
   }, [barcodeModalOpen]);
 
-  // Function to find existing customer by phone or name
+  // Function to find existing customer by phone or name (case insensitive)
   const findExistingCustomer = (name: string, phone: string) => {
     return customers.find(customer => 
       (phone && customer.phone === phone) || 
