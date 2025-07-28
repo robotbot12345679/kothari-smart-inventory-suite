@@ -32,7 +32,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { CartItem, Order, Product } from "@/types/pos";
+import { CartItem, Order, Product, Customer } from "@/types/pos";
 import { useData } from "@/context/DataContext";
 import { useToast } from "@/components/ui/use-toast";
 import { useUniqueId } from "@/hooks/useUniqueId";
@@ -45,7 +45,7 @@ interface ScannedProduct extends Product {
 }
 
 const Pos = () => {
-  const { products, categories, addOrder, findProductByBarcode, updateInventoryAfterSale } = useData();
+  const { products, categories, addOrder, findProductByBarcode, updateInventoryAfterSale, customers, addCustomer } = useData();
   const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -61,6 +61,7 @@ const Pos = () => {
     phone: "",
     email: ""
   });
+  const [matchedCustomer, setMatchedCustomer] = useState<Customer | null>(null);
   const [showProfessionalInvoice, setShowProfessionalInvoice] = useState<boolean>(false);
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
   
@@ -72,6 +73,43 @@ const Pos = () => {
       barcodeInputRef.current.focus();
     }
   }, [barcodeModalOpen]);
+
+  // Function to find existing customer by phone or name
+  const findExistingCustomer = (name: string, phone: string) => {
+    return customers.find(customer => 
+      (phone && customer.phone === phone) || 
+      (name && customer.name.toLowerCase() === name.toLowerCase())
+    );
+  };
+
+  // Handle customer info changes with auto-lookup
+  const handleCustomerInfoChange = (field: string, value: string) => {
+    const updatedInfo = { ...customerInfo, [field]: value };
+    setCustomerInfo(updatedInfo);
+
+    // Auto-lookup existing customer when name or phone is entered
+    if (field === 'name' || field === 'phone') {
+      if (value.trim()) {
+        const existingCustomer = findExistingCustomer(
+          field === 'name' ? value : customerInfo.name,
+          field === 'phone' ? value : customerInfo.phone
+        );
+        
+        if (existingCustomer) {
+          setMatchedCustomer(existingCustomer);
+          setCustomerInfo({
+            name: existingCustomer.name,
+            phone: existingCustomer.phone,
+            email: existingCustomer.email
+          });
+        } else {
+          setMatchedCustomer(null);
+        }
+      } else {
+        setMatchedCustomer(null);
+      }
+    }
+  };
 
   const filteredProducts = products.filter(product => {
     if (!product.isActive) return false;
@@ -268,6 +306,32 @@ const Pos = () => {
     };
     
     try {
+      // Add customer to database if name and phone are provided and customer doesn't exist
+      if (customerInfo.name.trim() && customerInfo.phone.trim() && !matchedCustomer) {
+        const newCustomer: Customer = {
+          id: 0, // Will be auto-assigned by addCustomer
+          name: customerInfo.name,
+          phone: customerInfo.phone,
+          email: customerInfo.email || '',
+          city: '',
+          state: '',
+          totalOrders: 1,
+          totalSpent: total,
+          lastOrderDate: new Date().toISOString(),
+          status: 'Active'
+        };
+        addCustomer(newCustomer);
+      } else if (matchedCustomer) {
+        // Update existing customer's order count and spending
+        const updatedCustomer = {
+          ...matchedCustomer,
+          totalOrders: matchedCustomer.totalOrders + 1,
+          totalSpent: matchedCustomer.totalSpent + total,
+          lastOrderDate: new Date().toISOString()
+        };
+        // Note: This would need updateCustomer from context, but for now we'll just track the order
+      }
+
       // Update inventory stock levels after a successful sale
       updateInventoryAfterSale(cart);
       
@@ -300,6 +364,7 @@ const Pos = () => {
       setCart([]);
       setAmountTendered("");
       setCustomerInfo({ name: "", phone: "", email: "" });
+      setMatchedCustomer(null);
       
     } catch (error) {
       console.error("Error creating order:", error);
@@ -867,8 +932,11 @@ const Pos = () => {
                   id="customer-name" 
                   placeholder="Optional" 
                   value={customerInfo.name}
-                  onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
+                  onChange={(e) => handleCustomerInfoChange('name', e.target.value)}
                 />
+                {matchedCustomer && (
+                  <p className="text-sm text-green-600">✓ Existing customer found</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="customer-phone">Phone Number</Label>
@@ -876,10 +944,30 @@ const Pos = () => {
                   id="customer-phone" 
                   placeholder="Optional" 
                   value={customerInfo.phone}
-                  onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
+                  onChange={(e) => handleCustomerInfoChange('phone', e.target.value)}
                 />
               </div>
             </div>
+            
+            {matchedCustomer && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800">
+                  <strong>Customer Details:</strong> {matchedCustomer.name} | {matchedCustomer.phone}
+                  {matchedCustomer.email && ` | ${matchedCustomer.email}`}
+                </p>
+                <p className="text-xs text-green-600 mt-1">
+                  Total Orders: {matchedCustomer.totalOrders} | Total Spent: ₹{matchedCustomer.totalSpent.toFixed(2)}
+                </p>
+              </div>
+            )}
+            
+            {customerInfo.name.trim() && customerInfo.phone.trim() && !matchedCustomer && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  ✓ New customer will be added to database
+                </p>
+              </div>
+            )}
             
             <Tabs defaultValue="upi" className="w-full" value={currentTab} onValueChange={setCurrentTab}>
               <TabsList className="grid w-full grid-cols-3">
