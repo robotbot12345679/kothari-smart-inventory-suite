@@ -186,7 +186,7 @@ export const createPrintableInvoice = (order: Order): Window | null => {
         }
       </style>
     </head>
-    <body onload="setTimeout(function() { window.print(); }, 500);">
+    <body onload="setTimeout(function() { window.print(); window.close(); }, 500);">
       <div class="invoice-container">
         <div class="header">
           <div>

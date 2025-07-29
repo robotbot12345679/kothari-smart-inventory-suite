@@ -370,6 +370,12 @@ const Customers = () => {
           </p>
         </div>
       </div>
+
+      <EditCustomerDialog
+        customer={selectedCustomer}
+        open={isEditCustomerOpen}
+        onOpenChange={setIsEditCustomerOpen}
+      />
     </div>
   );
 };

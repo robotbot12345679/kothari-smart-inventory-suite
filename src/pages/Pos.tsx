@@ -76,10 +76,24 @@ const Pos = () => {
 
   // Function to find existing customer by phone or name (case insensitive)
   const findExistingCustomer = (name: string, phone: string) => {
-    return customers.find(customer => 
-      (phone && customer.phone === phone) || 
-      (name && customer.name.toLowerCase() === name.toLowerCase())
-    );
+    return customers.find(customer => {
+      // Check if phone matches
+      if (phone && customer.phone === phone) {
+        return true;
+      }
+      
+      // Check if name matches (full name, first name, or last name)
+      if (name) {
+        const searchName = name.toLowerCase().trim();
+        const customerName = customer.name.toLowerCase();
+        const nameParts = customerName.split(' ');
+        
+        return customerName === searchName || 
+               nameParts.some(part => part === searchName);
+      }
+      
+      return false;
+    });
   };
 
   // Handle customer info changes with auto-lookup
@@ -306,12 +320,12 @@ const Pos = () => {
     };
     
     try {
-      // Add customer to database if name and phone are provided and customer doesn't exist
-      if (customerInfo.name.trim() && customerInfo.phone.trim() && !matchedCustomer) {
+      // Add customer to database if only name is provided and customer doesn't exist
+      if (customerInfo.name.trim() && !matchedCustomer) {
         const newCustomer: Customer = {
           id: 0, // Will be auto-assigned by addCustomer
           name: customerInfo.name,
-          phone: customerInfo.phone,
+          phone: customerInfo.phone || '',
           email: customerInfo.email || '',
           city: '',
           state: '',
