@@ -18,7 +18,7 @@ interface DataContextType {
   updateOrder: (id: string, updatedOrder: Order) => void;
   deleteOrder: (id: string) => void;
   findProductByBarcode: (barcode: string) => Product | undefined;
-  addCustomer: (customer: Customer) => void;
+  addCustomer: (customer: Customer) => Customer;
   updateCustomer: (id: number, updatedCustomer: Customer) => void;
   deleteCustomer: (id: number) => void;
   updateInventoryStock: (id: number, additionalStock: number) => void;
@@ -231,7 +231,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setOrders(prev => prev.filter(order => order.id !== id));
   };
 
-  const addCustomer = (customer: Customer) => {
+  const addCustomer = (customer: Customer): Customer => {
     try {
       if (!customer.id) {
         const maxId = customers.length > 0 ? Math.max(...customers.map(c => c.id)) : 0;
@@ -239,9 +239,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       setCustomers(prev => [...prev, customer]);
       showToast("Success", `Customer "${customer.name}" has been added.`);
+      return customer;
     } catch (error) {
       console.error("Error adding customer:", error);
       showToast("Error", "Failed to add customer. Please try again.", "destructive");
+      return customer;
     }
   };
 

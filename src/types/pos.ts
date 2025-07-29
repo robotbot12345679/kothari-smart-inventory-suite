@@ -41,11 +41,16 @@ export interface Customer {
   phone: string;
   city: string;
   state: string;
+  address?: string;
+  pincode?: string;
+  notes?: string;
   birthday?: string; // Optional birthday field
   totalOrders: number;
   totalSpent: number;
   lastOrderDate?: string;
   status: 'Active' | 'Inactive';
+  createdAt?: string;
+  orderHistory?: string[]; // Array of order IDs
 }
 
 export interface Order {

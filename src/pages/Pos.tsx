@@ -45,7 +45,7 @@ interface ScannedProduct extends Product {
 }
 
 const Pos = () => {
-  const { products, categories, addOrder, findProductByBarcode, updateInventoryAfterSale, customers, addCustomer } = useData();
+  const { products, categories, addOrder, findProductByBarcode, updateInventoryAfterSale, customers, addCustomer, updateCustomer } = useData();
   const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -329,21 +329,29 @@ const Pos = () => {
           email: customerInfo.email || '',
           city: '',
           state: '',
+          address: '',
+          pincode: '',
+          notes: '',
+          birthday: '',
           totalOrders: 1,
           totalSpent: total,
           lastOrderDate: new Date().toISOString(),
-          status: 'Active'
+          status: 'Active',
+          createdAt: new Date().toISOString(),
+          orderHistory: [orderId] // Add this order to history
         };
-        addCustomer(newCustomer);
+        const addedCustomer = addCustomer(newCustomer);
+        setMatchedCustomer(addedCustomer);
       } else if (matchedCustomer) {
-        // Update existing customer's order count and spending
-        const updatedCustomer = {
+        // Update existing customer's order count, spending, and order history
+        const updatedCustomer: Customer = {
           ...matchedCustomer,
           totalOrders: matchedCustomer.totalOrders + 1,
           totalSpent: matchedCustomer.totalSpent + total,
-          lastOrderDate: new Date().toISOString()
+          lastOrderDate: new Date().toISOString(),
+          orderHistory: [...(matchedCustomer.orderHistory || []), orderId]
         };
-        // Note: This would need updateCustomer from context, but for now we'll just track the order
+        updateCustomer(matchedCustomer.id, updatedCustomer);
       }
 
       // Update inventory stock levels after a successful sale

@@ -63,6 +63,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sendInvoiceViaWhatsApp, createPrintableInvoice } from "@/services/WhatsAppService";
 import ProfessionalInvoice from "@/components/invoice/ProfessionalInvoice";
 import { generateInvoiceNumber } from "@/services/InvoiceService";
+import { downloadInvoicePDF } from "@/lib/pdf-exporter";
 
 const BillsReport = () => {
   const { orders, updateOrderPaymentStatus } = useData();
@@ -114,9 +115,20 @@ const BillsReport = () => {
   };
 
   // Function to download receipts directly
-  const downloadReceipt = (order: Order) => {
-    // Directly trigger PDF creation in a new window for download
-    createPrintableInvoice(order);
+  const downloadReceipt = async (order: Order) => {
+    try {
+      await downloadInvoicePDF(order);
+      toast({
+        title: "Download Started",
+        description: "Your invoice has been downloaded successfully"
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed", 
+        description: "Could not download the invoice. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Function to handle sharing invoice via WhatsApp
