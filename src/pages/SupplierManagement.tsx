@@ -45,21 +45,41 @@ const SupplierManagement = () => {
   const [quickAddBillDialogOpen, setQuickAddBillDialogOpen] = useState(false);
 
   const overallStats = useMemo(() => {
+    console.log('Recalculating overall stats with fresh data...');
+    console.log('Suppliers count:', suppliers.length);
+    console.log('Bills count:', purchaseBills.length);
+    console.log('Payments count:', payments.length);
+    
     const totalPurchases = purchaseBills.reduce((sum, bill) => sum + bill.total, 0);
     const totalPayments = payments.reduce((sum, payment) => sum + payment.amount, 0);
     
-    // Calculate total pending amount by summing individual supplier analytics
-    const pendingAmount = suppliers.reduce((total, supplier) => {
-      const analytics = getSupplierAnalytics(supplier.id);
-      return total + analytics.pendingAmount;
-    }, 0);
+    // Calculate pending amount directly without using getSupplierAnalytics to avoid stale closures
+    let totalPendingAmount = 0;
+    
+    suppliers.forEach(supplier => {
+      const supplierBills = purchaseBills.filter(bill => bill.supplierId === supplier.id);
+      const supplierPayments = payments.filter(payment => payment.supplierId === supplier.id);
+      
+      const supplierTotalPurchases = supplierBills.reduce((sum, bill) => sum + bill.total, 0);
+      const supplierTotalPayments = supplierPayments.reduce((sum, payment) => sum + payment.amount, 0);
+      const calculatedPending = supplierTotalPurchases - supplierTotalPayments;
+      
+      const supplierPending = supplier.pendingAmountAdjustment !== undefined 
+        ? supplier.pendingAmountAdjustment 
+        : calculatedPending;
+        
+      console.log(`Supplier ${supplier.name}: Bills=₹${supplierTotalPurchases}, Payments=₹${supplierTotalPayments}, Pending=₹${supplierPending}`);
+      totalPendingAmount += supplierPending;
+    });
+    
+    console.log('Final calculated pending amount:', totalPendingAmount);
     
     const activeSuppliers = suppliers.filter(s => s.isActive).length;
 
     return {
       totalPurchases,
       totalPayments,
-      pendingAmount,
+      pendingAmount: totalPendingAmount,
       activeSuppliers,
       totalBills: purchaseBills.length,
       totalPaymentsCount: payments.length
