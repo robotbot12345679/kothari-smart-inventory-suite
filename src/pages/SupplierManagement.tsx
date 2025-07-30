@@ -44,16 +44,22 @@ const SupplierManagement = () => {
   const [manualAddBillDialogOpen, setManualAddBillDialogOpen] = useState(false);
   const [quickAddBillDialogOpen, setQuickAddBillDialogOpen] = useState(false);
 
+  
+  // Force re-calculation by creating a simple counter that updates with each data change
+  const [updateTrigger, setUpdateTrigger] = useState(0);
+  
+  // Trigger update whenever data changes
+  React.useEffect(() => {
+    setUpdateTrigger(prev => prev + 1);
+  }, [purchaseBills, payments, suppliers]);
+
   const overallStats = useMemo(() => {
-    console.log('Recalculating overall stats with fresh data...');
-    console.log('Suppliers count:', suppliers.length);
-    console.log('Bills count:', purchaseBills.length);
-    console.log('Payments count:', payments.length);
+    console.log('Recalculating overall stats - trigger:', updateTrigger);
     
     const totalPurchases = purchaseBills.reduce((sum, bill) => sum + bill.total, 0);
     const totalPayments = payments.reduce((sum, payment) => sum + payment.amount, 0);
     
-    // Calculate pending amount directly without using getSupplierAnalytics to avoid stale closures
+    // Calculate pending amount directly
     let totalPendingAmount = 0;
     
     suppliers.forEach(supplier => {
@@ -84,7 +90,7 @@ const SupplierManagement = () => {
       totalBills: purchaseBills.length,
       totalPaymentsCount: payments.length
     };
-  }, [purchaseBills, payments, suppliers]);
+  }, [purchaseBills, payments, suppliers, updateTrigger]);
 
   const handleProductComparison = () => {
     window.open('/product-comparison', '_blank');
