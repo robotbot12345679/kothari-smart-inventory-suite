@@ -50,8 +50,19 @@ const SupplierManagement = () => {
     
     // Calculate total pending amount by summing individual supplier pending amounts
     const pendingAmount = suppliers.reduce((total, supplier) => {
-      const analytics = getSupplierAnalytics(supplier.id);
-      return total + analytics.pendingAmount;
+      const supplierBills = purchaseBills.filter(bill => bill.supplierId === supplier.id);
+      const supplierPayments = payments.filter(payment => payment.supplierId === supplier.id);
+      
+      const supplierTotalPurchases = supplierBills.reduce((sum, bill) => sum + bill.total, 0);
+      const supplierTotalPayments = supplierPayments.reduce((sum, payment) => sum + payment.amount, 0);
+      const calculatedPending = supplierTotalPurchases - supplierTotalPayments;
+      
+      // Use manual pending amount adjustment if available, otherwise use calculated
+      const supplierPending = supplier.pendingAmountAdjustment !== undefined 
+        ? supplier.pendingAmountAdjustment 
+        : calculatedPending;
+        
+      return total + supplierPending;
     }, 0);
     
     const activeSuppliers = suppliers.filter(s => s.isActive).length;
@@ -64,7 +75,7 @@ const SupplierManagement = () => {
       totalBills: purchaseBills.length,
       totalPaymentsCount: payments.length
     };
-  }, [purchaseBills, payments, suppliers, getSupplierAnalytics]);
+  }, [purchaseBills, payments, suppliers]);
 
   const handleProductComparison = () => {
     window.open('/product-comparison', '_blank');
