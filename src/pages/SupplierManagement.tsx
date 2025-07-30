@@ -64,7 +64,7 @@ const SupplierManagement = () => {
       totalBills: purchaseBills.length,
       totalPaymentsCount: payments.length
     };
-  }, [purchaseBills, payments, suppliers, getSupplierAnalytics]);
+  }, [purchaseBills, payments, suppliers]);
 
   const handleProductComparison = () => {
     window.open('/product-comparison', '_blank');
