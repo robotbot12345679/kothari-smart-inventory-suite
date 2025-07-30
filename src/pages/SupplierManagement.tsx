@@ -45,8 +45,16 @@ const SupplierManagement = () => {
   const [quickAddBillDialogOpen, setQuickAddBillDialogOpen] = useState(false);
 
   const overallStats = useMemo(() => {
+    console.log('Recalculating overall stats...');
+    console.log('Purchase Bills:', purchaseBills.length);
+    console.log('Payments:', payments.length);
+    console.log('Suppliers:', suppliers.length);
+    
     const totalPurchases = purchaseBills.reduce((sum, bill) => sum + bill.total, 0);
     const totalPayments = payments.reduce((sum, payment) => sum + payment.amount, 0);
+    
+    console.log('Total Purchases:', totalPurchases);
+    console.log('Total Payments:', totalPayments);
     
     // Calculate total pending amount by summing individual supplier pending amounts
     const pendingAmount = suppliers.reduce((total, supplier) => {
@@ -57,6 +65,8 @@ const SupplierManagement = () => {
       const supplierTotalPayments = supplierPayments.reduce((sum, payment) => sum + payment.amount, 0);
       const calculatedPending = supplierTotalPurchases - supplierTotalPayments;
       
+      console.log(`Supplier ${supplier.name}: Bills=${supplierTotalPurchases}, Payments=${supplierTotalPayments}, Pending=${calculatedPending}`);
+      
       // Use manual pending amount adjustment if available, otherwise use calculated
       const supplierPending = supplier.pendingAmountAdjustment !== undefined 
         ? supplier.pendingAmountAdjustment 
@@ -64,6 +74,8 @@ const SupplierManagement = () => {
         
       return total + supplierPending;
     }, 0);
+    
+    console.log('Final Pending Amount:', pendingAmount);
     
     const activeSuppliers = suppliers.filter(s => s.isActive).length;
 
