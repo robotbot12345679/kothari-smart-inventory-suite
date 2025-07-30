@@ -48,22 +48,11 @@ const SupplierManagement = () => {
     const totalPurchases = purchaseBills.reduce((sum, bill) => sum + bill.total, 0);
     const totalPayments = payments.reduce((sum, payment) => sum + payment.amount, 0);
     
-    // Calculate pending amount including manual adjustments from suppliers
-    let pendingAmount = totalPurchases - totalPayments;
-    
-    // Add manual pending amount adjustments from suppliers
-    suppliers.forEach(supplier => {
-      if (supplier.pendingAmountAdjustment !== undefined) {
-        // If supplier has manual pending adjustment, use it instead of calculated amount for that supplier
-        const supplierBills = purchaseBills.filter(bill => bill.supplierId === supplier.id);
-        const supplierPayments = payments.filter(payment => payment.supplierId === supplier.id);
-        const supplierCalculatedPending = supplierBills.reduce((sum, bill) => sum + bill.total, 0) - 
-                                        supplierPayments.reduce((sum, payment) => sum + payment.amount, 0);
-        
-        // Replace calculated pending with manual adjustment
-        pendingAmount = pendingAmount - supplierCalculatedPending + supplier.pendingAmountAdjustment;
-      }
-    });
+    // Calculate total pending amount by summing individual supplier pending amounts
+    const pendingAmount = suppliers.reduce((total, supplier) => {
+      const analytics = getSupplierAnalytics(supplier.id);
+      return total + analytics.pendingAmount;
+    }, 0);
     
     const activeSuppliers = suppliers.filter(s => s.isActive).length;
 
@@ -75,7 +64,7 @@ const SupplierManagement = () => {
       totalBills: purchaseBills.length,
       totalPaymentsCount: payments.length
     };
-  }, [purchaseBills, payments, suppliers]);
+  }, [purchaseBills, payments, suppliers, getSupplierAnalytics]);
 
   const handleProductComparison = () => {
     window.open('/product-comparison', '_blank');
