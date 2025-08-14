@@ -12,10 +12,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Product } from "@/types/pos";
 import { useData } from "@/context/DataContext";
-import { ScanLine, Package, CheckCircle } from "lucide-react";
+import { ScanLine, Package, CheckCircle, Trash2, Plus, Minus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+interface StockItem {
+  product: Product;
+  quantity: number;
+}
 
 interface BarcodeStockDialogProps {
   children?: React.ReactNode;
@@ -24,8 +30,7 @@ interface BarcodeStockDialogProps {
 const BarcodeStockDialog: React.FC<BarcodeStockDialogProps> = ({ children }) => {
   const [open, setOpen] = useState(false);
   const [barcode, setBarcode] = useState("");
-  const [additionalStock, setAdditionalStock] = useState<number>(0);
-  const [foundProduct, setFoundProduct] = useState<Product | null>(null);
+  const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const { findProductByBarcode, updateInventoryStock } = useData();
   const { toast } = useToast();
@@ -34,45 +39,89 @@ const BarcodeStockDialog: React.FC<BarcodeStockDialogProps> = ({ children }) => 
   useEffect(() => {
     if (open) {
       setBarcode("");
-      setAdditionalStock(0);
-      setFoundProduct(null);
+      setStockItems([]);
       setIsScanning(false);
     }
   }, [open]);
 
-  // Auto-search product when barcode is entered
+  // Auto-add product when barcode is entered/scanned
   useEffect(() => {
     if (barcode.trim()) {
       const product = findProductByBarcode(barcode.trim());
-      setFoundProduct(product);
-      if (!product) {
+      if (product) {
+        // Check if product already exists in the list
+        const existingItemIndex = stockItems.findIndex(item => item.product.id === product.id);
+        
+        if (existingItemIndex >= 0) {
+          // Increment quantity if product already exists
+          const updatedItems = [...stockItems];
+          updatedItems[existingItemIndex].quantity += 1;
+          setStockItems(updatedItems);
+        } else {
+          // Add new product with quantity 1
+          setStockItems(prev => [...prev, { product, quantity: 1 }]);
+        }
+        
+        toast({
+          title: "Product added",
+          description: `${product.name} - 1 ${product.unit} added to list`,
+        });
+        
+        // Clear barcode for next scan
+        setBarcode("");
+      } else {
         toast({
           title: "Product not found",
           description: `No product found with barcode: ${barcode}`,
           variant: "destructive"
         });
+        setBarcode("");
       }
-    } else {
-      setFoundProduct(null);
     }
-  }, [barcode, findProductByBarcode, toast]);
+  }, [barcode, findProductByBarcode, toast, stockItems]);
+  
   
   const handleBarcodeChange = (value: string) => {
     setBarcode(value);
   };
 
-  const handleUpdate = () => {
-    if (additionalStock > 0 && foundProduct) {
-      updateInventoryStock(foundProduct.id, additionalStock);
-      toast({
-        title: "Stock updated",
-        description: `Added ${additionalStock} ${foundProduct.unit} to ${foundProduct.name}`,
-      });
-      setAdditionalStock(0);
-      setBarcode("");
-      setFoundProduct(null);
-      setOpen(false);
+  const updateItemQuantity = (productId: number, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      setStockItems(prev => prev.filter(item => item.product.id !== productId));
+    } else {
+      setStockItems(prev => 
+        prev.map(item => 
+          item.product.id === productId 
+            ? { ...item, quantity: newQuantity }
+            : item
+        )
+      );
     }
+  };
+
+  const removeItem = (productId: number) => {
+    setStockItems(prev => prev.filter(item => item.product.id !== productId));
+  };
+
+  const handleConfirmAll = () => {
+    if (stockItems.length === 0) return;
+    
+    stockItems.forEach(item => {
+      updateInventoryStock(item.product.id, item.quantity);
+    });
+    
+    toast({
+      title: "Stock updated successfully",
+      description: `Updated ${stockItems.length} product(s)`,
+    });
+    
+    setStockItems([]);
+    setBarcode("");
+    setOpen(false);
+  };
+
+  const getTotalItems = () => {
+    return stockItems.reduce((total, item) => total + item.quantity, 0);
   };
 
   const handleScanMode = () => {
@@ -94,14 +143,14 @@ const BarcodeStockDialog: React.FC<BarcodeStockDialogProps> = ({ children }) => 
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ScanLine className="h-5 w-5" />
             Add Stock by Barcode
           </DialogTitle>
           <DialogDescription>
-            Scan or enter a product barcode to automatically detect the product and add stock.
+            Scan or enter product barcodes to automatically add 1 unit each. Adjust quantities before confirming.
           </DialogDescription>
         </DialogHeader>
         
@@ -137,90 +186,107 @@ const BarcodeStockDialog: React.FC<BarcodeStockDialogProps> = ({ children }) => 
             </div>
           </div>
 
-          {/* Product Found Section */}
-          {foundProduct && (
-            <Card className="border-green-200 bg-green-50/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  Product Found
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Product Name</Label>
-                    <p className="font-medium">{foundProduct.name}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">SKU</Label>
-                    <p className="font-medium">{foundProduct.sku}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Current Stock</Label>
-                    <p className="font-medium">{foundProduct.stock} {foundProduct.unit}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Category</Label>
-                    <p className="font-medium">{foundProduct.category}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="additional-stock">Additional Stock to Add</Label>
-                  <Input 
-                    id="additional-stock" 
-                    type="number"
-                    min="1"
-                    value={additionalStock === 0 ? "" : additionalStock}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      setAdditionalStock(isNaN(value) ? 0 : Math.max(0, value));
-                    }}
-                    placeholder={`Enter units to add (${foundProduct.unit})`}
-                  />
-                </div>
-                
-                {additionalStock > 0 && (
-                  <div className="bg-blue-50 p-3 rounded-md">
-                    <p className="text-sm text-blue-800">
-                      <strong>New total:</strong> {foundProduct.stock + additionalStock} {foundProduct.unit}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          {/* Stock Items List */}
+          {stockItems.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-medium">Items to Add ({stockItems.length})</Label>
+                <Badge variant="secondary">
+                  Total: {getTotalItems()} units
+                </Badge>
+              </div>
+              
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {stockItems.map((item) => (
+                  <Card key={item.product.id} className="border">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium truncate">{item.product.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            SKU: {item.product.sku} • Current: {item.product.stock} {item.product.unit}
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 ml-4">
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateItemQuantity(item.product.id, item.quantity - 1)}
+                              disabled={item.quantity <= 1}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value);
+                                if (!isNaN(value) && value > 0) {
+                                  updateItemQuantity(item.product.id, value);
+                                }
+                              }}
+                              className="w-16 text-center"
+                            />
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateItemQuantity(item.product.id, item.quantity + 1)}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeItem(item.product.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        New total: {item.product.stock + item.quantity} {item.product.unit}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
           )}
 
-          {/* No Product Found Message */}
-          {barcode.trim() && !foundProduct && (
-            <Card className="border-orange-200 bg-orange-50/50">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 text-orange-800">
-                  <Package className="h-4 w-4" />
-                  <p className="text-sm">
-                    No product found with barcode: <strong>{barcode}</strong>
-                  </p>
+          {/* Empty State */}
+          {stockItems.length === 0 && (
+            <Card className="border-dashed">
+              <CardContent className="pt-6 pb-6">
+                <div className="text-center text-muted-foreground">
+                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No items scanned yet</p>
+                  <p className="text-xs">Scan a barcode to automatically add products</p>
                 </div>
-                <p className="text-xs text-orange-600 mt-1">
-                  Please check the barcode or add the product first.
-                </p>
               </CardContent>
             </Card>
           )}
         </div>
         
-        <DialogFooter>
+        <DialogFooter className="flex gap-2">
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
           <Button 
-            onClick={handleUpdate} 
-            disabled={additionalStock <= 0 || !foundProduct}
+            onClick={handleConfirmAll} 
+            disabled={stockItems.length === 0}
             className="gap-2"
           >
-            <Package className="h-4 w-4" />
-            Add Stock
+            <CheckCircle className="h-4 w-4" />
+            Confirm All ({getTotalItems()} items)
           </Button>
         </DialogFooter>
       </DialogContent>
