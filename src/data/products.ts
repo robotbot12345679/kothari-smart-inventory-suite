@@ -80,5 +80,22 @@ export const products: Product[] = [
     expiryDate: "2025-10-15",
     minimumStock: 5,
     isActive: true
+  },
+  {
+    id: 4,
+    name: "Test Product",
+    sku: "TP-004",
+    category: "Snacks",
+    image: "",
+    barcode: "00000285",
+    description: "Test product for barcode scanning",
+    price: 100,
+    stock: 20,
+    weight: 100,
+    unit: "g",
+    priceIncludesGST: true,
+    expiryDate: "2025-12-31",
+    minimumStock: 5,
+    isActive: true
   }
 ];
