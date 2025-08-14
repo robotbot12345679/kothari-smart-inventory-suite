@@ -23,6 +23,7 @@ import { useNavigate } from "react-router-dom";
 import { useData } from "@/context/DataContext";
 import UpdateStockDialog from "@/components/inventory/UpdateStockDialog";
 import AddStockButton from "@/components/inventory/AddStockButton";
+import BarcodeStockDialog from "@/components/inventory/BarcodeStockDialog";
 
 const Inventory = () => {
   const navigate = useNavigate();
@@ -76,6 +77,7 @@ const Inventory = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
         <div className="flex items-center gap-2">
+          <BarcodeStockDialog />
           <AddStockButton />
           <Button onClick={handleAddProduct}>
             <Plus className="h-4 w-4" />
