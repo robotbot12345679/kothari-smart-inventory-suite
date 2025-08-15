@@ -49,7 +49,7 @@ const BarcodeStockDialog: React.FC<BarcodeStockDialogProps> = ({ children }) => 
     }
   }, [open]);
 
-  // Handle barcode entry with Enter key
+  // Handle barcode entry with Enter key - automatically adds 1 unit
   const handleBarcodeSubmit = (e?: React.KeyboardEvent) => {
     if (e && e.key !== 'Enter') return;
     
@@ -57,9 +57,27 @@ const BarcodeStockDialog: React.FC<BarcodeStockDialogProps> = ({ children }) => 
     
     const product = findProductByBarcode(barcode.trim());
     if (product) {
-      setCurrentProduct(product);
+      // Automatically add 1 unit each time barcode is scanned
+      const existingItemIndex = stockItems.findIndex(item => item.product.id === product.id);
+      
+      if (existingItemIndex >= 0) {
+        // Add 1 more unit to existing item
+        const updatedItems = [...stockItems];
+        updatedItems[existingItemIndex].quantity += 1;
+        setStockItems(updatedItems);
+      } else {
+        // Add new item with 1 unit
+        setStockItems(prev => [...prev, { product, quantity: 1 }]);
+      }
+      
+      toast({
+        title: "Product scanned",
+        description: `${product.name} - 1 ${product.unit} added`,
+      });
+      
       setBarcode("");
-      setQuantityToAdd(1);
+      // Keep focus on input for next scan
+      setTimeout(() => inputRef.current?.focus(), 100);
     } else {
       toast({
         title: "Product not found",
