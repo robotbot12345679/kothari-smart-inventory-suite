@@ -55,19 +55,33 @@ const BarcodeStockDialog: React.FC<BarcodeStockDialogProps> = ({ children }) => 
     
     if (!barcode.trim()) return;
     
+    console.log("🔍 Scanning barcode:", barcode.trim());
     const product = findProductByBarcode(barcode.trim());
+    console.log("📦 Product found:", product);
+    
     if (product) {
+      console.log("📋 Current stockItems:", stockItems);
       // Automatically add 1 unit each time barcode is scanned
       const existingItemIndex = stockItems.findIndex(item => item.product.id === product.id);
+      console.log("🔍 Existing item index:", existingItemIndex);
       
       if (existingItemIndex >= 0) {
         // Add 1 more unit to existing item
         const updatedItems = [...stockItems];
+        console.log("📈 Adding to existing item, old quantity:", updatedItems[existingItemIndex].quantity);
         updatedItems[existingItemIndex].quantity += 1;
+        console.log("📈 New quantity:", updatedItems[existingItemIndex].quantity);
         setStockItems(updatedItems);
+        console.log("✅ Updated stockItems:", updatedItems);
       } else {
         // Add new item with 1 unit
-        setStockItems(prev => [...prev, { product, quantity: 1 }]);
+        console.log("➕ Adding new item with quantity 1");
+        const newItem = { product, quantity: 1 };
+        setStockItems(prev => {
+          const newItems = [...prev, newItem];
+          console.log("✅ New stockItems:", newItems);
+          return newItems;
+        });
       }
       
       toast({
@@ -79,6 +93,7 @@ const BarcodeStockDialog: React.FC<BarcodeStockDialogProps> = ({ children }) => 
       // Keep focus on input for next scan
       setTimeout(() => inputRef.current?.focus(), 100);
     } else {
+      console.log("❌ Product not found for barcode:", barcode.trim());
       toast({
         title: "Product not found",
         description: `No product found with barcode: ${barcode}`,
