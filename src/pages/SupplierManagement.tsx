@@ -70,9 +70,11 @@ const SupplierManagement = () => {
       const supplierTotalPayments = supplierPayments.reduce((sum, payment) => sum + payment.amount, 0);
       const calculatedPending = supplierTotalPurchases - supplierTotalPayments;
       
-      const supplierPending = supplier.pendingAmountAdjustment !== undefined 
-        ? supplier.pendingAmountAdjustment 
-        : calculatedPending;
+      // Priority: use manual adjustment if set and not null/undefined, otherwise use calculated pending
+      let supplierPending = calculatedPending;
+      if (supplier.pendingAmountAdjustment !== undefined && supplier.pendingAmountAdjustment !== null) {
+        supplierPending = supplier.pendingAmountAdjustment;
+      }
         
       console.log(`Supplier ${supplier.name}: Bills=₹${supplierTotalPurchases}, Payments=₹${supplierTotalPayments}, Pending=₹${supplierPending}`);
       totalPendingAmount += supplierPending;

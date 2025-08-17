@@ -169,7 +169,14 @@ export const useSupplierData = () => {
     const totalPurchases = supplierBills.reduce((sum, bill) => sum + bill.total, 0);
     const totalPayments = supplierPayments.reduce((sum, payment) => sum + payment.amount, 0);
     const calculatedPending = totalPurchases - totalPayments;
-    const manualPendingAmount = supplier?.pendingAmountAdjustment;
+    
+    // Priority: use manual adjustment if set, otherwise use calculated pending
+    let finalPendingAmount = calculatedPending;
+    if (supplier?.pendingAmountAdjustment !== undefined && supplier.pendingAmountAdjustment !== null) {
+      finalPendingAmount = supplier.pendingAmountAdjustment;
+    }
+    
+    console.log(`Analytics for ${supplier?.name}: Bills=${totalPurchases}, Payments=${totalPayments}, Calculated=${calculatedPending}, Manual=${supplier?.pendingAmountAdjustment}, Final=${finalPendingAmount}`);
     
     const lastBillDate = supplierBills.length > 0 
       ? supplierBills.sort((a, b) => new Date(b.billDate).getTime() - new Date(a.billDate).getTime())[0].billDate
@@ -182,7 +189,7 @@ export const useSupplierData = () => {
     return {
       totalPurchases,
       totalPayments,
-      pendingAmount: manualPendingAmount !== undefined ? manualPendingAmount : calculatedPending,
+      pendingAmount: finalPendingAmount,
       lastBillDate,
       lastPaymentDate,
       billCount: supplierBills.length,
