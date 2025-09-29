@@ -11,8 +11,8 @@ import { LogIn, UserPlus } from "lucide-react";
 import { z } from "zod";
 
 const loginSchema = z.object({
-  email: z.string().trim().email({ message: "Invalid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" })
+  email: z.string().trim(),
+  password: z.string().min(4, { message: "Password must be at least 4 characters" })
 });
 
 const signupSchema = z.object({
