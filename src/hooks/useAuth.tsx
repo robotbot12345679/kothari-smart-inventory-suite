@@ -47,6 +47,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     checkAuth();
+
+    // Listen for storage changes to update auth state
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'isAuthenticated' || e.key === 'username') {
+        checkAuth();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const signOut = () => {

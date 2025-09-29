@@ -49,8 +49,8 @@ const Auth = () => {
         description: "Successfully logged in."
       });
       
-      // Navigate directly to dashboard
-      navigate('/');
+      // Navigate to dashboard
+      navigate('/dashboard');
       
     } catch (error) {
       toast({
