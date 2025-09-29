@@ -1,62 +1,66 @@
 import { useState, useEffect, createContext, useContext } from "react";
-import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: { 
+    username: string;
+    id: string;
+    email?: string;
+    created_at?: string;
+    email_confirmed_at?: string;
+  } | null;
   loading: boolean;
-  signOut: () => Promise<void>;
+  signOut: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<{ 
+    username: string;
+    id: string;
+    email?: string;
+    created_at?: string;
+    email_confirmed_at?: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    // Check localStorage for authentication
+    const checkAuth = () => {
+      const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+      const username = localStorage.getItem('username');
+      
+      if (isAuthenticated && username) {
+        setUser({ 
+          username, 
+          id: 'sparsh-user-id',
+          email: 'sparsh@kotharisbusinesssuite.com',
+          created_at: new Date().toISOString(),
+          email_confirmed_at: new Date().toISOString()
+        });
+      } else {
+        setUser(null);
       }
-    );
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
       setLoading(false);
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    checkAuth();
   }, []);
 
-  const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Sign Out Failed",
-        description: error.message,
-        variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Signed Out",
-        description: "You have been successfully signed out."
-      });
-    }
+  const signOut = () => {
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('username');
+    setUser(null);
+    toast({
+      title: "Signed Out",
+      description: "You have been successfully signed out."
+    });
   };
 
   const value = {
     user,
-    session,
     loading,
     signOut
   };
