@@ -66,8 +66,8 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      // Restrict access to only Sparsh with password 0906
-      if (loginEmail.trim().toLowerCase() !== 'sparsh' || loginPassword.trim() !== '0906') {
+      // Restrict access to only Sparsh with password 09062011
+      if (loginEmail.trim().toLowerCase() !== 'sparsh' || loginPassword.trim() !== '09062011') {
         toast({
           title: "Access Denied",
           description: "Only authorized personnel can access this system.",
