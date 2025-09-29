@@ -16,50 +16,38 @@ import Inventory from './pages/Inventory';
 import BillsReport from './pages/BillsReport';
 import SupplierManagement from './pages/SupplierManagement';
 import ProductComparison from './pages/ProductComparison';
-import Auth from './pages/Auth';
 import { DataProvider } from './context/DataContext';
 import { CloudDataProvider } from './context/CloudDataContext';
-import { AuthProvider } from './hooks/useAuth';
-import ProtectedRoute from './components/auth/ProtectedRoute';
 import { Toaster } from './components/ui/toaster';
 
 const App = () => {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <AuthProvider>
-        <CloudDataProvider>
-          <DataProvider>
+      <CloudDataProvider>
+        <DataProvider>
           <Router>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/" element={<Navigate to="/auth" replace />} />
-              <Route path="/*" element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Routes>
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/products" element={<Products />} />
-                      <Route path="/orders" element={<Orders />} />
-                      <Route path="/customers" element={<Customers />} />
-                      <Route path="/reports" element={<Reports />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/pos" element={<Pos />} />
-                      <Route path="/analytics" element={<Analytics />} />
-                      <Route path="/shipping" element={<Shipping />} />
-                      <Route path="/inventory" element={<Inventory />} />
-                      <Route path="/bills" element={<BillsReport />} />
-                      <Route path="/suppliers" element={<SupplierManagement />} />
-                      <Route path="/product-comparison" element={<ProductComparison />} />
-                    </Routes>
-                  </MainLayout>
-                </ProtectedRoute>
-              } />
-            </Routes>
+            <MainLayout>
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/products" element={<Products />} />
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/customers" element={<Customers />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/pos" element={<Pos />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/shipping" element={<Shipping />} />
+                <Route path="/inventory" element={<Inventory />} />
+                <Route path="/bills" element={<BillsReport />} />
+                <Route path="/suppliers" element={<SupplierManagement />} />
+                <Route path="/product-comparison" element={<ProductComparison />} />
+              </Routes>
+            </MainLayout>
             <Toaster />
           </Router>
-          </DataProvider>
-        </CloudDataProvider>
-      </AuthProvider>
+        </DataProvider>
+      </CloudDataProvider>
     </ThemeProvider>
   );
 };

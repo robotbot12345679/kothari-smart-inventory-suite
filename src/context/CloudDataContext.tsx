@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -109,8 +108,10 @@ interface CloudDataContextType {
 const CloudDataContext = createContext<CloudDataContextType | undefined>(undefined);
 
 export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Static user ID since authentication is removed
+  const user = { id: '00000000-0000-0000-0000-000000000001' };
   
   // State
   const [products, setProducts] = useState<Product[]>([]);
@@ -170,7 +171,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Set up real-time subscriptions
   useEffect(() => {
-    if (!user) return;
 
     const newChannel = supabase
       .channel('schema-db-changes')
