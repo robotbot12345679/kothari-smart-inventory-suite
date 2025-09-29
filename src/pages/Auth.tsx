@@ -66,25 +66,60 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const validatedData = loginSchema.parse({
-        email: loginEmail,
+      // Restrict access to only Sparsh with password 0906
+      if (loginEmail.toLowerCase() !== 'sparsh' || loginPassword !== '0906') {
+        toast({
+          title: "Access Denied",
+          description: "Only authorized personnel can access this system.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Use Sparsh as the email for Supabase auth
+      const email = "sparsh@kotharisbusinesssuite.com";
+      
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email,
         password: loginPassword
       });
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email: validatedData.email,
-        password: validatedData.password
-      });
-
       if (error) {
-        toast({
-          title: "Login Failed",
-          description: error.message,
-          variant: "destructive"
-        });
+        // If user doesn't exist, create account
+        if (error.message.includes('Invalid login credentials')) {
+          const { error: signupError } = await supabase.auth.signUp({
+            email: email,
+            password: loginPassword,
+            options: {
+              emailRedirectTo: `${window.location.origin}/`,
+              data: {
+                full_name: 'Sparsh'
+              }
+            }
+          });
+          
+          if (signupError) {
+            toast({
+              title: "Login Failed",
+              description: signupError.message,
+              variant: "destructive"
+            });
+          } else {
+            toast({
+              title: "Welcome Sparsh!",
+              description: "Account created and logged in successfully."
+            });
+          }
+        } else {
+          toast({
+            title: "Login Failed",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
       } else {
         toast({
-          title: "Welcome back!",
+          title: "Welcome back, Sparsh!",
           description: "Successfully logged in."
         });
       }
@@ -163,20 +198,24 @@ const Auth = () => {
           <CardDescription>Sign in to your account or create a new one</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              This system is restricted to authorized users only.
+            </p>
+          </div>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-1">
+              <TabsTrigger value="login">Access System</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login" className="space-y-4 mt-4">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
+                  <Label htmlFor="login-email">Username</Label>
                   <Input 
                     id="login-email" 
-                    type="email" 
-                    placeholder="Enter your email" 
+                    type="text" 
+                    placeholder="Enter username (Sparsh)" 
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     required
@@ -188,72 +227,19 @@ const Auth = () => {
                   <Input 
                     id="login-password" 
                     type="password" 
-                    placeholder="Enter your password"
+                    placeholder="Enter password"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     required
                     disabled={loading}
                   />
                 </div>
+                <div className="text-sm text-muted-foreground text-center">
+                  Access restricted to authorized personnel only
+                </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   <LogIn className="h-4 w-4 mr-2" /> 
                   {loading ? "Signing in..." : "Sign In"}
-                </Button>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="signup" className="space-y-4 mt-4">
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input 
-                    id="signup-email" 
-                    type="email" 
-                    placeholder="Enter your email"
-                    value={signupEmail}
-                    onChange={(e) => setSignupEmail(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="full-name">Full Name</Label>
-                  <Input 
-                    id="full-name" 
-                    placeholder="Enter your full name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input 
-                    id="signup-password" 
-                    type="password" 
-                    placeholder="Create a password"
-                    value={signupPassword}
-                    onChange={(e) => setSignupPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm Password</Label>
-                  <Input 
-                    id="confirm-password" 
-                    type="password" 
-                    placeholder="Confirm your password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  <UserPlus className="h-4 w-4 mr-2" /> 
-                  {loading ? "Creating account..." : "Create Account"}
                 </Button>
               </form>
             </TabsContent>
