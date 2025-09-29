@@ -107,11 +107,11 @@ interface CloudDataContextType {
 
 const CloudDataContext = createContext<CloudDataContextType | undefined>(undefined);
 
+// Static user ID since authentication is removed
+const STATIC_USER_ID = '00000000-0000-0000-0000-000000000001';
+
 export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
-  
-  // Static user ID since authentication is removed
-  const user = { id: '00000000-0000-0000-0000-000000000001' };
   
   // State
   const [products, setProducts] = useState<Product[]>([]);
@@ -131,16 +131,14 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Fetch all data
   const fetchAllData = async () => {
-    if (!user) return;
-    
     setLoading(true);
     try {
       const [productsRes, categoriesRes, customersRes, ordersRes, suppliersRes] = await Promise.all([
-        supabase.from('products').select('*').eq('user_id', user.id),
-        supabase.from('categories').select('*').eq('user_id', user.id),
-        supabase.from('customers').select('*').eq('user_id', user.id),
-        supabase.from('orders').select('*').eq('user_id', user.id),
-        supabase.from('suppliers').select('*').eq('user_id', user.id)
+        supabase.from('products').select('*').eq('user_id', STATIC_USER_ID),
+        supabase.from('categories').select('*').eq('user_id', STATIC_USER_ID),
+        supabase.from('customers').select('*').eq('user_id', STATIC_USER_ID),
+        supabase.from('orders').select('*').eq('user_id', STATIC_USER_ID),
+        supabase.from('suppliers').select('*').eq('user_id', STATIC_USER_ID)
       ]);
 
       if (productsRes.error) throw productsRes.error;
@@ -171,10 +169,9 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Set up real-time subscriptions
   useEffect(() => {
-
     const newChannel = supabase
       .channel('schema-db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products', filter: `user_id=eq.${user.id}` }, 
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products', filter: `user_id=eq.${STATIC_USER_ID}` },
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setProducts(prev => [...prev, payload.new as Product]);
@@ -184,7 +181,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
             setProducts(prev => prev.filter(p => p.id !== payload.old.id));
           }
         })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${user.id}` }, 
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${STATIC_USER_ID}` }, 
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setCategories(prev => [...prev, payload.new as Category]);
@@ -194,7 +191,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
             setCategories(prev => prev.filter(c => c.id !== payload.old.id));
           }
         })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers', filter: `user_id=eq.${user.id}` }, 
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers', filter: `user_id=eq.${STATIC_USER_ID}` }, 
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setCustomers(prev => [...prev, payload.new as Customer]);
@@ -204,7 +201,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
             setCustomers(prev => prev.filter(c => c.id !== payload.old.id));
           }
         })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}` }, 
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${STATIC_USER_ID}` }, 
         (payload) => {
           const orderData = { 
             ...payload.new, 
@@ -219,7 +216,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
             setOrders(prev => prev.filter(o => o.id !== payload.old.id));
           }
         })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers', filter: `user_id=eq.${user.id}` }, 
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers', filter: `user_id=eq.${STATIC_USER_ID}` }, 
         (payload) => {
           const supplierData = { 
             ...payload.new, 
@@ -247,15 +244,13 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
         supabase.removeChannel(newChannel);
       }
     };
-  }, [user]);
+  }, []);
 
   // Product methods
   const addProduct = async (productData: Omit<Product, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
-    
     const { error } = await supabase
       .from('products')
-      .insert([{ ...productData, user_id: user.id }]);
+      .insert([{ ...productData, user_id: STATIC_USER_ID }]);
     
     if (error) {
       console.error('Error adding product:', error);
@@ -293,11 +288,9 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Category methods
   const addCategory = async (name: string) => {
-    if (!user) return;
-    
     const { error } = await supabase
       .from('categories')
-      .insert([{ name, user_id: user.id }]);
+      .insert([{ name, user_id: STATIC_USER_ID }]);
     
     if (error) {
       console.error('Error adding category:', error);
@@ -331,11 +324,9 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Customer methods
   const addCustomer = async (customerData: Omit<Customer, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
-    
     const { error } = await supabase
       .from('customers')
-      .insert([{ ...customerData, user_id: user.id }]);
+      .insert([{ ...customerData, user_id: STATIC_USER_ID }]);
     
     if (error) {
       console.error('Error adding customer:', error);
@@ -369,11 +360,9 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Order methods
   const addOrder = async (orderData: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
-    
     const { error } = await supabase
       .from('orders')
-      .insert([{ ...orderData, user_id: user.id }]);
+      .insert([{ ...orderData, user_id: STATIC_USER_ID }]);
     
     if (error) {
       console.error('Error adding order:', error);
@@ -407,11 +396,9 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Supplier methods
   const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
-    
     const { error } = await supabase
       .from('suppliers')
-      .insert([{ ...supplierData, user_id: user.id }]);
+      .insert([{ ...supplierData, user_id: STATIC_USER_ID }]);
     
     if (error) {
       console.error('Error adding supplier:', error);
