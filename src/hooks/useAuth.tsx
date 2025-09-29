@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (isAuthenticated && username) {
         setUser({ 
           username, 
-          id: 'sparsh-user-id',
+          id: '00000000-0000-0000-0000-000000000001',
           email: 'sparsh@kotharisbusinesssuite.com',
           created_at: new Date().toISOString(),
           email_confirmed_at: new Date().toISOString()
