@@ -1,100 +1,100 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useData } from "@/context/DataContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
-import { User, LogIn, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { User, LogOut, Mail, Calendar } from "lucide-react";
 
 const AccountSettings = () => {
-  const { createAccount, login, logout, currentUser } = useData();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<string>("login");
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   
-  // Login form state
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  
-  // Register form state
-  const [registerEmail, setRegisterEmail] = useState("");
-  const [registerName, setRegisterName] = useState("");
-  const [registerPassword, setRegisterPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (login(loginEmail, loginPassword)) {
-      setLoginEmail("");
-      setLoginPassword("");
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching profile:', error);
+      } else {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
     }
   };
-  
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!registerEmail || !registerName || !registerPassword) {
-      toast({
-        title: "Registration Failed",
-        description: "Please fill in all fields.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (registerPassword !== confirmPassword) {
-      toast({
-        title: "Registration Failed",
-        description: "Passwords do not match.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (createAccount(registerEmail, registerName, registerPassword)) {
-      setRegisterEmail("");
-      setRegisterName("");
-      setRegisterPassword("");
-      setConfirmPassword("");
-      setActiveTab("login");
-    }
+
+  const handleSignOut = async () => {
+    await signOut();
   };
   
-  const handleLogout = () => {
-    logout();
-  };
-  
-  if (currentUser) {
+  if (user) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Account</CardTitle>
-          <CardDescription>You are currently signed in</CardDescription>
+          <CardDescription>Your account information and settings</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center space-x-4">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="h-6 w-6 text-primary" />
+              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="h-8 w-8 text-primary" />
               </div>
-              <div>
-                <h3 className="font-medium">{currentUser.name}</h3>
-                <p className="text-sm text-muted-foreground">{currentUser.email}</p>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold">{profile?.full_name || 'User'}</h3>
+                <div className="flex items-center text-sm text-muted-foreground mt-1">
+                  <Mail className="h-4 w-4 mr-1" />
+                  {user.email}
+                </div>
+                <div className="flex items-center text-sm text-muted-foreground mt-1">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  Joined {new Date(user.created_at).toLocaleDateString()}
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <h4 className="text-sm font-medium mb-2">Account Status</h4>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Email Verified</span>
+                <span className="text-sm font-medium text-green-600">
+                  {user.email_confirmed_at ? '✓ Verified' : '⚠ Pending'}
+                </span>
               </div>
             </div>
             
             <div>
-              <h4 className="text-sm font-medium mb-2">Data Syncing</h4>
+              <h4 className="text-sm font-medium mb-2">Data Security</h4>
               <p className="text-sm text-muted-foreground">
-                Your data is automatically synced across devices when you sign in with the same account.
+                Your data is securely stored and automatically synced across all your devices. 
+                All sensitive information is encrypted and protected.
               </p>
             </div>
           </div>
         </CardContent>
         <CardFooter>
-          <Button variant="outline" className="w-full" onClick={handleLogout}>
+          <Button variant="outline" className="w-full" onClick={handleSignOut} disabled={loading}>
             <LogOut className="h-4 w-4 mr-2" /> Sign Out
           </Button>
         </CardFooter>
@@ -106,96 +106,19 @@ const AccountSettings = () => {
     <Card>
       <CardHeader>
         <CardTitle>Account</CardTitle>
-        <CardDescription>Sign in or create an account to sync your data across devices</CardDescription>
+        <CardDescription>You need to sign in to access your account</CardDescription>
       </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="register">Register</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="login" className="space-y-4 mt-4">
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="login-email">Email</Label>
-                <Input 
-                  id="login-email" 
-                  type="email" 
-                  placeholder="Enter your email" 
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="login-password">Password</Label>
-                <Input 
-                  id="login-password" 
-                  type="password" 
-                  placeholder="Enter your password"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full">
-                <LogIn className="h-4 w-4 mr-2" /> Sign In
-              </Button>
-            </form>
-          </TabsContent>
-          
-          <TabsContent value="register" className="space-y-4 mt-4">
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="register-email">Email</Label>
-                <Input 
-                  id="register-email" 
-                  type="email" 
-                  placeholder="Enter your email"
-                  value={registerEmail}
-                  onChange={(e) => setRegisterEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="register-name">Full Name</Label>
-                <Input 
-                  id="register-name" 
-                  placeholder="Enter your full name"
-                  value={registerName}
-                  onChange={(e) => setRegisterName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="register-password">Password</Label>
-                <Input 
-                  id="register-password" 
-                  type="password" 
-                  placeholder="Create a password"
-                  value={registerPassword}
-                  onChange={(e) => setRegisterPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm Password</Label>
-                <Input 
-                  id="confirm-password" 
-                  type="password" 
-                  placeholder="Confirm your password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full">
-                Create Account
-              </Button>
-            </form>
-          </TabsContent>
-        </Tabs>
+      <CardContent className="text-center py-8">
+        <div className="mb-4">
+          <User className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+          <p className="text-muted-foreground">Not signed in</p>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Sign in to sync your data across devices and access all features.
+        </p>
+        <Button onClick={() => window.location.href = '/auth'} className="w-full">
+          Go to Sign In
+        </Button>
       </CardContent>
     </Card>
   );
