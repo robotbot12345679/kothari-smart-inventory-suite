@@ -67,7 +67,7 @@ const Auth = () => {
 
     try {
       // Restrict access to only Sparsh with password 0906
-      if (loginEmail.toLowerCase() !== 'sparsh' || loginPassword !== '0906') {
+      if (loginEmail.trim().toLowerCase() !== 'sparsh' || loginPassword.trim() !== '0906') {
         toast({
           title: "Access Denied",
           description: "Only authorized personnel can access this system.",
@@ -215,7 +215,7 @@ const Auth = () => {
                   <Input 
                     id="login-email" 
                     type="text" 
-                    placeholder="Enter username (Sparsh)" 
+                    placeholder="Enter username" 
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     required
