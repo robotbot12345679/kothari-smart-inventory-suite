@@ -147,7 +147,7 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDe
         
         // If editing and there was an old image, delete it
         if (isEditing && product?.image && product.image !== imageFilename) {
-          deleteImage(product.image);
+          await deleteImage(product.image);
         }
       }
 

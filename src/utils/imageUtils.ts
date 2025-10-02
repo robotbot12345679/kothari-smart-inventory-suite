@@ -1,5 +1,6 @@
+import { supabase } from '@/integrations/supabase/client';
 
-export const compressImage = (file: File, maxSizeMB: number = 15): Promise<string> => {
+export const compressImage = (file: File, maxSizeMB: number = 15): Promise<File> => {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -31,21 +32,25 @@ export const compressImage = (file: File, maxSizeMB: number = 15): Promise<strin
       ctx?.drawImage(img, 0, 0, width, height);
       
       // Try different quality levels until we get under the size limit
-      let quality = 1.0;
-      let compressedDataUrl = '';
+      let quality = 0.9;
       
-      do {
-        compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-        const sizeInMB = (compressedDataUrl.length * 3) / 4 / (1024 * 1024);
-        
-        if (sizeInMB <= maxSizeMB || quality <= 0.1) {
-          break;
-        }
-        
-        quality -= 0.1;
-      } while (quality > 0.1);
-      
-      resolve(compressedDataUrl);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error('Failed to compress image'));
+            return;
+          }
+          
+          const compressedFile = new File([blob], file.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          });
+          
+          resolve(compressedFile);
+        },
+        'image/jpeg',
+        quality
+      );
     };
     
     img.onerror = () => reject(new Error('Failed to load image'));
@@ -71,198 +76,87 @@ export const saveImageToPublic = async (file: File): Promise<string> => {
     validateImageFile(file);
     
     // Compress the image
-    const compressedDataUrl = await compressImage(file, 15);
+    const compressedFile = await compressImage(file, 2);
     
     // Generate a unique filename
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(2);
-    const imageId = `${timestamp}_${randomId}`;
+    const ext = file.name.split('.').pop() || 'jpg';
+    const filename = `${timestamp}_${randomId}.${ext}`;
     
-    // Save to storage
-    await saveImageToStorage(compressedDataUrl, imageId);
+    // Save to Supabase Storage
+    const url = await saveImageToStorage(compressedFile, filename);
     
-    return imageId;
+    return url;
   } catch (error) {
     console.error('Error saving image:', error);
     throw error;
   }
 };
 
-export const deleteImage = (imageId: string): void => {
-  deleteImageFromStorage(imageId);
+export const deleteImage = async (imageUrl: string): Promise<void> => {
+  await deleteImageFromStorage(imageUrl);
 };
 
-export const saveImageToStorage = (imageData: string, imageId: string): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    try {
-      // Clean up old images if storage is getting full
-      cleanupStorageIfNeeded();
-      
-      // Save the image with a versioned key to prevent conflicts
-      const imageKey = `product_image_${imageId}_v${Date.now()}`;
-      localStorage.setItem(imageKey, imageData);
-      
-      // Keep track of image keys for cleanup
-      const imageKeys = JSON.parse(localStorage.getItem('image_keys') || '[]');
-      imageKeys.push(imageKey);
-      localStorage.setItem('image_keys', JSON.stringify(imageKeys));
-      
-      // Store the mapping from imageId to the actual storage key
-      const imageMapping = JSON.parse(localStorage.getItem('image_mapping') || '{}');
-      
-      // Remove old mapping if exists
-      if (imageMapping[imageId]) {
-        localStorage.removeItem(imageMapping[imageId]);
-      }
-      
-      imageMapping[imageId] = imageKey;
-      localStorage.setItem('image_mapping', JSON.stringify(imageMapping));
-      
-      console.log('Image saved successfully:', imageKey);
-      resolve();
-    } catch (error) {
-      console.error('Failed to save image:', error);
-      reject(error);
-    }
-  });
-};
-
-export const getImageUrl = (imageId?: string): string | null => {
-  if (!imageId) return null;
+export const saveImageToStorage = async (file: File, filename: string): Promise<string> => {
+  const { data, error } = await supabase.storage
+    .from('product-images')
+    .upload(filename, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
   
-  try {
-    // First check if it's already a data URL
-    if (imageId.startsWith('data:')) {
-      return imageId;
-    }
-    
-    // Check if it's a file path (for backward compatibility)
-    if (imageId.startsWith('/') || imageId.includes('.')) {
-      return imageId;
-    }
-    
-    // Get from storage using mapping
-    const imageMapping = JSON.parse(localStorage.getItem('image_mapping') || '{}');
-    const imageKey = imageMapping[imageId];
-    
-    if (imageKey) {
-      const imageData = localStorage.getItem(imageKey);
-      if (imageData) {
-        return imageData;
-      }
-    }
-    
-    // Fallback: try direct access (for old storage method)
-    const directImage = localStorage.getItem(`product_image_${imageId}`);
-    if (directImage) {
-      return directImage;
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Error retrieving image:', error);
-    return null;
+  if (error) {
+    console.error('Supabase upload error:', error);
+    throw new Error(`Failed to upload image: ${error.message}`);
   }
+  
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('product-images')
+    .getPublicUrl(filename);
+  
+  return publicUrl;
 };
 
-export const deleteImageFromStorage = (imageId: string): void => {
-  try {
-    const imageMapping = JSON.parse(localStorage.getItem('image_mapping') || '{}');
-    const imageKey = imageMapping[imageId];
-    
-    if (imageKey) {
-      localStorage.removeItem(imageKey);
-      delete imageMapping[imageId];
-      localStorage.setItem('image_mapping', JSON.stringify(imageMapping));
-      
-      // Remove from image keys list
-      const imageKeys = JSON.parse(localStorage.getItem('image_keys') || '[]');
-      const updatedKeys = imageKeys.filter((key: string) => key !== imageKey);
-      localStorage.setItem('image_keys', JSON.stringify(updatedKeys));
-    }
-    
-    // Also try to remove old format
-    localStorage.removeItem(`product_image_${imageId}`);
-    
-    console.log('Image deleted successfully:', imageId);
-  } catch (error) {
-    console.error('Error deleting image:', error);
+export const getImageUrl = (imageUrl?: string): string | null => {
+  if (!imageUrl) return null;
+  
+  // If it's already a full URL, return it
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
   }
+  
+  // For backward compatibility with old data URLs
+  if (imageUrl.startsWith('data:')) {
+    return imageUrl;
+  }
+  
+  // For old file paths
+  if (imageUrl.startsWith('/')) {
+    return imageUrl;
+  }
+  
+  return imageUrl;
 };
 
-const cleanupStorageIfNeeded = (): void => {
+export const deleteImageFromStorage = async (imageUrl: string): Promise<void> => {
   try {
-    // Check available storage space
-    const testKey = 'storage_test';
-    const testData = 'x'.repeat(1024 * 1024); // 1MB test
-    
-    try {
-      localStorage.setItem(testKey, testData);
-      localStorage.removeItem(testKey);
-    } catch {
-      // Storage is full, cleanup old images
-      console.log('Storage full, cleaning up old images...');
+    // Extract filename from URL if it's a Supabase URL
+    if (imageUrl.includes('product-images')) {
+      const filename = imageUrl.split('/product-images/').pop();
       
-      const imageKeys = JSON.parse(localStorage.getItem('image_keys') || '[]');
-      const imageMapping = JSON.parse(localStorage.getItem('image_mapping') || '{}');
-      
-      // Remove oldest 20% of images
-      const imagesToRemove = Math.ceil(imageKeys.length * 0.2);
-      
-      for (let i = 0; i < imagesToRemove && i < imageKeys.length; i++) {
-        const keyToRemove = imageKeys[i];
-        localStorage.removeItem(keyToRemove);
+      if (filename) {
+        const { error } = await supabase.storage
+          .from('product-images')
+          .remove([filename]);
         
-        // Remove from mapping
-        for (const [imageId, imageKey] of Object.entries(imageMapping)) {
-          if (imageKey === keyToRemove) {
-            delete imageMapping[imageId];
-            break;
-          }
+        if (error) {
+          console.error('Error deleting image:', error);
         }
       }
-      
-      // Update stored arrays
-      const remainingKeys = imageKeys.slice(imagesToRemove);
-      localStorage.setItem('image_keys', JSON.stringify(remainingKeys));
-      localStorage.setItem('image_mapping', JSON.stringify(imageMapping));
-      
-      console.log(`Cleaned up ${imagesToRemove} old images`);
     }
   } catch (error) {
-    console.error('Error during storage cleanup:', error);
-  }
-};
-
-// Utility to check storage health
-export const checkStorageHealth = (): void => {
-  try {
-    const imageKeys = JSON.parse(localStorage.getItem('image_keys') || '[]');
-    const imageMapping = JSON.parse(localStorage.getItem('image_mapping') || '{}');
-    
-    console.log('Storage Health Check:');
-    console.log(`- Total image keys: ${imageKeys.length}`);
-    console.log(`- Total image mappings: ${Object.keys(imageMapping).length}`);
-    
-    // Check for orphaned data
-    let orphanedKeys = 0;
-    imageKeys.forEach((key: string) => {
-      const exists = Object.values(imageMapping).includes(key);
-      if (!exists) {
-        orphanedKeys++;
-        localStorage.removeItem(key); // Clean up orphaned data
-      }
-    });
-    
-    if (orphanedKeys > 0) {
-      console.log(`- Cleaned up ${orphanedKeys} orphaned image keys`);
-      // Update the image keys array
-      const validKeys = imageKeys.filter((key: string) => 
-        Object.values(imageMapping).includes(key)
-      );
-      localStorage.setItem('image_keys', JSON.stringify(validKeys));
-    }
-  } catch (error) {
-    console.error('Error checking storage health:', error);
+    console.error('Error deleting image:', error);
   }
 };
