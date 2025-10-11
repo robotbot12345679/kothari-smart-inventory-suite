@@ -99,24 +99,24 @@ export const deleteImage = async (imageUrl: string): Promise<void> => {
 };
 
 export const saveImageToStorage = async (file: File, filename: string): Promise<string> => {
-  const { data, error } = await supabase.storage
-    .from('product-images')
-    .upload(filename, file, {
-      cacheControl: '3600',
-      upsert: false
-    });
-  
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('filename', filename);
+
+  const { data, error } = await supabase.functions.invoke('upload-product-image', {
+    body: formData,
+  });
+
   if (error) {
-    console.error('Supabase upload error:', error);
+    console.error('Upload error:', error);
     throw new Error(`Failed to upload image: ${error.message}`);
   }
-  
-  // Get public URL
-  const { data: { publicUrl } } = supabase.storage
-    .from('product-images')
-    .getPublicUrl(filename);
-  
-  return publicUrl;
+
+  if (!data?.publicUrl) {
+    throw new Error('No public URL returned from upload');
+  }
+
+  return data.publicUrl;
 };
 
 export const getImageUrl = (imageUrl?: string): string | null => {
@@ -142,19 +142,12 @@ export const getImageUrl = (imageUrl?: string): string | null => {
 
 export const deleteImageFromStorage = async (imageUrl: string): Promise<void> => {
   try {
-    // Extract filename from URL if it's a Supabase URL
-    if (imageUrl.includes('product-images')) {
-      const filename = imageUrl.split('/product-images/').pop();
-      
-      if (filename) {
-        const { error } = await supabase.storage
-          .from('product-images')
-          .remove([filename]);
-        
-        if (error) {
-          console.error('Error deleting image:', error);
-        }
-      }
+    const { error } = await supabase.functions.invoke('delete-product-image', {
+      body: { imageUrl },
+    });
+
+    if (error) {
+      console.error('Error deleting image:', error);
     }
   } catch (error) {
     console.error('Error deleting image:', error);
