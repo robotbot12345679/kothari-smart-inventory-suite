@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Filter, FileText, Download, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, FileText, Download, Trash2, Copy } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import ProductCard from "@/components/products/ProductCard";
 import AddProductDialog from "@/components/products/AddProductDialog";
@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const Products = () => {
-  const { products, categories, deleteProduct } = useData();
+  const { products, categories, deleteProduct, addProduct } = useData();
   const { toast } = useToast();
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isImportProductsOpen, setIsImportProductsOpen] = useState(false);
@@ -166,6 +166,40 @@ const Products = () => {
     setSearchQuery(e.target.value);
   };
 
+  const handleDuplicateProducts = () => {
+    if (selectedProducts.size === 0) {
+      toast({
+        title: "No products selected",
+        description: "Please select products to duplicate using the checkboxes.",
+        variant: "destructive"
+      });
+      setIsBulkDeleteMode(true);
+      return;
+    }
+
+    let duplicatedCount = 0;
+    selectedProducts.forEach(productId => {
+      const product = products.find(p => p.id === productId);
+      if (product) {
+        const newProduct = {
+          ...product,
+          id: Date.now() + duplicatedCount,
+          name: `${product.name} (Copy)`,
+          sku: `${product.sku}-COPY-${Date.now() + duplicatedCount}`
+        };
+        addProduct(newProduct);
+        duplicatedCount++;
+      }
+    });
+
+    toast({
+      title: "Products Duplicated",
+      description: `${duplicatedCount} product(s) have been duplicated successfully.`,
+    });
+    setSelectedProducts(new Set());
+    setIsBulkDeleteMode(false);
+  };
+
   // Filter products based on search and category
   const filteredProducts = products.filter(product => {
     const matchesSearch = searchQuery === "" || 
@@ -195,6 +229,9 @@ const Products = () => {
           >
             <Trash2 className="mr-2 h-4 w-4" /> 
             {isBulkDeleteMode ? (selectedProducts.size > 0 ? `Delete (${selectedProducts.size})` : 'Cancel') : 'Delete'}
+          </Button>
+          <Button onClick={handleDuplicateProducts} variant="outline">
+            <Copy className="mr-2 h-4 w-4" /> Duplicate
           </Button>
           <Button onClick={handleAddNewProduct}>
             <Plus className="mr-2 h-4 w-4" /> Add Product
