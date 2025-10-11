@@ -190,6 +190,7 @@ const Inventory = () => {
               <TableRow>
                 <TableHead>Product Name</TableHead>
                 <TableHead>SKU</TableHead>
+                <TableHead>Barcode</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead className="text-right">Stock</TableHead>
                 <TableHead className="text-right">Price</TableHead>
@@ -208,6 +209,7 @@ const Inventory = () => {
                   <TableRow key={product.id}>
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell>{product.sku}</TableCell>
+                    <TableCell>{product.barcode || 'N/A'}</TableCell>
                     <TableCell>{product.category}</TableCell>
                     <TableCell className="text-right">
                       {product.stock} {product.unit}

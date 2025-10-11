@@ -72,6 +72,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete, is
       <CardContent className="pt-2 p-3 flex-grow">
         <h3 className="font-bold text-base truncate text-gray-800">{product.name}</h3>
         <p className="text-xs text-gray-500 truncate">{product.weight}{product.unit} • SKU: {product.sku}</p>
+        {product.barcode && (
+          <p className="text-xs text-gray-500 truncate">Barcode: {product.barcode}</p>
+        )}
         <div className="flex justify-between items-center mt-1">
           <span className="text-[#c87137] font-bold text-base">₹{product.price.toFixed(2)}</span>
           <span className="text-gray-600 text-xs">{product.stock} in stock</span>
