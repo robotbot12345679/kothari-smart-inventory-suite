@@ -694,10 +694,21 @@ const Pos = () => {
                           const container = target.parentElement;
                           if (container && !container.querySelector('.placeholder-icon')) {
                             container.classList.add("bg-muted", "flex", "items-center", "justify-center");
-                            const icon = document.createElement('div');
-                            icon.className = 'placeholder-icon';
-                            icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><path d="M20.91 8.84 8.56 2.23a1.93 1.93 0 0 0-1.81 0L3.1 4.13a2.12 2.12 0 0 0-.05 3.69l12.22 6.93a2 2 0 0 0 1.94 0L21 12.51a2.12 2.12 0 0 0-.09-3.67Z"></path><path d="m3.09 8.84 12.35-6.61a1.93 1.93 0 0 1 1.81 0l3.65 1.9a2.12 2.12 0 0 1 .1 3.69L8.73 14.75a2 2 0 0 1-1.94 0L3 12.51a2.12 2.12 0 0 1 .09-3.67Z"></path><line x1="12" y1="22" x2="12" y2="13"></line><path d="M20 13.5v3.37a2.06 2.06 0 0 1-1.11 1.83l-6 3.08a1.93 1.93 0 0 1-1.78 0l-6-3.08A2.06 2.06 0 0 1 4 16.87V13.5"></path></svg>';
-                            container.appendChild(icon);
+                            const iconElement = document.createElement('div');
+                            iconElement.className = 'placeholder-icon';
+                            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                            svg.setAttribute('width', '48');
+                            svg.setAttribute('height', '48');
+                            svg.setAttribute('viewBox', '0 0 24 24');
+                            svg.setAttribute('fill', 'none');
+                            svg.setAttribute('stroke', 'currentColor');
+                            svg.setAttribute('stroke-width', '2');
+                            svg.classList.add('text-muted-foreground');
+                            const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                            path1.setAttribute('d', 'M20.91 8.84 8.56 2.23a1.93 1.93 0 0 0-1.81 0L3.1 4.13a2.12 2.12 0 0 0-.05 3.69l12.22 6.93a2 2 0 0 0 1.94 0L21 12.51a2.12 2.12 0 0 0-.09-3.67Z');
+                            svg.appendChild(path1);
+                            iconElement.appendChild(svg);
+                            container.appendChild(iconElement);
                           }
                         }}
                       />

@@ -4,25 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Mail, Calendar } from "lucide-react";
+import { User, Mail, Calendar, LogOut } from "lucide-react";
+import { useCloudData } from "@/context/CloudDataContext";
+import { useNavigate } from "react-router-dom";
 
 const AccountSettings = () => {
   const { toast } = useToast();
+  const { user } = useCloudData();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   
-  // Static user info since auth is removed
-  const user = {
-    id: '00000000-0000-0000-0000-000000000001',
-    email: 'kothari@businesssuite.com',
-    created_at: new Date().toISOString()
-  };
-  
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
 
   const fetchProfile = async () => {
+    if (!user) return;
+    
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -32,14 +33,34 @@ const AccountSettings = () => {
         .single();
       
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
+        // Profile doesn't exist, which is okay
       } else {
         setProfile(data);
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      // Error fetching profile
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      toast({
+        title: "Signed out",
+        description: "You have been successfully signed out.",
+      });
+      
+      navigate('/auth');
+    } catch (error) {
+      toast({
+        title: "Sign out failed",
+        description: "An error occurred while signing out.",
+        variant: "destructive",
+      });
     }
   };
   
@@ -56,10 +77,10 @@ const AccountSettings = () => {
               <User className="h-8 w-8 text-primary" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold">{profile?.full_name || "Kothari's Business"}</h3>
+              <h3 className="text-lg font-semibold">{profile?.full_name || "User"}</h3>
               <div className="flex items-center text-sm text-muted-foreground mt-1">
                 <Mail className="h-4 w-4 mr-1" />
-                {user.email}
+                {user?.email || 'No email'}
               </div>
               <div className="flex items-center text-sm text-muted-foreground mt-1">
                 <Calendar className="h-4 w-4 mr-1" />
@@ -87,6 +108,16 @@ const AccountSettings = () => {
           </div>
         </div>
       </CardContent>
+      <CardFooter className="flex justify-between">
+        <Button 
+          variant="destructive" 
+          onClick={handleLogout}
+          className="w-full"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign Out
+        </Button>
+      </CardFooter>
     </Card>
   );
 };

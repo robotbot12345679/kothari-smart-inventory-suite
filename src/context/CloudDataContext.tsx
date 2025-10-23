@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { RealtimeChannel } from '@supabase/supabase-js';
+import { RealtimeChannel, User, Session } from '@supabase/supabase-js';
+import { productSchema, customerSchema, categorySchema, orderSchema, supplierSchema } from '@/lib/validation';
+import { z } from 'zod';
 
 // Types
 export interface Product {
@@ -65,6 +67,10 @@ export interface Supplier {
 }
 
 interface CloudDataContextType {
+  // Auth
+  user: User | null;
+  session: Session | null;
+  
   // Data
   products: Product[];
   categories: Category[];
@@ -107,13 +113,14 @@ interface CloudDataContextType {
 
 const CloudDataContext = createContext<CloudDataContextType | undefined>(undefined);
 
-// Static user ID since authentication is removed
-const STATIC_USER_ID = '00000000-0000-0000-0000-000000000001';
-
 export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   
-  // State
+  // Auth state
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  
+  // Data state
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -130,15 +137,15 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Fetch all data
-  const fetchAllData = async () => {
+  const fetchAllData = async (userId: string) => {
     setLoading(true);
     try {
       const [productsRes, categoriesRes, customersRes, ordersRes, suppliersRes] = await Promise.all([
-        supabase.from('products').select('*').eq('user_id', STATIC_USER_ID),
-        supabase.from('categories').select('*').eq('user_id', STATIC_USER_ID),
-        supabase.from('customers').select('*').eq('user_id', STATIC_USER_ID),
-        supabase.from('orders').select('*').eq('user_id', STATIC_USER_ID),
-        supabase.from('suppliers').select('*').eq('user_id', STATIC_USER_ID)
+        supabase.from('products').select('*').eq('user_id', userId),
+        supabase.from('categories').select('*').eq('user_id', userId),
+        supabase.from('customers').select('*').eq('user_id', userId),
+        supabase.from('orders').select('*').eq('user_id', userId),
+        supabase.from('suppliers').select('*').eq('user_id', userId)
       ]);
 
       if (productsRes.error) throw productsRes.error;
@@ -160,18 +167,59 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
         payments: Array.isArray(supplier.payments) ? supplier.payments : []
       })));
     } catch (error) {
-      console.error('Error fetching data:', error);
       showToast('Error', 'Failed to load data', 'destructive');
     } finally {
       setLoading(false);
     }
   };
 
-  // Set up real-time subscriptions
+  // Set up auth and real-time subscriptions
   useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        if (currentSession?.user) {
+          setTimeout(() => {
+            fetchAllData(currentSession.user.id);
+          }, 0);
+        } else {
+          setProducts([]);
+          setCategories([]);
+          setCustomers([]);
+          setOrders([]);
+          setSuppliers([]);
+          setLoading(false);
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      
+      if (currentSession?.user) {
+        fetchAllData(currentSession.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      authSubscription.unsubscribe();
+    };
+  }, []);
+
+  // Set up real-time subscriptions when user is available
+  useEffect(() => {
+    if (!user) return;
+
     const newChannel = supabase
       .channel('schema-db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products', filter: `user_id=eq.${STATIC_USER_ID}` },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products', filter: `user_id=eq.${user.id}` },
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setProducts(prev => [...prev, payload.new as Product]);
@@ -181,7 +229,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
             setProducts(prev => prev.filter(p => p.id !== payload.old.id));
           }
         })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${STATIC_USER_ID}` }, 
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${user.id}` },
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setCategories(prev => [...prev, payload.new as Category]);
@@ -191,7 +239,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
             setCategories(prev => prev.filter(c => c.id !== payload.old.id));
           }
         })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers', filter: `user_id=eq.${STATIC_USER_ID}` }, 
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers', filter: `user_id=eq.${user.id}` },
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setCustomers(prev => [...prev, payload.new as Customer]);
@@ -201,7 +249,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
             setCustomers(prev => prev.filter(c => c.id !== payload.old.id));
           }
         })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${STATIC_USER_ID}` }, 
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}` },
         (payload) => {
           const orderData = { 
             ...payload.new, 
@@ -216,7 +264,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
             setOrders(prev => prev.filter(o => o.id !== payload.old.id));
           }
         })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers', filter: `user_id=eq.${STATIC_USER_ID}` }, 
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers', filter: `user_id=eq.${user.id}` },
         (payload) => {
           const supplierData = { 
             ...payload.new, 
@@ -236,48 +284,71 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
     setChannel(newChannel);
 
-    // Initial data fetch
-    fetchAllData();
-
     return () => {
       if (newChannel) {
         supabase.removeChannel(newChannel);
       }
     };
-  }, []);
+  }, [user]);
 
   // Product methods
   const addProduct = async (productData: Omit<Product, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    const { error } = await supabase
-      .from('products')
-      .insert([{ ...productData, user_id: STATIC_USER_ID }]);
-    
-    if (error) {
-      console.error('Error adding product:', error);
-      showToast('Error', 'Failed to add product', 'destructive');
+    if (!user) {
+      showToast('Error', 'You must be logged in to add products', 'destructive');
+      return;
+    }
+
+    try {
+      productSchema.parse(productData);
+      const { error } = await supabase
+        .from('products')
+        .insert([{ ...productData, user_id: user.id }]);
+      
+      if (error) throw error;
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        showToast('Validation Error', error.errors[0].message, 'destructive');
+      } else {
+        showToast('Error', 'Failed to add product', 'destructive');
+      }
     }
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
-    const { error } = await supabase
-      .from('products')
-      .update(updates)
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error updating product:', error);
-      showToast('Error', 'Failed to update product', 'destructive');
+    if (!user) {
+      showToast('Error', 'You must be logged in', 'destructive');
+      return;
+    }
+
+    try {
+      productSchema.partial().parse(updates);
+      const { error } = await supabase
+        .from('products')
+        .update(updates)
+        .eq('id', id);
+      
+      if (error) throw error;
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        showToast('Validation Error', error.errors[0].message, 'destructive');
+      } else {
+        showToast('Error', 'Failed to update product', 'destructive');
+      }
     }
   };
 
   const deleteProduct = async (id: string) => {
+    if (!user) {
+      showToast('Error', 'You must be logged in', 'destructive');
+      return;
+    }
+
     const { error } = await supabase
       .from('products')
       .delete()
       .eq('id', id);
     
     if (error) {
-      console.error('Error deleting product:', error);
       showToast('Error', 'Failed to delete product', 'destructive');
     }
   };
@@ -288,149 +359,222 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Category methods
   const addCategory = async (name: string) => {
-    const { error } = await supabase
-      .from('categories')
-      .insert([{ name, user_id: STATIC_USER_ID }]);
-    
-    if (error) {
-      console.error('Error adding category:', error);
-      showToast('Error', 'Failed to add category', 'destructive');
+    if (!user) {
+      showToast('Error', 'You must be logged in', 'destructive');
+      return;
+    }
+
+    try {
+      categorySchema.parse({ name });
+      const { error } = await supabase
+        .from('categories')
+        .insert([{ name, user_id: user.id }]);
+      
+      if (error) throw error;
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        showToast('Validation Error', error.errors[0].message, 'destructive');
+      } else {
+        showToast('Error', 'Failed to add category', 'destructive');
+      }
     }
   };
 
   const updateCategory = async (id: string, name: string) => {
-    const { error } = await supabase
-      .from('categories')
-      .update({ name })
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error updating category:', error);
-      showToast('Error', 'Failed to update category', 'destructive');
+    if (!user) return;
+
+    try {
+      categorySchema.parse({ name });
+      const { error } = await supabase
+        .from('categories')
+        .update({ name })
+        .eq('id', id);
+      
+      if (error) throw error;
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        showToast('Validation Error', error.errors[0].message, 'destructive');
+      } else {
+        showToast('Error', 'Failed to update category', 'destructive');
+      }
     }
   };
 
   const deleteCategory = async (id: string) => {
+    if (!user) return;
+
     const { error } = await supabase
       .from('categories')
       .delete()
       .eq('id', id);
     
     if (error) {
-      console.error('Error deleting category:', error);
       showToast('Error', 'Failed to delete category', 'destructive');
     }
   };
 
   // Customer methods
   const addCustomer = async (customerData: Omit<Customer, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    const { error } = await supabase
-      .from('customers')
-      .insert([{ ...customerData, user_id: STATIC_USER_ID }]);
-    
-    if (error) {
-      console.error('Error adding customer:', error);
-      showToast('Error', 'Failed to add customer', 'destructive');
+    if (!user) return;
+
+    try {
+      customerSchema.parse(customerData);
+      const { error } = await supabase
+        .from('customers')
+        .insert([{ ...customerData, user_id: user.id }]);
+      
+      if (error) throw error;
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        showToast('Validation Error', error.errors[0].message, 'destructive');
+      } else {
+        showToast('Error', 'Failed to add customer', 'destructive');
+      }
     }
   };
 
   const updateCustomer = async (id: string, updates: Partial<Customer>) => {
-    const { error } = await supabase
-      .from('customers')
-      .update(updates)
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error updating customer:', error);
-      showToast('Error', 'Failed to update customer', 'destructive');
+    if (!user) return;
+
+    try {
+      customerSchema.partial().parse(updates);
+      const { error } = await supabase
+        .from('customers')
+        .update(updates)
+        .eq('id', id);
+      
+      if (error) throw error;
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        showToast('Validation Error', error.errors[0].message, 'destructive');
+      } else {
+        showToast('Error', 'Failed to update customer', 'destructive');
+      }
     }
   };
 
   const deleteCustomer = async (id: string) => {
+    if (!user) return;
+
     const { error } = await supabase
       .from('customers')
       .delete()
       .eq('id', id);
     
     if (error) {
-      console.error('Error deleting customer:', error);
       showToast('Error', 'Failed to delete customer', 'destructive');
     }
   };
 
   // Order methods
   const addOrder = async (orderData: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    const { error } = await supabase
-      .from('orders')
-      .insert([{ ...orderData, user_id: STATIC_USER_ID }]);
-    
-    if (error) {
-      console.error('Error adding order:', error);
-      showToast('Error', 'Failed to add order', 'destructive');
+    if (!user) return;
+
+    try {
+      orderSchema.parse(orderData);
+      const { error } = await supabase
+        .from('orders')
+        .insert([{ ...orderData, user_id: user.id }]);
+      
+      if (error) throw error;
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        showToast('Validation Error', error.errors[0].message, 'destructive');
+      } else {
+        showToast('Error', 'Failed to add order', 'destructive');
+      }
     }
   };
 
   const updateOrder = async (id: string, updates: Partial<Order>) => {
-    const { error } = await supabase
-      .from('orders')
-      .update(updates)
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error updating order:', error);
-      showToast('Error', 'Failed to update order', 'destructive');
+    if (!user) return;
+
+    try {
+      orderSchema.partial().parse(updates);
+      const { error } = await supabase
+        .from('orders')
+        .update(updates)
+        .eq('id', id);
+      
+      if (error) throw error;
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        showToast('Validation Error', error.errors[0].message, 'destructive');
+      } else {
+        showToast('Error', 'Failed to update order', 'destructive');
+      }
     }
   };
 
   const deleteOrder = async (id: string) => {
+    if (!user) return;
+
     const { error } = await supabase
       .from('orders')
       .delete()
       .eq('id', id);
     
     if (error) {
-      console.error('Error deleting order:', error);
       showToast('Error', 'Failed to delete order', 'destructive');
     }
   };
 
   // Supplier methods
   const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    const { error } = await supabase
-      .from('suppliers')
-      .insert([{ ...supplierData, user_id: STATIC_USER_ID }]);
-    
-    if (error) {
-      console.error('Error adding supplier:', error);
-      showToast('Error', 'Failed to add supplier', 'destructive');
+    if (!user) return;
+
+    try {
+      supplierSchema.parse(supplierData);
+      const { error } = await supabase
+        .from('suppliers')
+        .insert([{ ...supplierData, user_id: user.id }]);
+      
+      if (error) throw error;
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        showToast('Validation Error', error.errors[0].message, 'destructive');
+      } else {
+        showToast('Error', 'Failed to add supplier', 'destructive');
+      }
     }
   };
 
   const updateSupplier = async (id: string, updates: Partial<Supplier>) => {
-    const { error } = await supabase
-      .from('suppliers')
-      .update(updates)
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error updating supplier:', error);
-      showToast('Error', 'Failed to update supplier', 'destructive');
+    if (!user) return;
+
+    try {
+      supplierSchema.partial().parse(updates);
+      const { error } = await supabase
+        .from('suppliers')
+        .update(updates)
+        .eq('id', id);
+      
+      if (error) throw error;
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        showToast('Validation Error', error.errors[0].message, 'destructive');
+      } else {
+        showToast('Error', 'Failed to update supplier', 'destructive');
+      }
     }
   };
 
   const deleteSupplier = async (id: string) => {
+    if (!user) return;
+
     const { error } = await supabase
       .from('suppliers')
       .delete()
       .eq('id', id);
     
     if (error) {
-      console.error('Error deleting supplier:', error);
       showToast('Error', 'Failed to delete supplier', 'destructive');
     }
   };
 
   const value = {
+    user,
+    session,
     products,
     categories,
     customers,

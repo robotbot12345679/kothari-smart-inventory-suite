@@ -12,21 +12,67 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
     );
+
+    // Verify user
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
 
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const filename = formData.get('filename') as string;
 
     if (!file || !filename) {
-      throw new Error('File and filename are required');
+      return new Response(
+        JSON.stringify({ error: 'File and filename are required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
 
-    // Upload to storage using service role (bypasses RLS)
-    const { data, error } = await supabaseClient.storage
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid file type. Only images are allowed.' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    // Validate file size (15MB max)
+    const maxSize = 15 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return new Response(
+        JSON.stringify({ error: 'File too large. Maximum size is 15MB.' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    // Use service role for storage operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
+
+    // Upload to storage
+    const { data, error } = await supabaseAdmin.storage
       .from('product-images')
       .upload(filename, file, {
         cacheControl: '3600',
@@ -38,7 +84,7 @@ serve(async (req) => {
     }
 
     // Get public URL
-    const { data: { publicUrl } } = supabaseClient.storage
+    const { data: { publicUrl } } = supabaseAdmin.storage
       .from('product-images')
       .getPublicUrl(filename);
 
@@ -51,10 +97,10 @@ serve(async (req) => {
     );
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Upload failed' }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400 
+        status: 500 
       }
     );
   }
