@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import { format, subDays, isAfter, startOfDay, endOfDay, isValid, parse } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { Download, Calendar as CalendarIcon, FileText, Filter, Printer } from "lucide-react";
@@ -15,7 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { DateRange } from "react-day-picker";
 
 const Reports = () => {
-  const { orders, products, categories } = useData();
+  const { orders, products, categories } = useCloudData();
   const { toast } = useToast();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [dateRange, setDateRange] = useState<DateRange>({

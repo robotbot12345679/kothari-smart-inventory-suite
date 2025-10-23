@@ -21,12 +21,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Tag } from "lucide-react";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import type { Category } from "@/types/pos";
 
 const CategoryManager = () => {
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
-  const { categories, addCategory, deleteCategory } = useData();
+  const { categories, addCategory, deleteCategory } = useCloudData();
   const { toast } = useToast();
   const [newCategory, setNewCategory] = useState({
     name: '',

@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Download } from "lucide-react";
@@ -23,7 +23,7 @@ interface ImportProductsDialogProps {
 }
 
 const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps) => {
-  const { addProduct, categories } = useData();
+  const { addProduct, categories } = useCloudData();
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);

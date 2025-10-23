@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCustomerMetrics } from "@/hooks/useCustomerMetrics";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import AddSalesDialog from "@/components/analytics/AddSalesDialog";
 import {
   ResponsiveContainer,
@@ -55,7 +55,7 @@ const Analytics = () => {
     activeRate 
   } = useCustomerMetrics();
 
-  const { orders, products } = useData();
+  const { orders, products } = useCloudData();
   const [period, setPeriod] = useState("30"); // Changed back to 30 days
 
   // Order count

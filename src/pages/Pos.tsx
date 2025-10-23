@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { CartItem, Order, Product, Customer } from "@/types/pos";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import { useToast } from "@/components/ui/use-toast";
 import { useUniqueId } from "@/hooks/useUniqueId";
 import ProfessionalInvoice from "@/components/invoice/ProfessionalInvoice";
@@ -45,7 +45,7 @@ interface ScannedProduct extends Product {
 }
 
 const Pos = () => {
-  const { products, categories, addOrder, findProductByBarcode, updateInventoryAfterSale, customers, addCustomer, updateCustomer } = useData();
+  const { products, categories, addOrder, findProductByBarcode, updateInventoryAfterSale, customers, addCustomer, updateCustomer } = useCloudData();
   const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");

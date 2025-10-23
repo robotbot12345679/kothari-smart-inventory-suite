@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState, useEffect } from "react";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import StatsCards from "@/components/dashboard/StatsCards";
 import SalesOverview from "@/components/dashboard/SalesOverview";
 import InsightsCard from "@/components/dashboard/InsightsCard";
@@ -9,7 +9,7 @@ import TopSellingProducts from "@/components/dashboard/TopSellingProducts";
 import InventoryStatus from "@/components/dashboard/InventoryStatus";
 
 const Dashboard = () => {
-  const { products, orders } = useData();
+  const { products, orders } = useCloudData();
   const [recentOrdersData, setRecentOrdersData] = useState([]);
 
   // Ensure we always have the latest data

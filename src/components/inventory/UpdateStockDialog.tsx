@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Product } from "@/types/pos";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import { Plus } from "lucide-react";
 
 interface UpdateStockDialogProps {
@@ -32,7 +32,7 @@ const UpdateStockDialog: React.FC<UpdateStockDialogProps> = ({ product, children
   const [open, setOpen] = useState(false);
   const [additionalStock, setAdditionalStock] = useState<number>(0);
   const [selectedProductId, setSelectedProductId] = useState<number | null>(product?.id || null);
-  const { updateInventoryStock, products } = useData();
+  const { updateInventoryStock, products } = useCloudData();
   
   const selectedProduct = selectedProductId ? products.find(p => p.id === selectedProductId) : null;
   

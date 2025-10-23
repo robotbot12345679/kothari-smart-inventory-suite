@@ -39,14 +39,14 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import { Label } from "@/components/ui/label";
 import { Customer } from "@/types/pos";
 import EditCustomerDialog from "@/components/customers/EditCustomerDialog";
 import { useToast } from "@/components/ui/use-toast";
 
 const Customers = () => {
-  const { customers, addCustomer, updateCustomer, deleteCustomer, orders } = useData();
+  const { customers, addCustomer, updateCustomer, deleteCustomer, orders } = useCloudData();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");

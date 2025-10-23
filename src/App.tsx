@@ -18,7 +18,6 @@ import BillsReport from './pages/BillsReport';
 import SupplierManagement from './pages/SupplierManagement';
 import ProductComparison from './pages/ProductComparison';
 import Auth from './pages/Auth';
-import { DataProvider } from './context/DataContext';
 import { CloudDataProvider } from './context/CloudDataContext';
 import { Toaster } from './components/ui/toaster';
 
@@ -26,8 +25,7 @@ const App = () => {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <CloudDataProvider>
-        <DataProvider>
-          <Router>
+        <Router>
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route
@@ -58,7 +56,6 @@ const App = () => {
             </Routes>
             <Toaster />
           </Router>
-        </DataProvider>
       </CloudDataProvider>
     </ThemeProvider>
   );

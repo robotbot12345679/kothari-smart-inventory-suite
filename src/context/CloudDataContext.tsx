@@ -101,11 +101,16 @@ interface CloudDataContextType {
   addOrder: (order: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateOrder: (id: string, updates: Partial<Order>) => Promise<void>;
   deleteOrder: (id: string) => Promise<void>;
+  updateOrderPaymentStatus: (orderId: string, updates: Partial<Order>) => Promise<void>;
   
   // Supplier methods
   addSupplier: (supplier: Omit<Supplier, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateSupplier: (id: string, updates: Partial<Supplier>) => Promise<void>;
   deleteSupplier: (id: string) => Promise<void>;
+  
+  // Inventory methods
+  updateInventoryStock: (id: string, additionalStock: number) => Promise<void>;
+  updateInventoryAfterSale: (cartItems: Array<{id: string, quantity: number}>) => Promise<void>;
   
   // Utility methods
   showToast: (title: string, description: string, variant?: 'default' | 'destructive') => void;
@@ -572,6 +577,60 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Inventory methods
+  const updateInventoryStock = async (id: string, additionalStock: number) => {
+    if (!user) {
+      showToast('Error', 'You must be logged in', 'destructive');
+      return;
+    }
+
+    const product = products.find(p => p.id === id);
+    if (!product) {
+      showToast('Error', 'Product not found', 'destructive');
+      return;
+    }
+
+    const newStock = product.stock + additionalStock;
+    await updateProduct(id, { stock: newStock });
+    showToast('Success', 'Stock updated successfully');
+  };
+
+  const updateInventoryAfterSale = async (cartItems: Array<{id: string, quantity: number}>) => {
+    if (!user) return;
+
+    for (const item of cartItems) {
+      const product = products.find(p => p.id === item.id);
+      if (product) {
+        const newStock = Math.max(0, product.stock - item.quantity);
+        await updateProduct(item.id, { stock: newStock });
+      }
+    }
+  };
+
+  const updateOrderPaymentStatus = async (orderId: string, updates: Partial<Order>) => {
+    if (!user) {
+      showToast('Error', 'You must be logged in', 'destructive');
+      return;
+    }
+
+    try {
+      orderSchema.partial().parse(updates);
+      const { error } = await supabase
+        .from('orders')
+        .update(updates)
+        .eq('id', orderId);
+      
+      if (error) throw error;
+      showToast('Success', 'Order payment status updated');
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        showToast('Validation Error', error.errors[0].message, 'destructive');
+      } else {
+        showToast('Error', 'Failed to update order', 'destructive');
+      }
+    }
+  };
+
   const value = {
     user,
     session,
@@ -597,6 +656,9 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     addSupplier,
     updateSupplier,
     deleteSupplier,
+    updateInventoryStock,
+    updateInventoryAfterSale,
+    updateOrderPaymentStatus,
     showToast
   };
 

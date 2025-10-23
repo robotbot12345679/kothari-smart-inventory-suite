@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import ProductCard from "@/components/products/ProductCard";
 import AddProductDialog from "@/components/products/AddProductDialog";
 import ImportProductsDialog from "@/components/products/ImportProductsDialog";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import { useToast } from "@/components/ui/use-toast";
 import { exportToCSV, downloadCSV } from "@/lib/csv-exporter";
 import type { Product } from "@/types/pos";
@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const Products = () => {
-  const { products, categories, deleteProduct, addProduct } = useData();
+  const { products, categories, deleteProduct, addProduct } = useCloudData();
   const { toast } = useToast();
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isImportProductsOpen, setIsImportProductsOpen] = useState(false);

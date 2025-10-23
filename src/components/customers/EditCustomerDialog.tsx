@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Customer } from "@/types/pos";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import { useToast } from "@/hooks/use-toast";
 
 interface EditCustomerDialogProps {
@@ -23,7 +23,7 @@ interface EditCustomerDialogProps {
 }
 
 const EditCustomerDialog = ({ open, onOpenChange, customer, onDelete }: EditCustomerDialogProps) => {
-  const { updateCustomer } = useData();
+  const { updateCustomer } = useCloudData();
   const { toast } = useToast();
   const [formData, setFormData] = useState<Partial<Customer>>({});
 

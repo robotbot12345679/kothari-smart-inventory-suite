@@ -14,7 +14,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Product } from "@/types/pos";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import { ScanLine, Package, CheckCircle, Trash2, Plus, Minus, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -34,7 +34,7 @@ const BarcodeStockDialog: React.FC<BarcodeStockDialogProps> = ({ children }) => 
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [quantityToAdd, setQuantityToAdd] = useState(1);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { findProductByBarcode, updateInventoryStock } = useData();
+  const { findProductByBarcode, updateInventoryStock } = useCloudData();
   const { toast } = useToast();
   
   // Reset state when dialog opens

@@ -38,7 +38,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import { Order } from "@/types/pos";
 import { cn } from "@/lib/utils";
 import {
@@ -66,7 +66,7 @@ import { generateInvoiceNumber } from "@/services/InvoiceService";
 import { downloadInvoicePDF } from "@/lib/pdf-exporter";
 
 const BillsReport = () => {
-  const { orders, updateOrderPaymentStatus } = useData();
+  const { orders, updateOrderPaymentStatus } = useCloudData();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");

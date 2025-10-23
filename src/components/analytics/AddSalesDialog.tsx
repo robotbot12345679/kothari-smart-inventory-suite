@@ -13,7 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import { Calendar } from "lucide-react";
 import { Order } from "@/types/pos";
 import { v4 as uuidv4 } from 'uuid';
@@ -22,7 +22,7 @@ const AddSalesDialog = () => {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<string>("");
   const [totalSales, setTotalSales] = useState<string>("");
-  const { addOrder } = useData();
+  const { addOrder } = useCloudData();
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {

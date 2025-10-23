@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import { useToast } from "@/components/ui/use-toast";
 import { Plus, Trash, Edit } from "lucide-react";
 import type { Product } from "@/types/pos";
@@ -35,7 +35,7 @@ interface AddProductDialogProps {
 }
 
 const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDelete }: AddProductDialogProps) => {
-  const { categories, addProduct, updateProduct } = useData();
+  const { categories, addProduct, updateProduct } = useCloudData();
   const { toast } = useToast();
   const isEditing = !!product;
 

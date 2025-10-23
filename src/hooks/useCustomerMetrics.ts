@@ -1,8 +1,8 @@
 
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 
 export const useCustomerMetrics = () => {
-  const { customers, orders } = useData();
+  const { customers, orders } = useCloudData();
 
   const activeCustomers = customers.filter(c => c.status === 'Active').length;
   const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);

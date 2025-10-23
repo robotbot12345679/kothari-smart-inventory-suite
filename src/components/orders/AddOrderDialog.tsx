@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import { useToast } from "@/components/ui/use-toast";
 import { useUniqueId } from "@/hooks/useUniqueId";
 import { CartItem, Order } from "@/types/pos";
@@ -25,7 +25,7 @@ import {
 import { Plus, Minus, Trash, Package } from "lucide-react";
 
 const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => {
-  const { products, addOrder } = useData();
+  const { products, addOrder } = useCloudData();
   const { toast } = useToast();
   const orderId = useUniqueId("ORD");
   

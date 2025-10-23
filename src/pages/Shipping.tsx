@@ -29,10 +29,10 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 
 const Shipping = () => {
-  const { orders } = useData();
+  const { orders } = useCloudData();
   const { toast } = useToast();
   const [isCreateShipmentOpen, setIsCreateShipmentOpen] = useState(false);
   const [shipments, setShipments] = useState<any[]>([]);

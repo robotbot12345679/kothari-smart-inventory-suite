@@ -29,14 +29,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import { Order } from "@/types/pos";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import AddOrderDialog from "@/components/orders/AddOrderDialog";
 
 const Orders = () => {
-  const { orders, deleteOrder } = useData();
+  const { orders, deleteOrder } = useCloudData();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");

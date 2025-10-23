@@ -20,14 +20,14 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { useData } from "@/context/DataContext";
+import { useCloudData } from "@/context/CloudDataContext";
 import UpdateStockDialog from "@/components/inventory/UpdateStockDialog";
 import AddStockButton from "@/components/inventory/AddStockButton";
 import BarcodeStockDialog from "@/components/inventory/BarcodeStockDialog";
 
 const Inventory = () => {
   const navigate = useNavigate();
-  const { products, categories } = useData();
+  const { products, categories } = useCloudData();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
