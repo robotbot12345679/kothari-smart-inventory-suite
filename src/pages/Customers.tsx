@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, UserPlus, Users, Phone, Mail, FileDown } from "lucide-react";
+import { Search, Filter, UserPlus, Users, Phone, Mail, FileDown, Trash } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -33,9 +43,11 @@ import { useData } from "@/context/DataContext";
 import { Label } from "@/components/ui/label";
 import { Customer } from "@/types/pos";
 import EditCustomerDialog from "@/components/customers/EditCustomerDialog";
+import { useToast } from "@/components/ui/use-toast";
 
 const Customers = () => {
   const { customers, addCustomer, updateCustomer, deleteCustomer, orders } = useData();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   
@@ -43,6 +55,8 @@ const Customers = () => {
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = searchQuery === "" || 
@@ -88,8 +102,21 @@ const Customers = () => {
     setIsEditCustomerOpen(true);
   };
 
-  const handleDeleteCustomer = (customer: Customer) => {
-    deleteCustomer(customer.id);
+  const handleDeleteClick = (customer: Customer) => {
+    setCustomerToDelete(customer);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (customerToDelete) {
+      deleteCustomer(customerToDelete.id);
+      toast({
+        title: "Customer Deleted",
+        description: `${customerToDelete.name} has been deleted successfully.`,
+      });
+      setIsDeleteDialogOpen(false);
+      setCustomerToDelete(null);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -258,7 +285,7 @@ const Customers = () => {
         open={isEditCustomerOpen}
         onOpenChange={setIsEditCustomerOpen}
         customer={selectedCustomer}
-        onDelete={handleDeleteCustomer}
+        onDelete={handleDeleteClick}
       />
 
       <div className="bg-white rounded-lg shadow dark:bg-gray-800">
@@ -350,13 +377,23 @@ const Customers = () => {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleEditCustomer(customer)}
-                    >
-                      Edit
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleEditCustomer(customer)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteClick(customer)}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -376,6 +413,23 @@ const Customers = () => {
         open={isEditCustomerOpen}
         onOpenChange={setIsEditCustomerOpen}
       />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {customerToDelete?.name}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
