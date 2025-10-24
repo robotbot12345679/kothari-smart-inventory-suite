@@ -1,30 +1,30 @@
 import React, { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, LineChart, PieChart, TrendingUp, Calendar, Download, RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useCustomerMetrics } from "@/hooks/useCustomerMetrics";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCloudData } from "@/context/CloudDataContext";
+import { 
+  TrendingUp, 
+  BarChart3 as BarChart3Icon, 
+  LineChart as LineChartIcon, 
+  PieChart as PieChartIcon, 
+  Download, 
+  RefreshCw 
+} from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import AddSalesDialog from "@/components/analytics/AddSalesDialog";
-import {
-  ResponsiveContainer,
-  BarChart,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Bar,
-  CartesianGrid,
-  PieChart as RechartsPieChart,
-  Cell,
-  Pie,
-} from "recharts";
+
+interface PaymentData {
+  name: string;
+  value: number;
+  color: string;
+}
+
+interface SalesData {
+  date: string;
+  sales: number;
+}
 
 interface DailyAnalyticsData {
   date: string;
@@ -34,46 +34,27 @@ interface DailyAnalyticsData {
   paymentMethods: Record<string, number>;
 }
 
-interface SalesData {
-  date: string;
-  sales: number;
-}
-
-interface PaymentData {
-  name: string;
-  value: number;
-  color: string;
-}
-
 const Analytics = () => {
-  const { 
-    totalCustomers, 
-    activeCustomers, 
-    totalRevenue, 
-    averageOrderValue, 
-    customerLifetimeValue, 
-    activeRate 
-  } = useCustomerMetrics();
+  const { orders, products, customers } = useCloudData();
+  const [period, setPeriod] = useState("30");
 
-  const { orders, products } = useCloudData();
-  const [period, setPeriod] = useState("30"); // Changed back to 30 days
-
-  // Order count
+  // Calculate key metrics
+  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
   const orderCount = orders.length;
+  const averageOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0;
+  const totalCustomers = customers.length;
+  const activeCustomers = customers.filter(c => (c.total_orders || 0) > 0).length;
+  const activeRate = totalCustomers > 0 ? (activeCustomers / totalCustomers) * 100 : 0;
+  const conversionRate = totalCustomers > 0 ? (orderCount / totalCustomers) * 100 : 0;
+  const customerLifetimeValue = totalCustomers > 0 ? totalRevenue / totalCustomers : 0;
 
-  // Simple conversion rate: orders / total customers (if totalCustomers > 0)
-  const conversionRate = totalCustomers > 0
-    ? ((orderCount / totalCustomers) * 100)
-    : 0;
-    
-  // Calculate orders for the selected period
   const getOrdersForPeriod = () => {
     const now = new Date();
     const periodDays = parseInt(period);
     const startDate = new Date();
     startDate.setDate(now.getDate() - periodDays);
     
-    return orders.filter(order => new Date(order.orderDate) >= startDate);
+    return orders.filter(order => new Date(order.order_date || order.created_at) >= startDate);
   };
 
   // Payment distribution data - shows amounts instead of order counts
@@ -82,7 +63,7 @@ const Analytics = () => {
     
     const paymentAmounts: Record<string, number> = {};
     orders.forEach(order => {
-      const method = order.paymentMethod || 'Cash';
+      const method = order.payment_method || 'Cash';
       paymentAmounts[method] = (paymentAmounts[method] || 0) + order.total;
     });
     
@@ -106,10 +87,8 @@ const Analytics = () => {
     const startDate = new Date();
     startDate.setDate(now.getDate() - periodDays);
     
-    // Filter orders by selected period
-    const periodOrders = orders.filter(order => new Date(order.orderDate) >= startDate);
+    const periodOrders = orders.filter(order => new Date(order.order_date || order.created_at) >= startDate);
     
-    // Initialize all dates in the period with 0 sales
     for (let i = 0; i < periodDays; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
@@ -117,15 +96,13 @@ const Analytics = () => {
       salesByDate[dateKey] = 0;
     }
     
-    // Group sales by date
     periodOrders.forEach((order) => {
-      const date = new Date(order.orderDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const date = new Date(order.order_date || order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       if (salesByDate.hasOwnProperty(date)) {
         salesByDate[date] += order.total;
       }
     });
     
-    // Convert to array format for Recharts and sort chronologically
     return Object.entries(salesByDate)
       .map(([date, sales]) => ({ date, sales }))
       .sort((a, b) => {
@@ -142,7 +119,7 @@ const Analytics = () => {
     const dailyData: Record<string, DailyAnalyticsData> = {};
     
     orders.forEach(order => {
-      const date = new Date(order.orderDate).toLocaleDateString('en-IN');
+      const date = new Date(order.order_date || order.created_at).toLocaleDateString('en-IN');
       
       if (!dailyData[date]) {
         dailyData[date] = {
@@ -157,15 +134,13 @@ const Analytics = () => {
       dailyData[date].sales += order.total;
       dailyData[date].orders += 1;
       
-      // Count products sold
       if (order.items) {
         order.items.forEach(item => {
           dailyData[date].productsSold += item.quantity || 0;
         });
       }
       
-      // Payment method distribution
-      const method = order.paymentMethod || 'Cash';
+      const method = order.payment_method || 'Cash';
       dailyData[date].paymentMethods[method] = (dailyData[date].paymentMethods[method] || 0) + 1;
     });
     
@@ -224,7 +199,7 @@ const Analytics = () => {
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Average Order Value</CardTitle>
-            <BarChart3 className="h-4 w-4 text-primary" />
+            <BarChart3Icon className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₹{averageOrderValue.toFixed(2)}</div>
@@ -239,7 +214,7 @@ const Analytics = () => {
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Order Count</CardTitle>
-            <LineChart className="h-4 w-4 text-primary" />
+            <LineChartIcon className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{orderCount}</div>
@@ -252,7 +227,7 @@ const Analytics = () => {
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-            <PieChart className="h-4 w-4 text-primary" />
+            <PieChartIcon className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{conversionRate.toFixed(1)}%</div>
@@ -317,7 +292,7 @@ const Analytics = () => {
                 </ResponsiveContainer>
               ) : (
                 <div className="text-muted-foreground flex flex-col h-full items-center justify-center">
-                  <BarChart3 className="h-12 w-12 mb-2 opacity-50" />
+                  <BarChart3Icon className="h-12 w-12 mb-2 opacity-50" />
                   <p>No sales data available for the selected period</p>
                   <p className="text-xs mt-2">Try adding missing sales data or changing the time period</p>
                 </div>
@@ -336,7 +311,7 @@ const Analytics = () => {
               <CardContent className="h-[350px]">
                 {paymentDistribution.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <RechartsPieChart>
+                    <PieChart>
                       <Pie
                         data={paymentDistribution}
                         cx="50%"
@@ -358,7 +333,7 @@ const Analytics = () => {
                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                         }}
                       />
-                    </RechartsPieChart>
+                    </PieChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="flex items-center justify-center h-full">
@@ -376,8 +351,8 @@ const Analytics = () => {
               <CardContent>
                 <div className="space-y-4">
                   {paymentDistribution.map((method, index) => {
-                    const totalRevenue = paymentDistribution.reduce((sum, m) => sum + m.value, 0);
-                    const percentage = totalRevenue > 0 ? (method.value / totalRevenue) * 100 : 0;
+                    const totalRev = paymentDistribution.reduce((sum, m) => sum + m.value, 0);
+                    const percentage = totalRev > 0 ? (method.value / totalRev) * 100 : 0;
                     
                     return (
                       <div key={index} className="flex justify-between items-center p-3 bg-muted/30 rounded-md">
@@ -428,7 +403,7 @@ const Analytics = () => {
                       <div className="font-medium">{product.name}</div>
                       <div className="text-sm text-muted-foreground">{product.unit || ''}</div>
                     </div>
-                    <div className={`text-sm font-medium ${product.stock <= (product.minimumStock || 5) ? 'text-red-500' : 'text-green-500'}`}>
+                    <div className={`text-sm font-medium ${(product.stock || 0) <= (product.min_stock || 5) ? 'text-red-500' : 'text-green-500'}`}>
                       {product.stock || 0} in stock
                     </div>
                   </div>
@@ -475,18 +450,18 @@ const Analytics = () => {
                     {orders.slice(0, 5).map((order) => (
                       <div key={order.id} className="flex justify-between items-center p-2 bg-muted/30 rounded-md">
                         <div>
-                          <div className="font-medium">{order.customerName || 'Guest'}</div>
+                          <div className="font-medium">{order.customer_name || 'Guest'}</div>
                           <div className="text-xs text-muted-foreground">
-                            {new Date(order.orderDate).toLocaleDateString()}
+                            {new Date(order.order_date || order.created_at).toLocaleDateString()}
                           </div>
                         </div>
-                        <div className="text-sm font-medium">₹{order.total.toFixed(2)}</div>
+                        <div className="font-semibold">₹{order.total.toFixed(2)}</div>
                       </div>
                     ))}
                     
                     {orders.length === 0 && (
-                      <div className="text-center py-5">
-                        <p>No order data available</p>
+                      <div className="text-center py-10">
+                        <p className="text-muted-foreground">No orders yet</p>
                       </div>
                     )}
                   </div>

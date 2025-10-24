@@ -19,7 +19,7 @@ interface ProfessionalInvoiceProps {
 
 const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
   const { toast } = useToast();
-  const orderDate = new Date(order.orderDate);
+  const orderDate = new Date(order.order_date || order.created_at);
   const invoiceDate = format(orderDate, "MMM dd, yyyy");
   const invoiceNumber = generateInvoiceNumber(order.id);
   
@@ -27,7 +27,7 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
   const billingTemplate = getBillingTemplate();
   
   // Use proper customer name handling
-  const customerName = order.customerName && order.customerName.trim() ? order.customerName : "";
+  const customerName = order.customer_name && order.customer_name.trim() ? order.customer_name : "";
   
   const handlePrint = () => {
     window.print();
@@ -38,7 +38,7 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
   };
   
   const handleShare = () => {
-    sendInvoiceViaWhatsApp(order, order.customerPhone || "+91 75677 00090");
+    sendInvoiceViaWhatsApp(order, order.customer_phone || "+91 75677 00090");
     toast({
       title: "WhatsApp Sharing",
       description: "Opening WhatsApp to share invoice..."
@@ -46,7 +46,7 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
   };
   
   const handleEmailShare = () => {
-    if (!order.customerEmail) {
+    if (!order.customer_email) {
       toast({
         title: "Email Required",
         description: "Customer email is not available",
@@ -64,7 +64,7 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
     
     // Then open email client
     setTimeout(() => {
-      window.location.href = `mailto:${order.customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = `mailto:${order.customer_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     }, 500);
 
     toast({
@@ -113,15 +113,15 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
           logoUrl={billingTemplate.logoUrl || ""}
           invoiceNumber={invoiceNumber}
           invoiceDate={invoiceDate}
-          paymentStatus={order.paymentStatus || "Paid"}
+          paymentStatus={order.payment_status || "Paid"}
         />
         
         {/* Bill To Section */}
         <CustomerInfo 
           customerName={customerName}
-          customerPhone={order.customerPhone}
-          customerEmail={order.customerEmail}
-          shippingAddress={order.shippingAddress}
+          customerPhone={order.customer_phone}
+          customerEmail={order.customer_email}
+          shippingAddress={order.shipping_address}
         />
         
         {/* Items Table */}
@@ -129,9 +129,9 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
         
         {/* Totals */}
         <InvoiceTotals 
-          subtotal={order.subtotal}
+          subtotal={order.subtotal || 0}
           total={order.total}
-          paid={order.paymentStatus === "Paid" ? order.total : 0}
+          paid={order.payment_status === "Paid" ? order.total : 0}
         />
         
         {/* Footer Notes */}

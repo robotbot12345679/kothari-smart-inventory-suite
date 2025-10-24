@@ -86,7 +86,7 @@ const BarcodeStockDialog: React.FC<BarcodeStockDialogProps> = ({ children }) => 
       
       toast({
         title: "Product scanned",
-        description: `${product.name} - 1 ${product.unit} added`,
+        description: `${product.name} - 1 ${product.unit || 'pcs'} added`,
       });
       
       setBarcode("");
@@ -120,7 +120,7 @@ const BarcodeStockDialog: React.FC<BarcodeStockDialogProps> = ({ children }) => 
     
     toast({
       title: "Product added",
-      description: `${currentProduct.name} - ${quantityToAdd} ${currentProduct.unit} added`,
+      description: `${currentProduct.name} - ${quantityToAdd} ${currentProduct.unit || 'pcs'} added`,
     });
     
     // Reset for next product
@@ -129,7 +129,7 @@ const BarcodeStockDialog: React.FC<BarcodeStockDialogProps> = ({ children }) => 
     inputRef.current?.focus();
   };
 
-  const updateItemQuantity = (productId: number, newQuantity: number) => {
+  const updateItemQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeItem(productId);
     } else {
@@ -143,7 +143,7 @@ const BarcodeStockDialog: React.FC<BarcodeStockDialogProps> = ({ children }) => 
     }
   };
 
-  const removeItem = (productId: number) => {
+  const removeItem = (productId: string) => {
     setStockItems(prev => prev.filter(item => item.product.id !== productId));
   };
 
@@ -235,7 +235,7 @@ const BarcodeStockDialog: React.FC<BarcodeStockDialogProps> = ({ children }) => 
                   <div className="flex-1">
                     <h4 className="font-medium">{currentProduct.name}</h4>
                     <p className="text-sm text-muted-foreground">
-                      SKU: {currentProduct.sku} • Current Stock: {currentProduct.stock} {currentProduct.unit}
+                      SKU: {currentProduct.sku} • Current Stock: {currentProduct.stock || 0} {currentProduct.unit || 'pcs'}
                     </p>
                   </div>
                   <Badge variant="outline" className="ml-4">
@@ -313,10 +313,10 @@ const BarcodeStockDialog: React.FC<BarcodeStockDialogProps> = ({ children }) => 
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium truncate">{item.product.name}</h4>
                           <p className="text-sm text-muted-foreground">
-                            SKU: {item.product.sku} • Current: {item.product.stock} {item.product.unit}
+                            SKU: {item.product.sku} • Current: {item.product.stock || 0} {item.product.unit || 'pcs'}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            New total: <span className="font-medium">{item.product.stock + item.quantity} {item.product.unit}</span>
+                            New total: <span className="font-medium">{(item.product.stock || 0) + item.quantity} {item.product.unit || 'pcs'}</span>
                           </p>
                         </div>
                         

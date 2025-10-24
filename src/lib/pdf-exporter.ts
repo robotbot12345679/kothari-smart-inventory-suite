@@ -12,11 +12,11 @@ export function downloadInvoicePDF(order: Order): Promise<void> {
     try {
       const billingTemplate = getBillingTemplate();
       const invoiceNumber = generateInvoiceNumber(order.id);
-      const orderDate = new Date(order.orderDate);
+      const orderDate = new Date(order.order_date || order.created_at);
       const invoiceDate = format(orderDate, "MMM dd, yyyy");
       
       // Use proper customer name handling
-      const customerName = order.customerName && order.customerName.trim() ? order.customerName : "";
+      const customerName = order.customer_name && order.customer_name.trim() ? order.customer_name : "";
       
       // Ensure we have the correct logo URL from the billing template
       const logoUrl = billingTemplate.logoUrl || "/lovable-uploads/6ab04e40-2860-4562-bace-e35da6383972.png";
@@ -179,16 +179,16 @@ export function downloadInvoicePDF(order: Order): Promise<void> {
                 <div class="dates">
                   <div>Date: ${invoiceDate}</div>
                 </div>
-                <div class="status-badge ${order.paymentStatus !== 'Paid' ? 'unpaid-badge' : ''}">${order.paymentStatus || 'PAID'}</div>
+                <div class="status-badge ${order.payment_status !== 'Paid' ? 'unpaid-badge' : ''}">${order.payment_status || 'PAID'}</div>
               </div>
             </div>
             
             <div class="client-info">
               <div class="section-title">Bill To:</div>
               ${customerName ? `<div style="font-weight: 500;">${customerName}</div>` : ''}
-              ${order.customerPhone ? `<div>Phone: ${order.customerPhone}</div>` : ''}
-              ${order.customerEmail ? `<div>Email: ${order.customerEmail}</div>` : ''}
-              ${order.shippingAddress ? `<div>${order.shippingAddress}</div>` : ''}
+              ${order.customer_phone ? `<div>Phone: ${order.customer_phone}</div>` : ''}
+              ${order.customer_email ? `<div>Email: ${order.customer_email}</div>` : ''}
+              ${order.shipping_address ? `<div>${order.shipping_address}</div>` : ''}
             </div>
             
             <table>
@@ -219,7 +219,7 @@ export function downloadInvoicePDF(order: Order): Promise<void> {
               <table class="totals-table">
                 <tr>
                   <td>Subtotal</td>
-                  <td class="amount-col">₹${order.subtotal.toFixed(2)}</td>
+                  <td class="amount-col">₹${(order.subtotal || 0).toFixed(2)}</td>
                 </tr>
                 <tr>
                   <td>Discount</td>
@@ -231,9 +231,9 @@ export function downloadInvoicePDF(order: Order): Promise<void> {
                 </tr>
                 <tr>
                   <td>Amount Paid</td>
-                  <td class="amount-col">${order.paymentStatus === 'Paid' ? '₹' + order.total.toFixed(2) : '₹0.00'}</td>
+                  <td class="amount-col">${order.payment_status === 'Paid' ? '₹' + order.total.toFixed(2) : '₹0.00'}</td>
                 </tr>
-                ${order.paymentStatus !== 'Paid' ? `
+                ${order.payment_status !== 'Paid' ? `
                 <tr>
                   <td>Balance Due</td>
                   <td class="amount-col">₹${order.total.toFixed(2)}</td>
@@ -242,7 +242,7 @@ export function downloadInvoicePDF(order: Order): Promise<void> {
               </table>
             </div>
 
-            ${order.paymentStatus !== 'Paid' ? `
+            ${order.payment_status !== 'Paid' ? `
             <div class="payment-section">
               <div class="section-title">Payment Information</div>
               <p>Please scan the QR code below or use the payment link to complete your payment.</p>

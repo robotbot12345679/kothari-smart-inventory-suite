@@ -31,7 +31,7 @@ interface UpdateStockDialogProps {
 const UpdateStockDialog: React.FC<UpdateStockDialogProps> = ({ product, children }) => {
   const [open, setOpen] = useState(false);
   const [additionalStock, setAdditionalStock] = useState<number>(0);
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(product?.id || null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(product?.id || null);
   const { updateInventoryStock, products } = useCloudData();
   
   const selectedProduct = selectedProductId ? products.find(p => p.id === selectedProductId) : null;
@@ -68,14 +68,14 @@ const UpdateStockDialog: React.FC<UpdateStockDialogProps> = ({ product, children
           {!product && (
             <div className="space-y-2">
               <Label htmlFor="product-select">Select Product</Label>
-              <Select value={selectedProductId?.toString() || ""} onValueChange={(value) => setSelectedProductId(parseInt(value))}>
+              <Select value={selectedProductId || ""} onValueChange={(value) => setSelectedProductId(value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose a product" />
                 </SelectTrigger>
                 <SelectContent>
                   {products.map((prod) => (
-                    <SelectItem key={prod.id} value={prod.id.toString()}>
-                      {prod.name} (Current: {prod.stock} {prod.unit})
+                    <SelectItem key={prod.id} value={prod.id}>
+                      {prod.name} (Current: {prod.stock || 0} {prod.unit || 'pcs'})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -89,7 +89,7 @@ const UpdateStockDialog: React.FC<UpdateStockDialogProps> = ({ product, children
                 <Label htmlFor="current-stock">Current Stock</Label>
                 <Input 
                   id="current-stock" 
-                  value={selectedProduct.stock} 
+                  value={selectedProduct.stock || 0} 
                   disabled 
                   className="bg-muted"
                 />
@@ -114,7 +114,7 @@ const UpdateStockDialog: React.FC<UpdateStockDialogProps> = ({ product, children
                 <Label htmlFor="new-stock">New Stock Total</Label>
                 <Input 
                   id="new-stock" 
-                  value={selectedProduct.stock + additionalStock} 
+                  value={(selectedProduct.stock || 0) + additionalStock} 
                   disabled 
                   className="bg-muted"
                 />
