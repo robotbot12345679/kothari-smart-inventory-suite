@@ -95,6 +95,23 @@ export interface Supplier {
   updated_at: string;
 }
 
+export interface BillingTemplate {
+  shopName: string;
+  address: string;
+  phone: string;
+  gstNumber: string;
+  logoUrl: string;
+  footerText: string[];
+}
+
+export interface Settings {
+  id: string;
+  user_id: string;
+  billing_template: BillingTemplate;
+  created_at: string;
+  updated_at: string;
+}
+
 interface CloudDataContextType {
   // Auth
   user: User | null;
@@ -106,6 +123,7 @@ interface CloudDataContextType {
   customers: Customer[];
   orders: Order[];
   suppliers: Supplier[];
+  billingTemplate: BillingTemplate | null;
   
   // Loading states
   loading: boolean;
@@ -137,6 +155,9 @@ interface CloudDataContextType {
   updateSupplier: (id: string, updates: Partial<Supplier>) => Promise<void>;
   deleteSupplier: (id: string) => Promise<void>;
   
+  // Settings methods
+  updateBillingTemplate: (template: BillingTemplate) => Promise<void>;
+  
   // Inventory methods
   updateInventoryStock: (id: string, additionalStock: number) => Promise<void>;
   updateInventoryAfterSale: (cartItems: Array<{id: string, quantity: number}>) => Promise<void>;
@@ -160,6 +181,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [billingTemplate, setBillingTemplate] = useState<BillingTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Real-time channel
@@ -174,12 +196,13 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   const fetchAllData = async (userId: string) => {
     setLoading(true);
     try {
-      const [productsRes, categoriesRes, customersRes, ordersRes, suppliersRes] = await Promise.all([
+      const [productsRes, categoriesRes, customersRes, ordersRes, suppliersRes, settingsRes] = await Promise.all([
         supabase.from('products').select('*').eq('user_id', userId),
         supabase.from('categories').select('*').eq('user_id', userId),
         supabase.from('customers').select('*').eq('user_id', userId),
         supabase.from('orders').select('*').eq('user_id', userId),
-        supabase.from('suppliers').select('*').eq('user_id', userId)
+        supabase.from('suppliers').select('*').eq('user_id', userId),
+        supabase.from('settings').select('*').eq('user_id', userId).maybeSingle()
       ]);
 
       if (productsRes.error) throw productsRes.error;
@@ -187,6 +210,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
       if (customersRes.error) throw customersRes.error;
       if (ordersRes.error) throw ordersRes.error;
       if (suppliersRes.error) throw suppliersRes.error;
+      if (settingsRes.error) throw settingsRes.error;
 
       setProducts(productsRes.data || []);
       setCategories(categoriesRes.data || []);
@@ -196,13 +220,28 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
       })));
       setOrders((ordersRes.data || []).map(order => ({ 
         ...order, 
-        items: Array.isArray(order.items) ? order.items : [] 
+        items: Array.isArray(order.items) ? order.items : []
       })));
       setSuppliers((suppliersRes.data || []).map(supplier => ({ 
         ...supplier, 
         bills: Array.isArray(supplier.bills) ? supplier.bills : [],
         payments: Array.isArray(supplier.payments) ? supplier.payments : []
       })));
+      
+      // Set billing template from settings or use default
+      if (settingsRes.data?.billing_template) {
+        setBillingTemplate(settingsRes.data.billing_template as unknown as BillingTemplate);
+      } else {
+        // Set default billing template
+        setBillingTemplate({
+          shopName: "Kothari's Dry Fruits & More",
+          address: "89, Sukan Mall, Nr. CIMS Hospital, Science City Road, Ahmedabad, Gujarat 380060",
+          phone: "+91 75677 00090",
+          gstNumber: "",
+          logoUrl: "/lovable-uploads/6ab04e40-2860-4562-bace-e35da6383972.png",
+          footerText: ["Thank you for shopping with us!", "Visit again soon!"]
+        });
+      }
     } catch (error) {
       showToast('Error', 'Failed to load data', 'destructive');
     } finally {
@@ -609,6 +648,42 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Settings methods
+  const updateBillingTemplate = async (template: BillingTemplate) => {
+    if (!user) return;
+
+    try {
+      // Check if settings exist
+      const { data: existing } = await supabase
+        .from('settings')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing settings
+        const { error } = await supabase
+          .from('settings')
+          .update({ billing_template: template as any })
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+      } else {
+        // Insert new settings
+        const { error } = await supabase
+          .from('settings')
+          .insert([{ user_id: user.id, billing_template: template as any }]);
+        
+        if (error) throw error;
+      }
+
+      setBillingTemplate(template);
+      showToast('Success', 'Billing template updated successfully');
+    } catch (error) {
+      showToast('Error', 'Failed to update billing template', 'destructive');
+    }
+  };
+
   // Inventory methods
   const updateInventoryStock = async (id: string, additionalStock: number) => {
     if (!user) {
@@ -671,6 +746,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     customers,
     orders,
     suppliers,
+    billingTemplate,
     loading,
     addProduct,
     updateProduct,
@@ -688,6 +764,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     addSupplier,
     updateSupplier,
     deleteSupplier,
+    updateBillingTemplate,
     updateInventoryStock,
     updateInventoryAfterSale,
     updateOrderPaymentStatus,

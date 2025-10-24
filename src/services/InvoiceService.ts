@@ -1,8 +1,9 @@
 
 import { Order } from "@/types/pos";
+import { BillingTemplate } from "@/context/CloudDataContext";
 
 // Function to get default billing template
-export const getDefaultBillingTemplate = () => {
+export const getDefaultBillingTemplate = (): BillingTemplate => {
   return {
     shopName: "Kothari's Dry Fruits & More",
     address: "89, Sukan Mall, Nr. CIMS Hospital, Science City Road, Ahmedabad, Gujarat 380060",
@@ -13,12 +14,6 @@ export const getDefaultBillingTemplate = () => {
   };
 };
 
-// Function to get billing template from localStorage or use defaults
-export const getBillingTemplate = () => {
-  const storedTemplate = localStorage.getItem("billingTemplate");
-  return storedTemplate ? JSON.parse(storedTemplate) : getDefaultBillingTemplate();
-};
-
 // Function to generate simplified invoice number
 export const generateInvoiceNumber = (orderId) => {
   // Remove any non-numeric characters and format as simple invoice number
@@ -27,8 +22,7 @@ export const generateInvoiceNumber = (orderId) => {
 };
 
 // Function to create a printable window for invoice
-export const createPrintableInvoice = (order: Order): Window | null => {
-  const billingTemplate = getBillingTemplate();
+export const createPrintableInvoice = (order: Order, billingTemplate: BillingTemplate): Window | null => {
   const invoiceNumber = generateInvoiceNumber(order.id);
   const orderDate = new Date(order.order_date);
   const invoiceDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(orderDate);

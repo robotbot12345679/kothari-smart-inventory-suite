@@ -1,5 +1,6 @@
 import { Order } from "@/types/pos";
-import { getBillingTemplate, generateInvoiceNumber } from "@/services/InvoiceService";
+import { BillingTemplate } from "@/context/CloudDataContext";
+import { generateInvoiceNumber } from "@/services/InvoiceService";
 import { format } from "date-fns";
 
 /**
@@ -7,10 +8,9 @@ import { format } from "date-fns";
  * @param order Order data for the invoice
  * @returns Promise<void>
  */
-export function downloadInvoicePDF(order: Order): Promise<void> {
+export function downloadInvoicePDF(order: Order, billingTemplate: BillingTemplate): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
-      const billingTemplate = getBillingTemplate();
       const invoiceNumber = generateInvoiceNumber(order.id);
       const orderDate = new Date(order.order_date || order.created_at);
       const invoiceDate = format(orderDate, "MMM dd, yyyy");

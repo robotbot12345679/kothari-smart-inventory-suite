@@ -1,53 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BillingSettings from "@/components/settings/BillingSettings";
 import AccountSettings from "@/components/settings/AccountSettings";
-import { BillingTemplate } from "@/types/pos";
-import { useToast } from "@/components/ui/use-toast";
+import { useCloudData } from "@/context/CloudDataContext";
 
 const Settings = () => {
-  const { toast } = useToast();
-  const [billingTemplate, setBillingTemplate] = useState<BillingTemplate>({
-    shopName: "Kothari's Dry Fruits & More",
-    address: "89, Sukan Mall, Nr. CIMS Hospital, Science City Road, Ahmedabad, Gujarat 380060",
-    phone: "+91 75677 00090",
-    gstNumber: "",
-    logoUrl: "/lovable-uploads/6ab04e40-2860-4562-bace-e35da6383972.png",
-    footerText: ["Thank you for shopping with us!", "Visit again soon!"]
-  });
+  const { billingTemplate, updateBillingTemplate } = useCloudData();
 
-  // Load billing template from localStorage on component mount
-  useEffect(() => {
-    const storedTemplate = localStorage.getItem("billingTemplate");
-    if (storedTemplate) {
-      try {
-        const parsedTemplate = JSON.parse(storedTemplate);
-        setBillingTemplate(parsedTemplate);
-      } catch (error) {
-        console.error("Failed to parse stored billing template:", error);
-      }
-    }
-  }, []);
-
-  const handleSaveTemplate = (template: BillingTemplate) => {
-    setBillingTemplate(template);
-    // Store in localStorage to persist across page refreshes
-    localStorage.setItem("billingTemplate", JSON.stringify(template));
-    toast({
-      title: "Settings Saved",
-      description: "Billing template has been updated successfully."
-    });
+  const handleSaveTemplate = async (template: any) => {
+    await updateBillingTemplate(template);
   };
 
   const handlePrintTestReceipt = () => {
+    if (!billingTemplate) return;
+    
     const receiptWindow = window.open('', '_blank', 'width=400,height=600');
     
     if (!receiptWindow) {
-      toast({
-        title: "Print Error",
-        description: "Could not open print window. Please check your popup blocker settings.",
-        variant: "destructive"
-      });
       return;
     }
     
@@ -162,11 +131,13 @@ const Settings = () => {
         </TabsContent>
         
         <TabsContent value="billing" className="mt-6">
-          <BillingSettings 
-            billingTemplate={billingTemplate}
-            onSave={handleSaveTemplate}
-            onPrintTest={handlePrintTestReceipt}
-          />
+          {billingTemplate && (
+            <BillingSettings 
+              billingTemplate={billingTemplate}
+              onSave={handleSaveTemplate}
+              onPrintTest={handlePrintTestReceipt}
+            />
+          )}
         </TabsContent>
       </Tabs>
     </div>
