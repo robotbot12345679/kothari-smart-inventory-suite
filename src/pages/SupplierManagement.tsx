@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Upload, BarChart3, Building2, FileText, CreditCard, DollarSign, Receipt } from "lucide-react";
-import { useSupplierData } from "@/hooks/useSupplierData";
+import { useCloudData } from "@/context/CloudDataContext";
 import { formatCurrency } from "@/utils/indianNumberFormat";
 import SupplierList from "@/components/suppliers/SupplierList";
 import SupplierStats from "@/components/suppliers/SupplierStats";
@@ -20,73 +20,69 @@ import PaymentsList from "@/components/suppliers/PaymentsList";
 import { Supplier } from "@/types/supplier";
 
 const SupplierManagement = () => {
-  const {
-    suppliers,
-    purchaseBills,
-    payments,
-    addSupplier,
-    updateSupplier,
-    addPurchaseBill,
-    addPayment,
-    deletePurchaseBill,
-    deletePayment,
-    deleteSupplier,
-    getSupplierAnalytics
-  } = useSupplierData();
+  const { suppliers, addSupplier, updateSupplier, deleteSupplier } = useCloudData();
 
-  const [selectedSupplier, setSelectedSupplier] = useState<number | null>(null);
+  const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [addSupplierDialogOpen, setAddSupplierDialogOpen] = useState(false);
   const [editSupplierDialogOpen, setEditSupplierDialogOpen] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [editingSupplier, setEditingSupplier] = useState<any | null>(null);
   const [addPaymentDialogOpen, setAddPaymentDialogOpen] = useState(false);
   const [manualAddPaymentDialogOpen, setManualAddPaymentDialogOpen] = useState(false);
   const [manualAddBillDialogOpen, setManualAddBillDialogOpen] = useState(false);
   const [quickAddBillDialogOpen, setQuickAddBillDialogOpen] = useState(false);
 
+  // Calculate supplier stats from their bills and payments
+  const getSupplierAnalytics = (supplier: any) => {
+    const bills = supplier.bills || [];
+    const payments = supplier.payments || [];
+    
+    const totalPurchases = bills.reduce((sum: number, bill: any) => sum + (bill.total || 0), 0);
+    const totalPayments = payments.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0);
+    const pendingAmount = totalPurchases - totalPayments;
+    
+    const lastBillDate = bills.length > 0 ? bills[bills.length - 1]?.billDate : null;
+    const lastPaymentDate = payments.length > 0 ? payments[payments.length - 1]?.paymentDate : null;
+    
+    return {
+      totalPurchases,
+      totalPayments,
+      pendingAmount,
+      lastBillDate,
+      lastPaymentDate
+    };
+  };
   
-  // Force re-calculation by creating a simple counter that updates with each data change
-  const [updateTrigger, setUpdateTrigger] = useState(0);
-  
-  // Trigger update whenever data changes
-  React.useEffect(() => {
-    setUpdateTrigger(prev => prev + 1);
-  }, [purchaseBills, payments, suppliers]);
-
   const overallStats = useMemo(() => {
-    console.log('Recalculating overall stats - trigger:', updateTrigger);
-    
-    const totalPurchases = purchaseBills.reduce((sum, bill) => sum + bill.total, 0);
-    const totalPayments = payments.reduce((sum, payment) => sum + payment.amount, 0);
-    
-    // Calculate pending amount directly
+    let totalPurchases = 0;
+    let totalPayments = 0;
     let totalPendingAmount = 0;
     
     suppliers.forEach(supplier => {
-      const supplierBills = purchaseBills.filter(bill => bill.supplierId === supplier.id);
-      const supplierPayments = payments.filter(payment => payment.supplierId === supplier.id);
+      const bills = supplier.bills || [];
+      const payments = supplier.payments || [];
       
-      const supplierTotalPurchases = supplierBills.reduce((sum, bill) => sum + bill.total, 0);
-      const supplierTotalPayments = supplierPayments.reduce((sum, payment) => sum + payment.amount, 0);
-      const supplierPending = supplierTotalPurchases - supplierTotalPayments;
-        
-      console.log(`Supplier ${supplier.name}: Bills=₹${supplierTotalPurchases}, Payments=₹${supplierTotalPayments}, Pending=₹${supplierPending}`);
-      totalPendingAmount += supplierPending;
+      const supplierTotalPurchases = bills.reduce((sum: number, bill: any) => sum + (bill.total || 0), 0);
+      const supplierTotalPayments = payments.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0);
+      
+      totalPurchases += supplierTotalPurchases;
+      totalPayments += supplierTotalPayments;
+      totalPendingAmount += (supplierTotalPurchases - supplierTotalPayments);
     });
     
-    console.log('Final calculated pending amount:', totalPendingAmount);
-    
-    const activeSuppliers = suppliers.filter(s => s.isActive).length;
+    const activeSuppliers = suppliers.filter(s => s.bills?.length > 0 || s.payments?.length > 0).length;
+    const totalBills = suppliers.reduce((sum, s) => sum + (s.bills?.length || 0), 0);
+    const totalPaymentsCount = suppliers.reduce((sum, s) => sum + (s.payments?.length || 0), 0);
 
     return {
       totalPurchases,
       totalPayments,
       pendingAmount: totalPendingAmount,
       activeSuppliers,
-      totalBills: purchaseBills.length,
-      totalPaymentsCount: payments.length
+      totalBills,
+      totalPaymentsCount
     };
-  }, [purchaseBills, payments, suppliers, updateTrigger]);
+  }, [suppliers]);
 
   const handleProductComparison = () => {
     window.open('/product-comparison', '_blank');

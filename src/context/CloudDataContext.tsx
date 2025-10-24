@@ -356,6 +356,15 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
             setSuppliers(prev => prev.filter(s => s.id !== payload.old.id));
           }
         })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const newSettings = payload.new as any;
+            if (newSettings.billing_template) {
+              setBillingTemplate(newSettings.billing_template as unknown as BillingTemplate);
+            }
+          }
+        })
       .subscribe();
 
     setChannel(newChannel);

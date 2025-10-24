@@ -118,7 +118,7 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
             min_stock: null
           };
 
-          addProduct(newProduct);
+          await addProduct(newProduct);
           importedCount++;
         } catch (err) {
           console.error("Error importing product row:", row, err);
