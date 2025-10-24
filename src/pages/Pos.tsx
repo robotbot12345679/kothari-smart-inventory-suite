@@ -47,7 +47,7 @@ interface ScannedProduct extends Product {
 const Pos = () => {
   const { products, categories, addOrder, findProductByBarcode, updateInventoryAfterSale, customers, addCustomer, updateCustomer } = useCloudData();
   const { toast } = useToast();
-  const [activeCategory, setActiveCategory] = useState<number>(1);
+  const [activeCategory, setActiveCategory] = useState<string>('1');
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentModalOpen, setPaymentModalOpen] = useState<boolean>(false);
@@ -126,9 +126,9 @@ const Pos = () => {
   };
 
   const filteredProducts = products.filter(product => {
-    if (!product.isActive) return false;
+    if (!product.is_active) return false;
     
-    const matchesCategory = activeCategory === 1 || product.category === categories.find(c => c.id === activeCategory)?.name;
+    const matchesCategory = activeCategory === '1' || product.category === categories.find(c => c.id === activeCategory)?.name;
     const matchesSearch = searchQuery === "" || 
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
       product.sku.toLowerCase().includes(searchQuery.toLowerCase());
@@ -167,7 +167,7 @@ const Pos = () => {
     }
   };
 
-  const updateQuantity = (itemId: number, action: 'increase' | 'decrease' | 'remove') => {
+  const updateQuantity = (itemId: string, action: 'increase' | 'decrease' | 'remove') => {
     if (action === 'remove') {
       setCart(cart.filter(item => item.id !== itemId));
       return;
@@ -263,11 +263,11 @@ const Pos = () => {
     setBarcodeModalOpen(false);
   };
 
-  const handleRemoveScannedProduct = (productId: number) => {
+  const handleRemoveScannedProduct = (productId: string) => {
     setScannedProducts(prev => prev.filter(p => p.id !== productId));
   };
 
-  const updateScannedProductQuantity = (productId: number, action: 'increase' | 'decrease') => {
+  const updateScannedProductQuantity = (productId: string, action: 'increase' | 'decrease') => {
     setScannedProducts(prev => prev.map(product => {
       if (product.id === productId) {
         const newQuantity = action === 'increase' 
@@ -310,48 +310,46 @@ const Pos = () => {
       subtotal,
       gst: 0,
       total,
-      paymentMethod: currentTab,
-      paymentStatus: 'Paid',
-      orderDate: new Date().toISOString(),
-      orderStatus: 'Delivered',
-      customerName: customerInfo.name || "Guest Customer",
-      customerPhone: customerInfo.phone,
-      customerEmail: customerInfo.email
+      payment_method: currentTab,
+      payment_status: 'Paid',
+      order_date: new Date().toISOString(),
+      order_status: 'Delivered',
+      customer_name: customerInfo.name || "Guest Customer",
+      customer_phone: customerInfo.phone || null,
+      customer_email: customerInfo.email || null,
+      shipping_address: null,
+      tracking_number: null,
+      status: 'completed'
     };
     
     try {
       // Add customer to database if only name is provided and customer doesn't exist
       if (customerInfo.name.trim() && !matchedCustomer) {
-        const newCustomer: Customer = {
-          id: 0, // Will be auto-assigned by addCustomer
+        const newCustomer: Omit<Customer, 'id' | 'created_at' | 'updated_at' | 'user_id'> = {
           name: customerInfo.name,
-          phone: customerInfo.phone || '',
-          email: customerInfo.email || '',
-          city: '',
-          state: '',
-          address: '',
-          pincode: '',
-          notes: '',
-          birthday: '',
-          totalOrders: 1,
-          totalSpent: total,
-          lastOrderDate: new Date().toISOString(),
+          phone: customerInfo.phone || null,
+          email: customerInfo.email || null,
+          city: null,
+          state: null,
+          address: null,
+          pincode: null,
+          notes: null,
+          birthday: null,
+          total_orders: 1,
+          total_spent: total,
+          last_order_date: new Date().toISOString(),
           status: 'Active',
-          createdAt: new Date().toISOString(),
-          orderHistory: [orderId] // Add this order to history
+          order_history: [orderId] // Add this order to history
         };
-        const addedCustomer = addCustomer(newCustomer);
-        setMatchedCustomer(addedCustomer);
+        addCustomer(newCustomer);
       } else if (matchedCustomer) {
         // Update existing customer's order count, spending, and order history
-        const updatedCustomer: Customer = {
-          ...matchedCustomer,
-          totalOrders: matchedCustomer.totalOrders + 1,
-          totalSpent: matchedCustomer.totalSpent + total,
-          lastOrderDate: new Date().toISOString(),
-          orderHistory: [...(matchedCustomer.orderHistory || []), orderId]
-        };
-        updateCustomer(matchedCustomer.id, updatedCustomer);
+        updateCustomer(matchedCustomer.id, {
+          total_orders: (matchedCustomer.total_orders || 0) + 1,
+          total_spent: (matchedCustomer.total_spent || 0) + total,
+          last_order_date: new Date().toISOString(),
+          order_history: [...(matchedCustomer.order_history || []), orderId]
+        });
       }
 
       // Update inventory stock levels after a successful sale
@@ -420,7 +418,7 @@ const Pos = () => {
       footerText: ["Thank you for shopping with us!", "Visit again soon!"]
     };
     
-    const orderDate = new Date(order.orderDate);
+    const orderDate = new Date(order.order_date);
     const formattedDate = orderDate.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -431,7 +429,7 @@ const Pos = () => {
       minute: '2-digit'
     });
 
-    const showQrCode = order.paymentMethod === 'upi';
+    const showQrCode = order.payment_method === 'upi';
     const upiQrCode = showQrCode ? 
       `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=ashokkothari738@oksbi%26pn=KothariDryFruits%26am=${order.total}%26cu=INR` : '';
     
@@ -537,8 +535,8 @@ const Pos = () => {
           <div class="order-info">
             <div class="info">Order #: ${order.id}</div>
             <div class="info">Date: ${formattedDate} ${formattedTime}</div>
-            <div class="info">Customer: ${order.customerName}</div>
-            ${order.customerPhone ? `<div class="info">Phone: ${order.customerPhone}</div>` : ''}
+            <div class="info">Customer: ${order.customer_name || 'Guest'}</div>
+            ${order.customer_phone ? `<div class="info">Phone: ${order.customer_phone}</div>` : ''}
           </div>
         
           <div class="divider"></div>
@@ -568,9 +566,9 @@ const Pos = () => {
               </tr>
               <tr>
                 <td colspan="3">Payment Method</td>
-                <td class="item-price">${order.paymentMethod.toUpperCase()}</td>
+                <td class="item-price">${order.payment_method?.toUpperCase() || 'CASH'}</td>
               </tr>
-              ${order.paymentMethod === 'cash' ? `
+              ${order.payment_method === 'cash' ? `
                 <tr>
                   <td colspan="3">Amount Tendered</td>
                   <td class="item-price">₹${parseFloat(amountTendered).toFixed(2)}</td>
@@ -657,7 +655,7 @@ const Pos = () => {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+              <div className="overflow-x-auto">
               <div className="flex space-x-2 pb-2">
                 {categories.map(category => (
                   <Button
@@ -989,7 +987,7 @@ const Pos = () => {
                   {matchedCustomer.email && ` | ${matchedCustomer.email}`}
                 </p>
                 <p className="text-xs text-green-600 mt-1">
-                  Total Orders: {matchedCustomer.totalOrders} | Total Spent: ₹{matchedCustomer.totalSpent.toFixed(2)}
+                  Total Orders: {matchedCustomer.total_orders || 0} | Total Spent: ₹{(matchedCustomer.total_spent || 0).toFixed(2)}
                 </p>
               </div>
             )}

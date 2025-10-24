@@ -45,10 +45,9 @@ const CategoryManager = () => {
     }
 
     addCategory({
-      id: 0, // Will be assigned by DataContext
       name: newCategory.name,
-      description: newCategory.description,
-      isActive: newCategory.isActive
+      description: newCategory.description || null,
+      is_active: newCategory.isActive
     });
 
     setNewCategory({ name: '', description: '', isActive: true });
@@ -60,7 +59,7 @@ const CategoryManager = () => {
     });
   };
 
-  const handleDeleteCategory = (id: number) => {
+  const handleDeleteCategory = (id: string) => {
     deleteCategory(id);
     toast({
       title: "Success",
@@ -142,7 +141,7 @@ const CategoryManager = () => {
                 )}
                 <div className="flex justify-between items-center mt-4">
                   <span className="text-sm font-medium">
-                    {category.isActive ? 'Active' : 'Inactive'}
+                    {category.is_active ? 'Active' : 'Inactive'}
                   </span>
                   <div className="flex gap-2">
                     <Button 

@@ -48,11 +48,11 @@ const Orders = () => {
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       searchQuery === "" ||
-      order.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.id.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus =
-      statusFilter === "all" || order.orderStatus.toLowerCase() === statusFilter.toLowerCase();
+      statusFilter === "all" || order.order_status?.toLowerCase() === statusFilter.toLowerCase();
 
     return matchesSearch && matchesStatus;
   });
@@ -66,7 +66,7 @@ const Orders = () => {
     if (!printWindow) return;
 
     // Check if UPI method is selected
-    const isUpiPayment = order.paymentMethod === 'upi';
+    const isUpiPayment = order.payment_method === 'upi';
     
     // Generate UPI QR data URI - in a real app, this would be an actual QR code
     const upiQrCode = isUpiPayment ? 
@@ -96,12 +96,12 @@ const Orders = () => {
           <hr />
           <p>Order Receipt</p>
           <p>Order ID: ${order.id}</p>
-          <p>Date: ${format(new Date(order.orderDate), 'PPP')}</p>
+          <p>Date: ${format(new Date(order.order_date), 'PPP')}</p>
         </div>
         <div class="order-info">
-          ${order.customerName ? `<p><strong>Customer:</strong> ${order.customerName}</p>` : ''}
-          ${order.customerPhone ? `<p><strong>Phone:</strong> ${order.customerPhone}</p>` : ''}
-          ${order.customerEmail ? `<p><strong>Email:</strong> ${order.customerEmail}</p>` : ''}
+          ${order.customer_name ? `<p><strong>Customer:</strong> ${order.customer_name}</p>` : ''}
+          ${order.customer_phone ? `<p><strong>Phone:</strong> ${order.customer_phone}</p>` : ''}
+          ${order.customer_email ? `<p><strong>Email:</strong> ${order.customer_email}</p>` : ''}
         </div>
         <table class="items-table">
           <thead>
@@ -127,8 +127,8 @@ const Orders = () => {
           <p><strong>Subtotal:</strong> ₹${order.subtotal.toFixed(2)}</p>
           <p><strong>GST (Included):</strong> ₹${order.gst.toFixed(2)}</p>
           <p><strong>Total:</strong> ₹${order.total.toFixed(2)}</p>
-          <p><strong>Payment Status:</strong> ${order.paymentStatus}</p>
-          <p><strong>Payment Method:</strong> ${order.paymentMethod}</p>
+          <p><strong>Payment Status:</strong> ${order.payment_status}</p>
+          <p><strong>Payment Method:</strong> ${order.payment_method}</p>
         </div>
         ${isUpiPayment ? `
           <div class="qr-code">
@@ -201,7 +201,7 @@ const Orders = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {orders.filter(order => order.orderStatus === 'Pending').length}
+              {orders.filter(order => order.order_status === 'Pending').length}
             </div>
             <p className="text-xs text-muted-foreground">Awaiting processing</p>
           </CardContent>
@@ -214,7 +214,7 @@ const Orders = () => {
           <CardContent>
             <div className="text-2xl font-bold">
               {orders.filter(order => 
-                new Date(order.orderDate).toDateString() === new Date().toDateString()
+                new Date(order.order_date).toDateString() === new Date().toDateString()
               ).length}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -283,20 +283,20 @@ const Orders = () => {
                 filteredOrders.map((order) => (
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">{order.id}</TableCell>
-                    <TableCell>{order.customerName || '-'}</TableCell>
+                    <TableCell>{order.customer_name || '-'}</TableCell>
                     <TableCell>
-                      {format(new Date(order.orderDate), 'PP')}
+                      {format(new Date(order.order_date), 'PP')}
                     </TableCell>
                     <TableCell>{order.items.length}</TableCell>
                     <TableCell className="text-right">₹{order.total.toFixed(2)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={getStatusColor(order.orderStatus)}>
-                        {order.orderStatus}
+                      <Badge variant="outline" className={getStatusColor(order.order_status || 'Pending')}>
+                        {order.order_status || 'Pending'}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={getPaymentStatusColor(order.paymentStatus)}>
-                        {order.paymentStatus}
+                      <Badge variant="outline" className={getPaymentStatusColor(order.payment_status || 'Pending')}>
+                        {order.payment_status || 'Pending'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">

@@ -17,7 +17,7 @@ const Dashboard = () => {
     // Sort orders by date (most recent first)
     if (orders && orders.length > 0) {
       const sortedOrders = [...orders].sort((a, b) => 
-        new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
+        new Date(b.order_date).getTime() - new Date(a.order_date).getTime()
       );
       // Display only 5 most recent orders
       setRecentOrdersData(sortedOrders.slice(0, 5));
@@ -39,11 +39,11 @@ const Dashboard = () => {
       monthlyOrders: 0
     };
 
-    const activeProducts = products.filter(p => p.isActive !== false)?.length || 0;
+    const activeProducts = products.filter(p => p.is_active !== false)?.length || 0;
     
     // Fix low stock calculation - count items where stock is less than or equal to minimum stock
     const lowStockItems = products.filter(p => {
-      const minStock = p.minimumStock || 10; // Default minimum stock to 10 if not set
+      const minStock = p.min_stock || 10; // Default minimum stock to 10 if not set
       return p.stock <= minStock;
     })?.length || 0;
 
@@ -52,7 +52,7 @@ const Dashboard = () => {
 
     // Get pending orders
     const pendingOrders = orders.filter(order => 
-      order.orderStatus === 'Pending' || order.orderStatus === 'Processing'
+      order.order_status === 'Pending' || order.order_status === 'Processing'
     )?.length || 0;
 
     // Calculate today's sales
@@ -72,7 +72,7 @@ const Dashboard = () => {
     const currentYear = new Date().getFullYear();
     
     const thisMonthOrders = orders.filter(order => {
-      const orderDate = new Date(order.orderDate);
+      const orderDate = new Date(order.order_date);
       return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
     });
 
@@ -122,7 +122,7 @@ const Dashboard = () => {
   const lowStockProducts = useMemo(() => {
     if (!products) return [];
     return products.filter(p => {
-      const minStock = p.minimumStock || 10;
+      const minStock = p.min_stock || 10;
       return p.stock <= minStock;
     });
   }, [products]);

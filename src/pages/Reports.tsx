@@ -27,7 +27,7 @@ const Reports = () => {
   
   // Get filtered orders based on date range
   const filteredOrders = orders.filter(order => {
-    const orderDate = new Date(order.orderDate);
+    const orderDate = new Date(order.order_date);
     const fromDate = dateRange.from ? startOfDay(dateRange.from) : undefined;
     const toDate = dateRange.to ? endOfDay(dateRange.to) : undefined;
     
@@ -48,7 +48,7 @@ const Reports = () => {
   
   // Sales by payment method data
   const salesByMethod = filteredOrders.reduce((acc, order) => {
-    const method = order.paymentMethod || "Unknown";
+    const method = order.payment_method || "Unknown";
     if (!acc[method]) {
       acc[method] = { count: 0, amount: 0 };
     }
@@ -112,8 +112,8 @@ const Reports = () => {
       sku: product.sku,
       stock: product.stock,
       category: product.category,
-      minimumStock: product.minimumStock || 0,
-      lowStock: product.minimumStock && product.stock <= product.minimumStock
+      min_stock: product.min_stock || 0,
+      lowStock: product.min_stock && product.stock <= product.min_stock
     }));
   
   // Pie chart colors
@@ -127,8 +127,8 @@ const Reports = () => {
       // Generate sales report CSV
       csvContent = "Order ID,Date,Customer,Items,Total\n";
       filteredOrders.forEach(order => {
-        const date = new Date(order.orderDate).toLocaleDateString();
-        const customer = order.customerName || "Guest";
+        const date = new Date(order.order_date).toLocaleDateString();
+        const customer = order.customer_name || "Guest";
         const items = order.items.reduce((sum, item) => sum + item.quantity, 0);
         csvContent += `${order.id},${date},${customer},${items},${order.total.toFixed(2)}\n`;
       });
@@ -194,10 +194,10 @@ const Reports = () => {
             ${filteredOrders.map(order => `
               <tr>
                 <td>${order.id}</td>
-                <td>${format(new Date(order.orderDate), 'MMM dd, yyyy')}</td>
-                <td>${order.customerName || "Guest"}</td>
+                <td>${format(new Date(order.order_date), 'MMM dd, yyyy')}</td>
+                <td>${order.customer_name || "Guest"}</td>
                 <td>${order.items.reduce((sum, item) => sum + item.quantity, 0)}</td>
-                <td>${order.paymentMethod || "Unknown"}</td>
+                <td>${order.payment_method || "Unknown"}</td>
                 <td>₹${order.total.toFixed(2)}</td>
               </tr>
             `).join('')}

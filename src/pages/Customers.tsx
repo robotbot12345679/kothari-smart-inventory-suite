@@ -81,15 +81,17 @@ const Customers = () => {
   const handleAddCustomer = () => {
     if (newCustomer.name && newCustomer.phone) {
       addCustomer({
-        id: 0, // Will be set by addCustomer function
         name: newCustomer.name,
-        email: newCustomer.email || '',
+        email: newCustomer.email || null,
         phone: newCustomer.phone,
-        city: '',
-        state: '',
-        birthday: newCustomer.birthday,
-        totalOrders: 0,
-        totalSpent: 0,
+        address: null,
+        city: null,
+        state: null,
+        pincode: null,
+        notes: null,
+        birthday: newCustomer.birthday || null,
+        total_orders: 0,
+        total_spent: 0,
         status: 'Active'
       });
       setNewCustomer({});
@@ -150,10 +152,10 @@ const Customers = () => {
                 'City': customer.city || '',
                 'State': customer.state || '',
                 'Birthday': customer.birthday || '',
-                'Total Orders': customer.totalOrders,
-                'Total Spent': customer.totalSpent,
-                'Last Order Date': customer.lastOrderDate ? new Date(customer.lastOrderDate).toLocaleDateString('en-IN') : '',
-                'Status': customer.status
+                'Total Orders': customer.total_orders || 0,
+                'Total Spent': customer.total_spent || 0,
+                'Last Order Date': customer.last_order_date ? new Date(customer.last_order_date).toLocaleDateString('en-IN') : '',
+                'Status': customer.status || 'Active'
               }));
               
               import('@/lib/csv-exporter').then(({ exportToCSV, downloadCSV }) => {
@@ -363,11 +365,11 @@ const Customers = () => {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">{customer.totalOrders}</TableCell>
-                  <TableCell className="text-right">₹{customer.totalSpent.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{customer.total_orders || 0}</TableCell>
+                  <TableCell className="text-right">₹{(customer.total_spent || 0).toLocaleString()}</TableCell>
                   <TableCell>
-                    {customer.lastOrderDate 
-                      ? new Date(customer.lastOrderDate).toLocaleDateString('en-IN') 
+                    {customer.last_order_date 
+                      ? new Date(customer.last_order_date).toLocaleDateString('en-IN') 
                       : 'No orders yet'
                     }
                   </TableCell>

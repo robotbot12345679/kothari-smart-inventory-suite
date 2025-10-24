@@ -90,16 +90,16 @@ const BillsReport = () => {
     const matchesSearch =
       searchQuery === "" ||
       (order.id && order.id.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (order.customerName && order.customerName.toLowerCase().includes(searchQuery.toLowerCase()));
+      (order.customer_name && order.customer_name.toLowerCase().includes(searchQuery.toLowerCase()));
 
     // Filter by payment method
     const matchesPaymentMethod =
-      paymentMethodFilter === "all" || order.paymentMethod === paymentMethodFilter;
+      paymentMethodFilter === "all" || order.payment_method === paymentMethodFilter;
 
     // Filter by date
     const matchesDate =
       !date ||
-      (order.orderDate && format(new Date(order.orderDate), "yyyy-MM-dd") === format(date, "yyyy-MM-dd"));
+      (order.order_date && format(new Date(order.order_date), "yyyy-MM-dd") === format(date, "yyyy-MM-dd"));
 
     // Filter by source (POS vs Orders)
     const orderSource = order.id && order.id.startsWith("ORD") ? "pos" : "orders";
@@ -172,12 +172,12 @@ const BillsReport = () => {
     };
     
     const invoiceNumber = generateInvoiceNumber(selectedOrder.id);
-    const orderDate = new Date(selectedOrder.orderDate);
+    const orderDate = new Date(selectedOrder.order_date);
     const formattedDate = format(orderDate, 'PP');
     
     const subject = `Invoice ${invoiceNumber} - ${billingTemplate.shopName}`;
     const body = messageText || 
-      `Dear ${selectedOrder.customerName || ""},
+      `Dear ${selectedOrder.customer_name || ""},
 
 Please find attached your invoice #${invoiceNumber} for Rs. ${selectedOrder.total.toFixed(2)} dated ${formattedDate}.
 
@@ -410,9 +410,9 @@ ${billingTemplate.shopName}`;
             <TableBody>
               {filteredOrders.length > 0 ? (
                 filteredOrders.map((order) => {
-                  const orderDate = new Date(order.orderDate);
+                  const orderDate = new Date(order.order_date);
                   const source = order.id?.startsWith("ORD") ? "POS" : "Order";
-                  const isPaid = order.paymentStatus === "Paid";
+                  const isPaid = order.payment_status === "Paid";
                   const invoiceNumber = generateInvoiceNumber(order.id);
                   
                   return (
@@ -426,16 +426,16 @@ ${billingTemplate.shopName}`;
                         </span>
                       </TableCell>
                       <TableCell>
-                        {order.customerName ? order.customerName : "—"}
-                        {order.customerPhone && (
+                        {order.customer_name ? order.customer_name : "—"}
+                        {order.customer_phone && (
                           <div className="text-xs text-muted-foreground">
-                            {order.customerPhone}
+                            {order.customer_phone}
                           </div>
                         )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={isPaid ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
-                          {isPaid ? "Paid" : "Pending"} - {order.paymentMethod || "N/A"}
+                          {isPaid ? "Paid" : "Pending"} - {order.payment_method || "N/A"}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -466,7 +466,7 @@ ${billingTemplate.shopName}`;
                             <DropdownMenuItem onClick={() => {
                               setSelectedOrder(order);
                               setIsShareDialogOpen(true);
-                              setCustomerPhone(order.customerPhone || "");
+                              setCustomerPhone(order.customer_phone || "");
                             }}>
                               <MessageSquare className="mr-2 h-4 w-4" />
                               Share via WhatsApp
@@ -474,7 +474,7 @@ ${billingTemplate.shopName}`;
                             <DropdownMenuItem onClick={() => {
                               setSelectedOrder(order);
                               setIsShareDialogOpen(true);
-                              setCustomerEmail(order.customerEmail || "");
+                              setCustomerEmail(order.customer_email || "");
                             }}>
                               <Mail className="mr-2 h-4 w-4" />
                               Share via Email
@@ -632,7 +632,7 @@ ${billingTemplate.shopName}`;
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-medium">Customer:</span>
-                <span>{selectedOrder?.customerName || "—"}</span>
+                <span>{selectedOrder?.customer_name || "—"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-medium">Amount:</span>

@@ -30,11 +30,11 @@ export const generateInvoiceNumber = (orderId) => {
 export const createPrintableInvoice = (order: Order): Window | null => {
   const billingTemplate = getBillingTemplate();
   const invoiceNumber = generateInvoiceNumber(order.id);
-  const orderDate = new Date(order.orderDate);
+  const orderDate = new Date(order.order_date);
   const invoiceDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(orderDate);
   
   // Use proper customer name handling
-  const customerName = order.customerName && order.customerName.trim() ? order.customerName : "";
+  const customerName = order.customer_name && order.customer_name.trim() ? order.customer_name : "";
   
   const printWindow = window.open('', '_blank', 'width=800,height=600');
   
@@ -211,9 +211,9 @@ export const createPrintableInvoice = (order: Order): Window | null => {
         <div class="client-info">
           <div class="section-title">Bill To:</div>
           ${customerName ? `<div style="font-weight: 500;">${customerName}</div>` : ''}
-          ${order.customerPhone ? `<div>Phone: ${order.customerPhone}</div>` : ''}
-          ${order.customerEmail ? `<div>Email: ${order.customerEmail}</div>` : ''}
-          ${order.shippingAddress ? `<div>${order.shippingAddress}</div>` : ''}
+          ${order.customer_phone ? `<div>Phone: ${order.customer_phone}</div>` : ''}
+          ${order.customer_email ? `<div>Email: ${order.customer_email}</div>` : ''}
+          ${order.shipping_address ? `<div>${order.shipping_address}</div>` : ''}
         </div>
         
         <table>
@@ -256,9 +256,9 @@ export const createPrintableInvoice = (order: Order): Window | null => {
             </tr>
             <tr>
               <td>Amount Paid</td>
-              <td class="amount-col">${order.paymentStatus === 'Paid' ? '₹' + order.total.toFixed(2) : '₹0.00'}</td>
+              <td class="amount-col">${order.payment_status === 'Paid' ? '₹' + order.total.toFixed(2) : '₹0.00'}</td>
             </tr>
-            ${order.paymentStatus !== 'Paid' ? `
+            ${order.payment_status !== 'Paid' ? `
             <tr>
               <td>Balance Due</td>
               <td class="amount-col">₹${order.total.toFixed(2)}</td>
@@ -267,7 +267,7 @@ export const createPrintableInvoice = (order: Order): Window | null => {
           </table>
         </div>
 
-        ${order.paymentStatus !== 'Paid' ? `
+        ${order.payment_status !== 'Paid' ? `
         <div class="payment-section">
           <div class="section-title">Payment Information</div>
           <p>Please scan the QR code below or use the payment link to complete your payment.</p>

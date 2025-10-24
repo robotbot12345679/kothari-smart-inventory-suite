@@ -43,7 +43,7 @@ const Inventory = () => {
 
     // Use product.stock directly
     const stockStatus = product.stock === 0 ? "Out of Stock" : 
-                       product.stock <= (product.minimumStock || 10) ? "Low Stock" : 
+                       product.stock <= (product.min_stock || 10) ? "Low Stock" : 
                        "In Stock";
     
     const matchesStatus = statusFilter === "all" || 
@@ -55,12 +55,12 @@ const Inventory = () => {
   // Calculate inventory metrics
   const totalProducts = products.length;
   const lowStockCount = products.filter(p => 
-    p.stock <= (p.minimumStock || 10)
+    p.stock <= (p.min_stock || 10)
   ).length;
 
   const expiringSoonCount = products.filter(p => {
-    if (!p.expiryDate) return false;
-    const daysUntilExpiry = Math.ceil((new Date(p.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    if (!p.expiry_date) return false;
+    const daysUntilExpiry = Math.ceil((new Date(p.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
     return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
   }).length;
 
@@ -202,7 +202,7 @@ const Inventory = () => {
             <TableBody>
               {filteredProducts.map((product) => {
                 const stockStatus = product.stock === 0 ? "Out of Stock" : 
-                                   product.stock <= (product.minimumStock || 10) ? "Low Stock" : 
+                                   product.stock <= (product.min_stock || 10) ? "Low Stock" : 
                                    "In Stock";
 
                 return (
@@ -212,14 +212,14 @@ const Inventory = () => {
                     <TableCell>{product.barcode || 'N/A'}</TableCell>
                     <TableCell>{product.category}</TableCell>
                     <TableCell className="text-right">
-                      {product.stock} {product.unit}
+                      {product.stock} {product.unit || 'pcs'}
                     </TableCell>
                     <TableCell className="text-right">
                       ₹{product.price.toFixed(2)}
                     </TableCell>
                     <TableCell>
-                      {product.expiryDate ? 
-                        new Date(product.expiryDate).toLocaleDateString('en-IN') : 
+                      {product.expiry_date ? 
+                        new Date(product.expiry_date).toLocaleDateString('en-IN') : 
                         'N/A'}
                     </TableCell>
                     <TableCell>

@@ -38,7 +38,7 @@ const Products = () => {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-  const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isBulkDeleteMode, setIsBulkDeleteMode] = useState(false);
 
   const handleEditProduct = (product: Product) => {
@@ -136,11 +136,11 @@ const Products = () => {
         price: product.price,
         stock: product.stock,
         weight: product.weight,
-        unit: product.unit,
-        minimumStock: product.minimumStock || '',
-        expiryDate: product.expiryDate || '',
-        isActive: product.isActive ? 'Yes' : 'No',
-        priceIncludesGST: product.priceIncludesGST ? 'Yes' : 'No'
+        unit: product.unit || 'pcs',
+        min_stock: product.min_stock || 0,
+        expiry_date: product.expiry_date || '',
+        is_active: product.is_active ? 'Yes' : 'No',
+        price_includes_gst: product.price_includes_gst ? 'Yes' : 'No'
       }));
 
       const csvContent = exportToCSV(exportData);

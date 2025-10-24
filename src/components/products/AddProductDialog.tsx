@@ -333,12 +333,12 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDe
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="minimumStock">Min. Stock Level</Label>
+                  <Label htmlFor="min_stock">Min. Stock Level</Label>
                   <Input 
-                    id="minimumStock" 
+                    id="min_stock" 
                     type="number" 
                     placeholder="0" 
-                    value={formData.minimumStock || ""} 
+                    value={formData.min_stock || ""} 
                     onChange={handleChange}
                     min="0"
                   />
@@ -395,11 +395,11 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDe
                 <Label>Product Status</Label>
                 <div className="flex items-center space-x-2 pt-2">
                   <Switch 
-                    id="isActive" 
-                    checked={formData.isActive || false}
-                    onCheckedChange={(checked) => handleSwitchChange(checked, "isActive")}
+                    id="is_active" 
+                    checked={formData.is_active || false}
+                    onCheckedChange={(checked) => handleSwitchChange(checked, "is_active")}
                   />
-                  <Label htmlFor="isActive">Product is active and available for sale</Label>
+                  <Label htmlFor="is_active">Product is active and available for sale</Label>
                 </div>
               </div>
             </TabsContent>
