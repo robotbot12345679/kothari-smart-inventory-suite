@@ -56,6 +56,23 @@ serve(async (req) => {
       const filename = imageUrl.split('/product-images/').pop();
       
       if (filename) {
+        // Security: Validate filename format to prevent path traversal attacks
+        const validFilenamePattern = /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$/;
+        if (!validFilenamePattern.test(filename)) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid filename format' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          );
+        }
+
+        // Security: Check for path traversal characters
+        if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+          return new Response(
+            JSON.stringify({ error: 'Path traversal detected' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          );
+        }
+
         const { error } = await supabaseAdmin.storage
           .from('product-images')
           .remove([filename]);
