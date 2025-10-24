@@ -50,8 +50,8 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDe
     weight: 1,
     unit: defaultUnit,
     stock: 0,
-    isActive: true,
-    priceIncludesGST: true
+    is_active: true,
+    price_includes_gst: true
   });
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -60,8 +60,8 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDe
   useEffect(() => {
     if (product) {
       let expiryMonth = "";
-      if (product.expiryDate) {
-        const date = new Date(product.expiryDate);
+      if (product.expiry_date) {
+        const date = new Date(product.expiry_date);
         expiryMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
       }
       
@@ -81,8 +81,8 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDe
         weight: 1,
         unit: "g",
         stock: 0,
-        isActive: true,
-        priceIncludesGST: true,
+        is_active: true,
+        price_includes_gst: true,
         expiryMonth: ""
       });
     }
@@ -158,8 +158,7 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDe
         expiryDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
       }
       
-      const productData: Product = {
-        id: isEditing && product ? product.id : Date.now(),
+      const productData: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'> = {
         name: formData.name!,
         sku: formData.sku!,
         category: formData.category!,
@@ -170,10 +169,11 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDe
         stock: formData.stock || 0,
         weight: formData.weight || 1,
         unit: (formData.unit as 'g' | 'kg' | 'box' | 'pcs') || 'g',
-        priceIncludesGST: true,
-        expiryDate,
-        minimumStock: formData.minimumStock,
-        isActive: formData.isActive !== undefined ? formData.isActive : true
+        price_includes_gst: true,
+        expiry_date: expiryDate || null,
+        min_stock: formData.min_stock || null,
+        is_active: formData.is_active !== undefined ? formData.is_active : true,
+        image_url: null
       };
       
       if (isEditing && product) {

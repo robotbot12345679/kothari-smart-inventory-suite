@@ -13,7 +13,7 @@ interface ProductCardProps {
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
   isSelected?: boolean;
-  onSelect?: (productId: number, isSelected: boolean) => void;
+  onSelect?: (productId: string, isSelected: boolean) => void;
   showCheckbox?: boolean;
 }
 
@@ -90,7 +90,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete, is
             <Package className="h-12 w-12 text-muted-foreground" />
           </div>
         )}
-        {!product.isActive && (
+        {!product.is_active && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
             <span className="text-white font-medium px-2 py-1 rounded-md">
               Inactive

@@ -100,8 +100,7 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
 
       for (const row of csvData) {
         try {
-          const newProduct: Product = {
-            id: Date.now() + importedCount,
+          const newProduct: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'> = {
             name: row.name || "Unknown Product",
             sku: row.sku || `SKU-${Date.now() + importedCount}`,
             price: parseFloat(row.price) || 0,
@@ -111,8 +110,12 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
             weight: parseFloat(row.weight || "1"),
             unit: (row.unit as 'g' | 'kg' | 'box' | 'pcs') || 'g',
             image: "",
-            isActive: true,
-            priceIncludesGST: true
+            is_active: true,
+            price_includes_gst: true,
+            barcode: null,
+            image_url: null,
+            expiry_date: null,
+            min_stock: null
           };
 
           addProduct(newProduct);
