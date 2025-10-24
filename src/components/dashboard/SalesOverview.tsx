@@ -33,7 +33,7 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
     
     // Get orders from current month
     const currentMonthOrders = orders.filter(order => {
-      const orderDate = new Date(order.orderDate);
+      const orderDate = new Date(order.order_date);
       return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
     });
     
@@ -48,7 +48,7 @@ const SalesOverview: React.FC<SalesOverviewProps> = ({ orders }) => {
     
     // Aggregate sales by day
     currentMonthOrders.forEach((order) => {
-      const orderDay = new Date(order.orderDate).getDate();
+      const orderDay = new Date(order.order_date).getDate();
       const dateKey = `${orderDay}`;
       // Only include if the day has passed or is today
       if (orderDay <= currentDay) {

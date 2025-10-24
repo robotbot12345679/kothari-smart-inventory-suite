@@ -56,7 +56,7 @@ const RecentOrdersCard: React.FC<RecentOrdersCardProps> = ({ recentOrders }) => 
                   <div>
                     <p className="font-medium">Order {getSimplifiedOrderId(order.id)}</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(order.orderDate).toLocaleDateString('en-US', {
+                      {new Date(order.order_date).toLocaleDateString('en-US', {
                         day: 'numeric',
                         month: 'short'
                       })}

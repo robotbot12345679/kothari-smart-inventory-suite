@@ -16,6 +16,13 @@ export interface Product {
   min_stock: number;
   description?: string;
   image_url?: string;
+  sku?: string;
+  image?: string;
+  weight: number;
+  unit: string;
+  price_includes_gst: boolean;
+  expiry_date?: string;
+  is_active: boolean;
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -24,6 +31,8 @@ export interface Product {
 export interface Category {
   id: string;
   name: string;
+  description?: string;
+  is_active: boolean;
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -35,6 +44,16 @@ export interface Customer {
   email?: string;
   phone?: string;
   address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  notes?: string;
+  birthday?: string;
+  total_orders: number;
+  total_spent: number;
+  last_order_date?: string;
+  status: string;
+  order_history?: string[];
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -44,8 +63,18 @@ export interface Order {
   id: string;
   customer_id?: string;
   customer_name?: string;
+  customer_phone?: string;
+  customer_email?: string;
   items: any[];
+  subtotal: number;
+  gst: number;
   total: number;
+  payment_method?: string;
+  payment_status: string;
+  order_date: string;
+  shipping_address?: string;
+  order_status: string;
+  tracking_number?: string;
   status: string;
   user_id: string;
   created_at: string;
@@ -161,7 +190,10 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
       setProducts(productsRes.data || []);
       setCategories(categoriesRes.data || []);
-      setCustomers(customersRes.data || []);
+      setCustomers((customersRes.data || []).map(c => ({
+        ...c,
+        order_history: Array.isArray(c.order_history) ? c.order_history as string[] : []
+      })));
       setOrders((ordersRes.data || []).map(order => ({ 
         ...order, 
         items: Array.isArray(order.items) ? order.items : [] 

@@ -41,7 +41,7 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
   const [paymentStatus, setPaymentStatus] = useState("Paid");
   const [orderStatus, setOrderStatus] = useState("Delivered");
   
-  const selectedProductObj = products.find(p => p.id.toString() === selectedProduct);
+  const selectedProductObj = products.find(p => p.id === selectedProduct);
   
   const handleAddToCart = () => {
     if (!selectedProductObj) {
@@ -62,7 +62,7 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
       return;
     }
     
-    const existingItemIndex = cart.findIndex(item => item.id === selectedProductObj.id);
+    const existingItemIndex = cart.findIndex(item => item.id === selectedProductObj.id.toString());
     
     if (existingItemIndex >= 0) {
       // Update existing item
@@ -72,12 +72,12 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
     } else {
       // Add new item
       setCart([...cart, {
-        id: selectedProductObj.id,
+        id: selectedProductObj.id.toString(),
         name: selectedProductObj.name,
-        price: selectedProductObj.price,
+        price: Number(selectedProductObj.price),
         quantity: quantity,
-        unit: selectedProductObj.unit,
-        weight: selectedProductObj.weight
+        unit: selectedProductObj.unit || 'pcs',
+        weight: Number(selectedProductObj.weight) || 0
       }]);
     }
     
@@ -116,19 +116,20 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
       return;
     }
 
-    const newOrder: Order = {
-      id: orderId,
-      customerName: customerInfo.name || "Guest Customer",
-      customerPhone: customerInfo.phone || undefined,
-      customerEmail: customerInfo.email || undefined,
+    const newOrder = {
+      customer_name: customerInfo.name || "Guest Customer",
+      customer_phone: customerInfo.phone || undefined,
+      customer_email: customerInfo.email || undefined,
       items: [...cart],
       subtotal,
-      gst: 0, // No GST as per requirements
+      gst: 0,
       total,
-      paymentMethod,
-      paymentStatus: paymentStatus as 'Pending' | 'Paid' | 'Failed',
-      orderDate: new Date().toISOString(),
-      orderStatus: orderStatus as 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled'
+      payment_method: paymentMethod,
+      payment_status: paymentStatus as 'Pending' | 'Paid' | 'Failed',
+      order_date: new Date().toISOString(),
+      shipping_address: "",
+      order_status: orderStatus as 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled',
+      status: "pending",
     };
     
     addOrder(newOrder);

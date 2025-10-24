@@ -38,20 +38,20 @@ const AddSalesDialog = () => {
     }
 
     // Create a new manual order entry
-    const manualOrder: Order = {
-      id: uuidv4(),
-      orderDate: new Date(date).toISOString(),
-      orderStatus: "Delivered",
-      paymentStatus: "Paid",
-      paymentMethod: "Cash",
+    const manualOrder = {
+      order_date: new Date(date).toISOString(),
+      order_status: "Delivered",
+      payment_status: "Paid",
+      payment_method: "Cash",
       items: [],
       total: parseFloat(totalSales),
       subtotal: parseFloat(totalSales),
       gst: 0,
-      customerName: "Manual Entry",
-      customerEmail: "",
-      customerPhone: "",
-      shippingAddress: "",
+      customer_name: "Manual Entry",
+      customer_email: "",
+      customer_phone: "",
+      shipping_address: "",
+      status: "pending",
     };
 
     addOrder(manualOrder);

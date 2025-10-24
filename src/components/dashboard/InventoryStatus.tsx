@@ -35,15 +35,15 @@ const InventoryStatus: React.FC<InventoryStatusProps> = ({ products }) => {
   const calculateStockPercentage = (product: Product): { percentage: number; statusColor: string } => {
     let stockPercentage = 100;
     try {
-      stockPercentage = product.minimumStock
-        ? Math.min(100, Math.round((product.stock / (product.minimumStock * 2)) * 100))
+      stockPercentage = product.min_stock
+        ? Math.min(100, Math.round((Number(product.stock) / (product.min_stock * 2)) * 100))
         : 100;
     } catch (e) {
       console.error("Error calculating stock percentage:", e);
     }
     
     // Get color based on product id for consistent but varied colors
-    const colorIndex = product.id % productColors.length;
+    const colorIndex = parseInt(product.id.substring(0, 8), 16) % productColors.length;
     const statusColor = productColors[colorIndex];
     
     return { percentage: stockPercentage, statusColor };

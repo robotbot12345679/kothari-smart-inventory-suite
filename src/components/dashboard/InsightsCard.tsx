@@ -36,11 +36,11 @@ const InsightsCard: React.FC<InsightsCardProps> = ({
     const previous7Days = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
     
     const recentSales = orders.filter(order => 
-      new Date(order.orderDate) >= last7Days
+      new Date(order.order_date) >= last7Days
     ).reduce((sum, order) => sum + order.total, 0);
     
     const previousSales = orders.filter(order => {
-      const orderDate = new Date(order.orderDate);
+      const orderDate = new Date(order.order_date);
       return orderDate >= previous7Days && orderDate < last7Days;
     }).reduce((sum, order) => sum + order.total, 0);
     
@@ -60,7 +60,7 @@ const InsightsCard: React.FC<InsightsCardProps> = ({
     // Analyze peak hours
     const hourlyOrders = new Array(24).fill(0);
     orders.forEach(order => {
-      const hour = new Date(order.orderDate).getHours();
+      const hour = new Date(order.order_date).getHours();
       hourlyOrders[hour]++;
     });
     
