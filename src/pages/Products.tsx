@@ -87,7 +87,7 @@ const Products = () => {
     }
   };
 
-  const handleProductSelect = (productId: number, isSelected: boolean) => {
+  const handleProductSelect = (productId: string, isSelected: boolean) => {
     const newSelected = new Set(selectedProducts);
     if (isSelected) {
       newSelected.add(productId);

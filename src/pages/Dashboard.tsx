@@ -60,7 +60,7 @@ const Dashboard = () => {
     today.setHours(0, 0, 0, 0);
     
     const todaysOrders = orders.filter(order => {
-      const orderDate = new Date(order.orderDate);
+      const orderDate = new Date(order.order_date);
       orderDate.setHours(0, 0, 0, 0);
       return orderDate.getTime() === today.getTime();
     });

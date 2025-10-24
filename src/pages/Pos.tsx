@@ -294,7 +294,7 @@ const Pos = () => {
     return Math.max(0, tendered - total).toFixed(2);
   };
 
-  const handleCompletePayment = () => {
+  const handleCompletePayment = async () => {
     if (currentTab === "cash" && parseFloat(amountTendered || "0") < total) {
       toast({
         title: "Invalid Payment",
@@ -303,24 +303,6 @@ const Pos = () => {
       });
       return;
     }
-    
-    const newOrder: Order = {
-      id: orderId,
-      items: [...cart],
-      subtotal,
-      gst: 0,
-      total,
-      payment_method: currentTab,
-      payment_status: 'Paid',
-      order_date: new Date().toISOString(),
-      order_status: 'Delivered',
-      customer_name: customerInfo.name || "Guest Customer",
-      customer_phone: customerInfo.phone || null,
-      customer_email: customerInfo.email || null,
-      shipping_address: null,
-      tracking_number: null,
-      status: 'completed'
-    };
     
     try {
       // Add customer to database if only name is provided and customer doesn't exist
@@ -339,7 +321,7 @@ const Pos = () => {
           total_spent: total,
           last_order_date: new Date().toISOString(),
           status: 'Active',
-          order_history: [orderId] // Add this order to history
+          order_history: [orderId]
         };
         addCustomer(newCustomer);
       } else if (matchedCustomer) {
@@ -356,7 +338,46 @@ const Pos = () => {
       updateInventoryAfterSale(cart);
       
       // Add the order to the system
-      addOrder(newOrder);
+      await addOrder({
+        items: cart,
+        subtotal,
+        gst: 0,
+        total,
+        payment_method: currentTab,
+        payment_status: 'Paid',
+        order_date: new Date().toISOString(),
+        order_status: 'Delivered',
+        customer_name: customerInfo.name || "Guest Customer",
+        customer_phone: customerInfo.phone || null,
+        customer_email: customerInfo.email || null,
+        shipping_address: null,
+        tracking_number: null,
+        status: 'completed',
+        customer_id: matchedCustomer?.id || null
+      });
+
+      // Create order object for display
+      const newOrder: Order = {
+        id: orderId,
+        items: cart,
+        subtotal,
+        gst: 0,
+        total,
+        payment_method: currentTab,
+        payment_status: 'Paid',
+        order_date: new Date().toISOString(),
+        order_status: 'Delivered',
+        customer_name: customerInfo.name || "Guest Customer",
+        customer_phone: customerInfo.phone || null,
+        customer_email: customerInfo.email || null,
+        shipping_address: null,
+        tracking_number: null,
+        status: 'completed',
+        customer_id: matchedCustomer?.id || null,
+        user_id: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
       
       toast({
         title: "Order Completed",

@@ -44,11 +44,7 @@ const CategoryManager = () => {
       return;
     }
 
-    addCategory({
-      name: newCategory.name,
-      description: newCategory.description || null,
-      is_active: newCategory.isActive
-    });
+    addCategory(newCategory.name);
 
     setNewCategory({ name: '', description: '', isActive: true });
     setIsAddCategoryOpen(false);

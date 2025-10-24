@@ -137,7 +137,7 @@ const Reports = () => {
       // Generate inventory report CSV
       csvContent = "ID,Name,SKU,Category,Stock,Minimum Stock,Low Stock\n";
       inventoryData.forEach(item => {
-        csvContent += `${item.id},${item.name},${item.sku},${item.category},${item.stock},${item.minimumStock},${item.lowStock ? "Yes" : "No"}\n`;
+        csvContent += `${item.id},${item.name},${item.sku},${item.category},${item.stock},${item.min_stock},${item.lowStock ? "Yes" : "No"}\n`;
       });
       filename = `inventory-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     }
@@ -232,7 +232,7 @@ const Reports = () => {
                 <td>${item.sku}</td>
                 <td>${item.category}</td>
                 <td>${item.stock}</td>
-                <td>${item.minimumStock}</td>
+                <td>${item.min_stock}</td>
                 <td>${item.lowStock ? "Low Stock" : "OK"}</td>
               </tr>
             `).join('')}
@@ -641,7 +641,7 @@ const Reports = () => {
                                 <td className="p-2 px-4">{item.sku}</td>
                                 <td className="p-2 px-4">{item.category}</td>
                                 <td className="p-2 px-4">{item.stock}</td>
-                                <td className="p-2 px-4">{item.minimumStock}</td>
+                                <td className="p-2 px-4">{item.min_stock}</td>
                                 <td className="p-2 px-4">
                                   {item.lowStock ? (
                                     <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">

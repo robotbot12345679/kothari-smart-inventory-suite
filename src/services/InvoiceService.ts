@@ -204,7 +204,7 @@ export const createPrintableInvoice = (order: Order): Window | null => {
             <div class="dates">
               <div>Date: ${invoiceDate}</div>
             </div>
-            <div class="status-badge ${order.paymentStatus !== 'Paid' ? 'unpaid-badge' : ''}">${order.paymentStatus || 'PAID'}</div>
+            <div class="status-badge ${order.payment_status !== 'Paid' ? 'unpaid-badge' : ''}">${order.payment_status || 'PAID'}</div>
           </div>
         </div>
         
