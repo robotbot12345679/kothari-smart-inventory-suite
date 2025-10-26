@@ -93,7 +93,7 @@ const ManualAddBillDialog: React.FC<ManualAddBillDialogProps> = ({
     e.preventDefault();
     if (!formData.supplierId || formData.items.length === 0) return;
 
-    const supplier = suppliers.find(s => s.id === parseInt(formData.supplierId));
+    const supplier = suppliers.find(s => s.id === formData.supplierId);
     if (!supplier) return;
 
     const bill: Omit<PurchaseBill, 'id' | 'createdDate'> = {
@@ -150,7 +150,7 @@ const ManualAddBillDialog: React.FC<ManualAddBillDialogProps> = ({
                   <SelectValue placeholder="Select supplier" />
                 </SelectTrigger>
                 <SelectContent>
-                  {suppliers.filter(s => s.isActive).map(supplier => (
+                  {suppliers.map(supplier => (
                     <SelectItem key={supplier.id} value={supplier.id.toString()}>
                       {supplier.name}
                     </SelectItem>

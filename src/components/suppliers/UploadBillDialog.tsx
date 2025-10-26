@@ -162,7 +162,7 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
       return;
     }
 
-    const supplier = suppliers.find(s => s.id === parseInt(formData.supplierId));
+    const supplier = suppliers.find(s => s.id === formData.supplierId);
     if (!supplier) return;
 
     const bill: Omit<PurchaseBill, 'id' | 'createdDate'> = {
@@ -289,7 +289,7 @@ const UploadBillDialog: React.FC<UploadBillDialogProps> = ({
                         <SelectValue placeholder="Select supplier" />
                       </SelectTrigger>
                       <SelectContent>
-                        {suppliers.filter(s => s.isActive).map(supplier => (
+                        {suppliers.map(supplier => (
                           <SelectItem key={supplier.id} value={supplier.id.toString()}>
                             {supplier.name}
                           </SelectItem>

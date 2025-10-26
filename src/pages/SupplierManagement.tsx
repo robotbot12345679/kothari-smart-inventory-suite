@@ -20,7 +20,16 @@ import PaymentsList from "@/components/suppliers/PaymentsList";
 import { Supplier } from "@/types/supplier";
 
 const SupplierManagement = () => {
-  const { suppliers, addSupplier, updateSupplier, deleteSupplier } = useCloudData();
+  const { 
+    suppliers, 
+    addSupplier, 
+    updateSupplier, 
+    deleteSupplier,
+    addPurchaseBill,
+    deletePurchaseBill,
+    addPayment,
+    deletePayment
+  } = useCloudData();
 
   const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -41,7 +50,7 @@ const SupplierManagement = () => {
     const totalPayments = payments.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0);
     const pendingAmount = totalPurchases - totalPayments;
     
-    const lastBillDate = bills.length > 0 ? bills[bills.length - 1]?.billDate : null;
+      const lastBillDate = bills.length > 0 ? bills[bills.length - 1]?.billDate : null;
     const lastPaymentDate = payments.length > 0 ? payments[payments.length - 1]?.paymentDate : null;
     
     return {
@@ -49,7 +58,9 @@ const SupplierManagement = () => {
       totalPayments,
       pendingAmount,
       lastBillDate,
-      lastPaymentDate
+      lastPaymentDate,
+      billCount: bills.length,
+      paymentCount: payments.length
     };
   };
   
@@ -89,14 +100,18 @@ const SupplierManagement = () => {
   };
 
   const handleDeleteBill = (billId: string) => {
-    deletePurchaseBill(billId);
+    if (selectedSupplier) {
+      deletePurchaseBill(selectedSupplier, billId);
+    }
   };
 
   const handleDeletePayment = (paymentId: string) => {
-    deletePayment(paymentId);
+    if (selectedSupplier) {
+      deletePayment(selectedSupplier, paymentId);
+    }
   };
 
-  const handleDeleteSupplier = (supplierId: number) => {
+  const handleDeleteSupplier = (supplierId: string) => {
     if (window.confirm('Are you sure you want to delete this supplier? This will also delete all related bills and payments.')) {
       deleteSupplier(supplierId);
       if (selectedSupplier === supplierId) {
@@ -110,16 +125,20 @@ const SupplierManagement = () => {
     setEditSupplierDialogOpen(true);
   };
 
-  const handleUpdateSupplier = (id: number, updatedSupplier: Omit<Supplier, 'id' | 'createdDate'>) => {
+  const handleUpdateSupplier = (id: string, updatedSupplier: Partial<Supplier>) => {
     updateSupplier(id, updatedSupplier);
   };
 
-  const handleAddSupplierWithPendingAmount = (supplier: any, pendingAmount: number) => {
-    const newSupplier = addSupplier(supplier);
+  const handleAddSupplierWithPendingAmount = async (supplierData: any, pendingAmount: number) => {
+    await addSupplier(supplierData);
+    
+    // Get the newly added supplier to get its ID
+    const newSupplier = suppliers[suppliers.length - 1];
     
     // Add a bill for the pending amount
-    if (pendingAmount > 0) {
+    if (pendingAmount > 0 && newSupplier) {
       const pendingBill = {
+        id: `PENDING-${Date.now()}`,
         supplierId: newSupplier.id,
         supplierName: newSupplier.name,
         billNumber: `PENDING-${Date.now()}`,
@@ -134,9 +153,10 @@ const SupplierManagement = () => {
         subtotal: pendingAmount,
         gst: 0,
         total: pendingAmount,
-        status: 'Pending' as const
+        status: 'Pending' as const,
+        createdDate: new Date().toISOString()
       };
-      addPurchaseBill(pendingBill);
+      await addPurchaseBill(newSupplier.id, pendingBill);
     }
   };
 
@@ -302,13 +322,13 @@ const SupplierManagement = () => {
             </TabsList>
             <TabsContent value="bills" className="space-y-4">
               <PurchaseBillsList 
-                bills={purchaseBills.filter(bill => bill.supplierId === selectedSupplier)}
+                bills={suppliers.find(s => s.id === selectedSupplier)?.bills || []}
                 onDelete={handleDeleteBill}
               />
             </TabsContent>
             <TabsContent value="payments" className="space-y-4">
               <PaymentsList 
-                payments={payments.filter(payment => payment.supplierId === selectedSupplier)}
+                payments={suppliers.find(s => s.id === selectedSupplier)?.payments || []}
                 onDelete={handleDeletePayment}
               />
             </TabsContent>
@@ -321,7 +341,7 @@ const SupplierManagement = () => {
         open={uploadDialogOpen}
         onOpenChange={setUploadDialogOpen}
         suppliers={suppliers}
-        onUpload={addPurchaseBill}
+        onUpload={(bill) => addPurchaseBill(bill.supplierId, bill)}
       />
       
       <AddSupplierDialog 
@@ -343,7 +363,7 @@ const SupplierManagement = () => {
         onOpenChange={setAddPaymentDialogOpen}
         suppliers={suppliers}
         selectedSupplierId={selectedSupplier}
-        onAdd={addPayment}
+        onAdd={(payment) => addPayment(payment.supplierId, payment)}
       />
 
       <ManualAddPaymentDialog 
@@ -351,14 +371,14 @@ const SupplierManagement = () => {
         onOpenChange={setManualAddPaymentDialogOpen}
         suppliers={suppliers}
         selectedSupplierId={selectedSupplier}
-        onAdd={addPayment}
+        onAdd={(payment) => addPayment(payment.supplierId, payment)}
       />
 
       <ManualAddBillDialog 
         open={manualAddBillDialogOpen}
         onOpenChange={setManualAddBillDialogOpen}
         suppliers={suppliers}
-        onAdd={addPurchaseBill}
+        onAdd={(bill) => addPurchaseBill(bill.supplierId, bill)}
       />
 
       <QuickAddBillDialog 
@@ -366,7 +386,7 @@ const SupplierManagement = () => {
         onOpenChange={setQuickAddBillDialogOpen}
         suppliers={suppliers}
         selectedSupplierId={selectedSupplier}
-        onAdd={addPurchaseBill}
+        onAdd={(bill) => addPurchaseBill(bill.supplierId, bill)}
       />
     </div>
   );

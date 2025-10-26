@@ -16,7 +16,7 @@ interface AddPaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   suppliers: Supplier[];
-  selectedSupplierId: number | null;
+  selectedSupplierId: string | null;
   onAdd: (payment: Omit<Payment, 'id' | 'createdDate'>) => void;
 }
 
@@ -79,7 +79,7 @@ const AddPaymentDialog: React.FC<AddPaymentDialogProps> = ({
     e.preventDefault();
     if (!formData.supplierId || !formData.amount) return;
 
-    const supplier = suppliers.find(s => s.id === parseInt(formData.supplierId));
+    const supplier = suppliers.find(s => s.id === formData.supplierId);
     if (!supplier) return;
 
     const payment: Omit<Payment, 'id' | 'createdDate'> = {
@@ -129,7 +129,7 @@ const AddPaymentDialog: React.FC<AddPaymentDialogProps> = ({
                 <SelectValue placeholder="Select supplier" />
               </SelectTrigger>
               <SelectContent>
-                {suppliers.filter(s => s.isActive).map(supplier => (
+                {suppliers.map(supplier => (
                   <SelectItem key={supplier.id} value={supplier.id.toString()}>
                     {supplier.name}
                   </SelectItem>

@@ -8,9 +8,9 @@ import { Supplier } from "@/types/supplier";
 
 interface SupplierListProps {
   suppliers: Supplier[];
-  selectedSupplier: number | null;
-  onSelectSupplier: (id: number) => void;
-  onDeleteSupplier: (supplierId: number) => void;
+  selectedSupplier: string | null;
+  onSelectSupplier: (id: string) => void;
+  onDeleteSupplier: (supplierId: string) => void;
   onEditSupplier: (supplier: Supplier) => void;
 }
 
@@ -21,9 +21,9 @@ const SupplierList: React.FC<SupplierListProps> = ({
   onDeleteSupplier,
   onEditSupplier
 }) => {
-  const activeSuppliers = suppliers.filter(s => s.isActive);
+  const activeSuppliers = suppliers;
 
-  const handleDeleteClick = (e: React.MouseEvent, supplierId: number) => {
+  const handleDeleteClick = (e: React.MouseEvent, supplierId: string) => {
     e.stopPropagation();
     onDeleteSupplier(supplierId);
   };
@@ -87,9 +87,9 @@ const SupplierList: React.FC<SupplierListProps> = ({
                 </div>
               </div>
               
-              {supplier.contactPerson && (
+              {supplier.contact_person && (
                 <p className="text-sm text-muted-foreground mb-2">
-                  Contact: {supplier.contactPerson}
+                  Contact: {supplier.contact_person}
                 </p>
               )}
               
@@ -108,12 +108,6 @@ const SupplierList: React.FC<SupplierListProps> = ({
                   </div>
                 )}
               </div>
-
-              {supplier.gstNumber && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  GST: {supplier.gstNumber}
-                </p>
-              )}
             </CardContent>
           </Card>
         ))}

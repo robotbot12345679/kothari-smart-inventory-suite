@@ -1,17 +1,15 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Supplier } from "@/types/supplier";
 
 interface AddSupplierDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (supplier: Omit<Supplier, 'id' | 'createdDate'>) => void;
-  onAddWithPendingAmount?: (supplier: Omit<Supplier, 'id' | 'createdDate'>, pendingAmount: number) => void;
+  onAdd: (supplier: any) => Promise<void>;
+  onAddWithPendingAmount?: (supplier: any, pendingAmount: number) => Promise<void>;
 }
 
 const AddSupplierDialog: React.FC<AddSupplierDialogProps> = ({
@@ -22,44 +20,40 @@ const AddSupplierDialog: React.FC<AddSupplierDialogProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     name: "",
-    contactPerson: "",
+    contact_person: "",
     phone: "",
     email: "",
     address: "",
-    gstNumber: "",
-    pendingAmount: 0,
-    isActive: true
+    pendingAmount: 0
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
     const supplierData = {
       name: formData.name,
-      contactPerson: formData.contactPerson,
+      contact_person: formData.contact_person,
       phone: formData.phone,
-      email: formData.email,
+      email: formData.address,
       address: formData.address,
-      gstNumber: formData.gstNumber,
-      isActive: formData.isActive
+      bills: [],
+      payments: []
     };
 
     if (onAddWithPendingAmount && formData.pendingAmount > 0) {
-      onAddWithPendingAmount(supplierData, formData.pendingAmount);
+      await onAddWithPendingAmount(supplierData, formData.pendingAmount);
     } else {
-      onAdd(supplierData);
+      await onAdd(supplierData);
     }
 
     setFormData({
       name: "",
-      contactPerson: "",
+      contact_person: "",
       phone: "",
       email: "",
       address: "",
-      gstNumber: "",
-      pendingAmount: 0,
-      isActive: true
+      pendingAmount: 0
     });
     onOpenChange(false);
   };
@@ -87,8 +81,8 @@ const AddSupplierDialog: React.FC<AddSupplierDialogProps> = ({
             <Label htmlFor="contactPerson">Contact Person</Label>
             <Input
               id="contactPerson"
-              value={formData.contactPerson}
-              onChange={(e) => setFormData(prev => ({ ...prev, contactPerson: e.target.value }))}
+              value={formData.contact_person}
+              onChange={(e) => setFormData(prev => ({ ...prev, contact_person: e.target.value }))}
               placeholder="Enter contact person name"
             />
           </div>
@@ -111,16 +105,6 @@ const AddSupplierDialog: React.FC<AddSupplierDialogProps> = ({
               value={formData.email}
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
               placeholder="Enter email address"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="gstNumber">GST Number</Label>
-            <Input
-              id="gstNumber"
-              value={formData.gstNumber}
-              onChange={(e) => setFormData(prev => ({ ...prev, gstNumber: e.target.value }))}
-              placeholder="Enter GST number"
             />
           </div>
 
