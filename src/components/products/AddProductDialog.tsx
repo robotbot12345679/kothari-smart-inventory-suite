@@ -10,6 +10,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -35,7 +45,7 @@ interface AddProductDialogProps {
 }
 
 const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDelete }: AddProductDialogProps) => {
-  const { categories, addProduct, updateProduct } = useCloudData();
+  const { categories, addProduct, updateProduct, addCategory } = useCloudData();
   const { toast } = useToast();
   const isEditing = !!product;
 
@@ -56,6 +66,8 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDe
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   useEffect(() => {
     if (product) {
@@ -121,6 +133,36 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDe
           variant: "destructive"
         });
       }
+    }
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a category name.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await addCategory(newCategoryName.trim());
+      
+      setFormData(prev => ({ ...prev, category: newCategoryName.trim() }));
+      setNewCategoryName("");
+      setShowAddCategory(false);
+      
+      toast({
+        title: "Category Added",
+        description: `${newCategoryName} has been added successfully.`
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add category. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -246,22 +288,38 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDe
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="category">Category *</Label>
-                  <Select 
-                    value={formData.category || ""} 
-                    onValueChange={(value) => handleSelectChange(value, "category")}
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.name}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select 
+                      value={formData.category || ""} 
+                      onValueChange={(value) => handleSelectChange(value, "category")}
+                      required
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder={categories.length === 0 ? "No categories available" : "Select category"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.filter(cat => cat.is_active).map((category) => (
+                          <SelectItem key={category.id} value={category.name}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                        {categories.length === 0 && (
+                          <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+                            No categories yet
+                          </div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setShowAddCategory(true)}
+                      title="Add new category"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="barcode">Barcode</Label>
@@ -425,6 +483,34 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDe
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <AlertDialog open={showAddCategory} onOpenChange={setShowAddCategory}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add New Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter a name for the new category.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="Category name"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddCategory();
+                }
+              }}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setNewCategoryName("")}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleAddCategory}>Add Category</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
