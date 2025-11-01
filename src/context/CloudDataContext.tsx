@@ -335,12 +335,20 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       productSchema.partial().parse(updates);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('products')
         .update(updates)
-        .eq('id', id);
+        .eq('id', id)
+        .select()
+        .single();
       
       if (error) throw error;
+      
+      // Update local state immediately
+      if (data) {
+        setProducts(prev => prev.map(p => p.id === id ? data as Product : p));
+        showToast('Success', 'Product updated successfully');
+      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
@@ -363,6 +371,10 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     
     if (error) {
       showToast('Error', 'Failed to delete product', 'destructive');
+    } else {
+      // Update local state immediately
+      setProducts(prev => prev.filter(p => p.id !== id));
+      showToast('Success', 'Product deleted successfully');
     }
   };
 
