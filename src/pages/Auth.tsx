@@ -5,9 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const HARDCODED_USERNAME = 'Sparsh';
 const HARDCODED_PASSWORD = '0906';
+const SUPABASE_EMAIL = 'spu0906@gmail.com';
+const SUPABASE_PASSWORD = 'sparsh0906';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -22,6 +25,13 @@ const Auth = () => {
 
     try {
       if (username === HARDCODED_USERNAME && password === HARDCODED_PASSWORD) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: SUPABASE_EMAIL,
+          password: SUPABASE_PASSWORD,
+        });
+
+        if (error) throw error;
+
         localStorage.setItem('isAuthenticated', 'true');
         toast({
           title: 'Welcome!',

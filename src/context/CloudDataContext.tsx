@@ -293,92 +293,8 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Set up real-time subscriptions when user is available
-  useEffect(() => {
-    if (!user) return;
-
-    const newChannel = supabase
-      .channel('schema-db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products', filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setProducts(prev => [...prev, payload.new as Product]);
-          } else if (payload.eventType === 'UPDATE') {
-            setProducts(prev => prev.map(p => p.id === payload.new.id ? payload.new as Product : p));
-          } else if (payload.eventType === 'DELETE') {
-            setProducts(prev => prev.filter(p => p.id !== payload.old.id));
-          }
-        })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setCategories(prev => [...prev, payload.new as Category]);
-          } else if (payload.eventType === 'UPDATE') {
-            setCategories(prev => prev.map(c => c.id === payload.new.id ? payload.new as Category : c));
-          } else if (payload.eventType === 'DELETE') {
-            setCategories(prev => prev.filter(c => c.id !== payload.old.id));
-          }
-        })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers', filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setCustomers(prev => [...prev, payload.new as Customer]);
-          } else if (payload.eventType === 'UPDATE') {
-            setCustomers(prev => prev.map(c => c.id === payload.new.id ? payload.new as Customer : c));
-          } else if (payload.eventType === 'DELETE') {
-            setCustomers(prev => prev.filter(c => c.id !== payload.old.id));
-          }
-        })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          const orderData = { 
-            ...payload.new, 
-            items: Array.isArray((payload.new as any)?.items) ? (payload.new as any).items : [] 
-          } as Order;
-          
-          if (payload.eventType === 'INSERT') {
-            setOrders(prev => [...prev, orderData]);
-          } else if (payload.eventType === 'UPDATE') {
-            setOrders(prev => prev.map(o => o.id === orderData.id ? orderData : o));
-          } else if (payload.eventType === 'DELETE') {
-            setOrders(prev => prev.filter(o => o.id !== payload.old.id));
-          }
-        })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers', filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          const supplierData = { 
-            ...payload.new, 
-            bills: Array.isArray((payload.new as any)?.bills) ? (payload.new as any).bills : [],
-            payments: Array.isArray((payload.new as any)?.payments) ? (payload.new as any).payments : []
-          } as Supplier;
-          
-          if (payload.eventType === 'INSERT') {
-            setSuppliers(prev => [...prev, supplierData]);
-          } else if (payload.eventType === 'UPDATE') {
-            setSuppliers(prev => prev.map(s => s.id === supplierData.id ? supplierData : s));
-          } else if (payload.eventType === 'DELETE') {
-            setSuppliers(prev => prev.filter(s => s.id !== payload.old.id));
-          }
-        })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings', filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            const newSettings = payload.new as any;
-            if (newSettings.billing_template) {
-              setBillingTemplate(newSettings.billing_template as unknown as BillingTemplate);
-            }
-          }
-        })
-      .subscribe();
-
-    setChannel(newChannel);
-
-    return () => {
-      if (newChannel) {
-        supabase.removeChannel(newChannel);
-      }
-    };
-  }, [user]);
+  // Optimized: Removed real-time subscriptions to improve performance
+  // Data will be refetched on page load and after mutations
 
   // Product methods
   const addProduct = async (productData: Omit<Product, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
@@ -389,11 +305,19 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       productSchema.parse(productData);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('products')
-        .insert([{ ...productData, user_id: user.id }]);
+        .insert([{ ...productData, user_id: user.id }])
+        .select()
+        .single();
       
       if (error) throw error;
+      
+      // Update local state immediately
+      if (data) {
+        setProducts(prev => [...prev, data as Product]);
+        showToast('Success', 'Product added successfully');
+      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');

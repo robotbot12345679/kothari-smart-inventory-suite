@@ -4,6 +4,7 @@ import { UserCircle, Bell, Menu, LogOut } from "lucide-react";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface HeaderProps {
   setSidebarOpen: (open: boolean) => void;
@@ -13,7 +14,8 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem('isAuthenticated');
     toast({
       title: 'Logged out',
