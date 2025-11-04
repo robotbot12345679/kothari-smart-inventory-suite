@@ -7,15 +7,10 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-    
+    // We'll keep this for auto-navigation, but add a slight delay
     const timer = setTimeout(() => {
-      if (isAuthenticated) {
-        navigate('/dashboard');
-      } else {
-        navigate('/auth');
-      }
-    }, 1000);
+      navigate('/dashboard');
+    }, 3000);
     
     return () => clearTimeout(timer);
   }, [navigate]);

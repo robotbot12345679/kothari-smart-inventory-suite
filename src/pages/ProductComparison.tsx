@@ -1,80 +1,22 @@
+
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowUp, ArrowDown, TrendingUp, TrendingDown, Download, Home } from "lucide-react";
-import { useCloudData } from "@/context/CloudDataContext";
+import { useSupplierData } from "@/hooks/useSupplierData";
 import { useNavigate } from "react-router-dom";
 
-interface SupplierPrice {
-  price: number;
-  change: number;
-  changePercent: number;
-  date: string;
-}
-
-interface ProductComparison {
-  productName: string;
-  suppliers: Record<string, SupplierPrice>;
-}
-
 const ProductComparison = () => {
-  const { suppliers } = useCloudData();
+  const { getProductComparison } = useSupplierData();
   const navigate = useNavigate();
-  
-  const productComparison = useMemo<ProductComparison[]>(() => {
-    const productMap = new Map<string, ProductComparison>();
-
-    suppliers.forEach(supplier => {
-      const bills = supplier.bills || [];
-      
-      bills.forEach((bill: any) => {
-        if (!bill.items) return;
-        
-        bill.items.forEach((item: any) => {
-          const productName = item.productName;
-          const supplierKey = `${supplier.id}-${supplier.name}`;
-          
-          if (!productMap.has(productName)) {
-            productMap.set(productName, {
-              productName,
-              suppliers: {}
-            });
-          }
-          
-          const product = productMap.get(productName)!;
-          const currentPrice = item.pricePerUnit || 0;
-          
-          if (!product.suppliers[supplierKey]) {
-            product.suppliers[supplierKey] = {
-              price: currentPrice,
-              change: 0,
-              changePercent: 0,
-              date: bill.billDate
-            };
-          } else {
-            const previousPrice = product.suppliers[supplierKey].price;
-            const change = currentPrice - previousPrice;
-            const changePercent = previousPrice !== 0 ? (change / previousPrice) * 100 : 0;
-            
-            product.suppliers[supplierKey] = {
-              price: currentPrice,
-              change,
-              changePercent,
-              date: bill.billDate
-            };
-          }
-        });
-      });
-    });
-
-    return Array.from(productMap.values());
-  }, [suppliers]);
+  const productComparison = useMemo(() => getProductComparison(), []);
 
   const exportToExcel = () => {
+    // Simple CSV export
     const headers = ['Product Name', 'Supplier', 'Current Price', 'Previous Price', 'Change', 'Change %'];
-    const rows: string[][] = [];
+    const rows = [];
     
     productComparison.forEach(product => {
       Object.entries(product.suppliers).forEach(([supplierKey, data]) => {
@@ -98,6 +40,12 @@ const ProductComparison = () => {
     a.download = `product-comparison-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
+  };
+
+  const getChangeColor = (change: number) => {
+    if (change > 0) return 'text-red-600';
+    if (change < 0) return 'text-green-600';
+    return 'text-muted-foreground';
   };
 
   const getChangeBadge = (change: number, changePercent: number) => {

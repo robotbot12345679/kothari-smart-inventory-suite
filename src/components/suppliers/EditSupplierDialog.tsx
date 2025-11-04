@@ -1,16 +1,18 @@
+
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Supplier } from "@/types/supplier";
 
 interface EditSupplierDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   supplier: Supplier | null;
-  onUpdate: (id: string, updates: Partial<Supplier>) => void;
+  onUpdate: (id: number, supplier: Omit<Supplier, 'id' | 'createdDate'>) => void;
 }
 
 const EditSupplierDialog: React.FC<EditSupplierDialogProps> = ({
@@ -21,20 +23,26 @@ const EditSupplierDialog: React.FC<EditSupplierDialogProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     name: "",
-    contact_person: "",
+    contactPerson: "",
     phone: "",
     email: "",
-    address: ""
+    address: "",
+    gstNumber: "",
+    isActive: true,
+    pendingAmount: 0
   });
 
   useEffect(() => {
     if (supplier) {
       setFormData({
         name: supplier.name,
-        contact_person: supplier.contact_person || "",
+        contactPerson: supplier.contactPerson || "",
         phone: supplier.phone || "",
         email: supplier.email || "",
-        address: supplier.address || ""
+        address: supplier.address || "",
+        gstNumber: supplier.gstNumber || "",
+        isActive: supplier.isActive,
+        pendingAmount: supplier.pendingAmountAdjustment || 0
       });
     }
   }, [supplier]);
@@ -45,10 +53,13 @@ const EditSupplierDialog: React.FC<EditSupplierDialogProps> = ({
 
     onUpdate(supplier.id, {
       name: formData.name,
-      contact_person: formData.contact_person,
+      contactPerson: formData.contactPerson,
       phone: formData.phone,
       email: formData.email,
-      address: formData.address
+      address: formData.address,
+      gstNumber: formData.gstNumber,
+      isActive: formData.isActive,
+      pendingAmountAdjustment: formData.pendingAmount
     });
 
     onOpenChange(false);
@@ -77,8 +88,8 @@ const EditSupplierDialog: React.FC<EditSupplierDialogProps> = ({
             <Label htmlFor="edit-contactPerson">Contact Person</Label>
             <Input
               id="edit-contactPerson"
-              value={formData.contact_person}
-              onChange={(e) => setFormData(prev => ({ ...prev, contact_person: e.target.value }))}
+              value={formData.contactPerson}
+              onChange={(e) => setFormData(prev => ({ ...prev, contactPerson: e.target.value }))}
               placeholder="Enter contact person name"
             />
           </div>
@@ -105,6 +116,16 @@ const EditSupplierDialog: React.FC<EditSupplierDialogProps> = ({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="edit-gstNumber">GST Number</Label>
+            <Input
+              id="edit-gstNumber"
+              value={formData.gstNumber}
+              onChange={(e) => setFormData(prev => ({ ...prev, gstNumber: e.target.value }))}
+              placeholder="Enter GST number"
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="edit-address">Address</Label>
             <Textarea
               id="edit-address"
@@ -113,6 +134,27 @@ const EditSupplierDialog: React.FC<EditSupplierDialogProps> = ({
               placeholder="Enter address"
               rows={3}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-pendingAmount">Pending Amount</Label>
+            <Input
+              id="edit-pendingAmount"
+              type="number"
+              step="0.01"
+              value={formData.pendingAmount}
+              onChange={(e) => setFormData(prev => ({ ...prev, pendingAmount: parseFloat(e.target.value) || 0 }))}
+              placeholder="Enter total pending amount"
+            />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="edit-isActive"
+              checked={formData.isActive}
+              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+            />
+            <Label htmlFor="edit-isActive">Active Supplier</Label>
           </div>
 
           <div className="flex justify-end gap-2">

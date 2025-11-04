@@ -66,16 +66,8 @@ import { generateInvoiceNumber } from "@/services/InvoiceService";
 import { downloadInvoicePDF } from "@/lib/pdf-exporter";
 
 const BillsReport = () => {
-  const { orders, updateOrderPaymentStatus, billingTemplate } = useCloudData();
+  const { orders, updateOrderPaymentStatus } = useCloudData();
   const { toast } = useToast();
-  const template = billingTemplate || {
-    shopName: "Kothari's Dry Fruits & More",
-    address: "89, Sukan Mall, Nr. CIMS Hospital, Science City Road, Ahmedabad, Gujarat 380060",
-    phone: "+91 75677 00090",
-    gstNumber: "",
-    logoUrl: "/lovable-uploads/6ab04e40-2860-4562-bace-e35da6383972.png",
-    footerText: ["Thank you for shopping with us!", "Visit again soon!"]
-  };
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
@@ -125,7 +117,7 @@ const BillsReport = () => {
   // Function to download receipts directly
   const downloadReceipt = async (order: Order) => {
     try {
-      await downloadInvoicePDF(order, template);
+      await downloadInvoicePDF(order);
       toast({
         title: "Download Started",
         description: "Your invoice has been downloaded successfully"
@@ -150,7 +142,7 @@ const BillsReport = () => {
       return;
     }
 
-    sendInvoiceViaWhatsApp(selectedOrder, template, customerPhone);
+    sendInvoiceViaWhatsApp(selectedOrder, customerPhone);
     
     toast({
       title: "WhatsApp Message Ready",
@@ -173,11 +165,17 @@ const BillsReport = () => {
       return;
     }
     
+    // Get billing template from localStorage or use defaults
+    const storedTemplate = localStorage.getItem("billingTemplate");
+    const billingTemplate = storedTemplate ? JSON.parse(storedTemplate) : {
+      shopName: "Kothari's Dry Fruits & More"
+    };
+    
     const invoiceNumber = generateInvoiceNumber(selectedOrder.id);
     const orderDate = new Date(selectedOrder.order_date);
     const formattedDate = format(orderDate, 'PP');
     
-    const subject = `Invoice ${invoiceNumber} - ${template.shopName}`;
+    const subject = `Invoice ${invoiceNumber} - ${billingTemplate.shopName}`;
     const body = messageText || 
       `Dear ${selectedOrder.customer_name || ""},
 
@@ -186,10 +184,10 @@ Please find attached your invoice #${invoiceNumber} for Rs. ${selectedOrder.tota
 Thank you for shopping with us!
 
 Regards,
-${template.shopName}`;
+${billingTemplate.shopName}`;
     
     // First, generate the PDF in a new window
-    createPrintableInvoice(selectedOrder, template);
+    createPrintableInvoice(selectedOrder);
     
     // After a short delay to allow the PDF to initialize, open the email client
     setTimeout(() => {

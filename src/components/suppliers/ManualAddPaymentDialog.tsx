@@ -12,7 +12,7 @@ interface ManualAddPaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   suppliers: Supplier[];
-  selectedSupplierId: string | null;
+  selectedSupplierId: number | null;
   onAdd: (payment: Omit<Payment, 'id' | 'createdDate'>) => void;
 }
 
@@ -36,7 +36,7 @@ const ManualAddPaymentDialog: React.FC<ManualAddPaymentDialogProps> = ({
     e.preventDefault();
     if (!formData.supplierId || !formData.amount) return;
 
-    const supplier = suppliers.find(s => s.id === formData.supplierId);
+    const supplier = suppliers.find(s => s.id === parseInt(formData.supplierId));
     if (!supplier) return;
 
     const payment: Omit<Payment, 'id' | 'createdDate'> = {
@@ -83,7 +83,7 @@ const ManualAddPaymentDialog: React.FC<ManualAddPaymentDialogProps> = ({
                 <SelectValue placeholder="Select supplier" />
               </SelectTrigger>
               <SelectContent>
-                {suppliers.map(supplier => (
+                {suppliers.filter(s => s.isActive).map(supplier => (
                   <SelectItem key={supplier.id} value={supplier.id.toString()}>
                     {supplier.name}
                   </SelectItem>

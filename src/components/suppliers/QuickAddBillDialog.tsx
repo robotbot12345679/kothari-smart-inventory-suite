@@ -11,7 +11,7 @@ interface QuickAddBillDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   suppliers: Supplier[];
-  selectedSupplierId?: string | null;
+  selectedSupplierId?: number | null;
   onAdd: (bill: Omit<PurchaseBill, 'id' | 'createdDate'>) => void;
 }
 
@@ -35,7 +35,7 @@ const QuickAddBillDialog: React.FC<QuickAddBillDialogProps> = ({
     e.preventDefault();
     if (!formData.supplierId || formData.total <= 0) return;
 
-    const supplier = suppliers.find(s => s.id === formData.supplierId);
+    const supplier = suppliers.find(s => s.id === parseInt(formData.supplierId));
     if (!supplier) return;
 
     const subtotal = formData.total - formData.gst;
@@ -92,7 +92,7 @@ const QuickAddBillDialog: React.FC<QuickAddBillDialogProps> = ({
                 <SelectValue placeholder="Select supplier" />
               </SelectTrigger>
               <SelectContent>
-                {suppliers.map(supplier => (
+                {suppliers.filter(s => s.isActive).map(supplier => (
                   <SelectItem key={supplier.id} value={supplier.id.toString()}>
                     {supplier.name}
                   </SelectItem>

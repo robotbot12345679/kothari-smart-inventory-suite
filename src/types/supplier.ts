@@ -1,15 +1,15 @@
+
 export interface Supplier {
-  id: string;
+  id: number;
   name: string;
-  contact_person?: string;
+  contactPerson?: string;
   phone?: string;
   email?: string;
   address?: string;
-  bills: PurchaseBill[];
-  payments: Payment[];
-  user_id: string;
-  created_at: string;
-  updated_at: string;
+  gstNumber?: string;
+  createdDate: string;
+  isActive: boolean;
+  pendingAmountAdjustment?: number;
 }
 
 export interface PurchaseItem {
@@ -22,7 +22,7 @@ export interface PurchaseItem {
 
 export interface PurchaseBill {
   id: string;
-  supplierId: string;
+  supplierId: number;
   supplierName: string;
   billNumber?: string;
   billDate: string;
@@ -38,7 +38,7 @@ export interface PurchaseBill {
 
 export interface Payment {
   id: string;
-  supplierId: string;
+  supplierId: number;
   supplierName: string;
   amount: number;
   paymentDate: string;
@@ -51,7 +51,7 @@ export interface Payment {
 
 export interface ProductPriceHistory {
   productName: string;
-  supplierId: string;
+  supplierId: number;
   supplierName: string;
   price: number;
   date: string;

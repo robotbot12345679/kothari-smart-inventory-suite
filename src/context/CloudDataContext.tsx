@@ -154,10 +154,6 @@ interface CloudDataContextType {
   addSupplier: (supplier: Omit<Supplier, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateSupplier: (id: string, updates: Partial<Supplier>) => Promise<void>;
   deleteSupplier: (id: string) => Promise<void>;
-  addPurchaseBill: (supplierId: string, bill: any) => Promise<void>;
-  deletePurchaseBill: (supplierId: string, billId: string) => Promise<void>;
-  addPayment: (supplierId: string, payment: any) => Promise<void>;
-  deletePayment: (supplierId: string, paymentId: string) => Promise<void>;
   
   // Settings methods
   updateBillingTemplate: (template: BillingTemplate) => Promise<void>;
@@ -293,8 +289,83 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Optimized: Removed real-time subscriptions to improve performance
-  // Data will be refetched on page load and after mutations
+  // Set up real-time subscriptions when user is available
+  useEffect(() => {
+    if (!user) return;
+
+    const newChannel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setProducts(prev => [...prev, payload.new as Product]);
+          } else if (payload.eventType === 'UPDATE') {
+            setProducts(prev => prev.map(p => p.id === payload.new.id ? payload.new as Product : p));
+          } else if (payload.eventType === 'DELETE') {
+            setProducts(prev => prev.filter(p => p.id !== payload.old.id));
+          }
+        })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setCategories(prev => [...prev, payload.new as Category]);
+          } else if (payload.eventType === 'UPDATE') {
+            setCategories(prev => prev.map(c => c.id === payload.new.id ? payload.new as Category : c));
+          } else if (payload.eventType === 'DELETE') {
+            setCategories(prev => prev.filter(c => c.id !== payload.old.id));
+          }
+        })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setCustomers(prev => [...prev, payload.new as Customer]);
+          } else if (payload.eventType === 'UPDATE') {
+            setCustomers(prev => prev.map(c => c.id === payload.new.id ? payload.new as Customer : c));
+          } else if (payload.eventType === 'DELETE') {
+            setCustomers(prev => prev.filter(c => c.id !== payload.old.id));
+          }
+        })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const orderData = { 
+            ...payload.new, 
+            items: Array.isArray((payload.new as any)?.items) ? (payload.new as any).items : [] 
+          } as Order;
+          
+          if (payload.eventType === 'INSERT') {
+            setOrders(prev => [...prev, orderData]);
+          } else if (payload.eventType === 'UPDATE') {
+            setOrders(prev => prev.map(o => o.id === orderData.id ? orderData : o));
+          } else if (payload.eventType === 'DELETE') {
+            setOrders(prev => prev.filter(o => o.id !== payload.old.id));
+          }
+        })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const supplierData = { 
+            ...payload.new, 
+            bills: Array.isArray((payload.new as any)?.bills) ? (payload.new as any).bills : [],
+            payments: Array.isArray((payload.new as any)?.payments) ? (payload.new as any).payments : []
+          } as Supplier;
+          
+          if (payload.eventType === 'INSERT') {
+            setSuppliers(prev => [...prev, supplierData]);
+          } else if (payload.eventType === 'UPDATE') {
+            setSuppliers(prev => prev.map(s => s.id === supplierData.id ? supplierData : s));
+          } else if (payload.eventType === 'DELETE') {
+            setSuppliers(prev => prev.filter(s => s.id !== payload.old.id));
+          }
+        })
+      .subscribe();
+
+    setChannel(newChannel);
+
+    return () => {
+      if (newChannel) {
+        supabase.removeChannel(newChannel);
+      }
+    };
+  }, [user]);
 
   // Product methods
   const addProduct = async (productData: Omit<Product, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
@@ -305,19 +376,11 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       productSchema.parse(productData);
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('products')
-        .insert([{ ...productData, user_id: user.id }])
-        .select()
-        .single();
+        .insert([{ ...productData, user_id: user.id }]);
       
       if (error) throw error;
-      
-      // Update local state immediately
-      if (data) {
-        setProducts(prev => [...prev, data as Product]);
-        showToast('Success', 'Product added successfully');
-      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
@@ -335,20 +398,12 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       productSchema.partial().parse(updates);
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('products')
         .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+        .eq('id', id);
       
       if (error) throw error;
-      
-      // Update local state immediately
-      if (data) {
-        setProducts(prev => prev.map(p => p.id === id ? data as Product : p));
-        showToast('Success', 'Product updated successfully');
-      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
@@ -371,10 +426,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     
     if (error) {
       showToast('Error', 'Failed to delete product', 'destructive');
-    } else {
-      // Update local state immediately
-      setProducts(prev => prev.filter(p => p.id !== id));
-      showToast('Success', 'Product deleted successfully');
     }
   };
 
@@ -597,57 +648,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Supplier bill and payment methods
-  const addPurchaseBill = async (supplierId: string, bill: any) => {
-    if (!user) return;
-
-    const supplier = suppliers.find(s => s.id === supplierId);
-    if (!supplier) {
-      showToast('Error', 'Supplier not found', 'destructive');
-      return;
-    }
-
-    const updatedBills = [...(supplier.bills || []), bill];
-    await updateSupplier(supplierId, { bills: updatedBills });
-    showToast('Success', 'Bill added successfully');
-  };
-
-  const deletePurchaseBill = async (supplierId: string, billId: string) => {
-    if (!user) return;
-
-    const supplier = suppliers.find(s => s.id === supplierId);
-    if (!supplier) return;
-
-    const updatedBills = (supplier.bills || []).filter((b: any) => b.id !== billId);
-    await updateSupplier(supplierId, { bills: updatedBills });
-    showToast('Success', 'Bill deleted successfully');
-  };
-
-  const addPayment = async (supplierId: string, payment: any) => {
-    if (!user) return;
-
-    const supplier = suppliers.find(s => s.id === supplierId);
-    if (!supplier) {
-      showToast('Error', 'Supplier not found', 'destructive');
-      return;
-    }
-
-    const updatedPayments = [...(supplier.payments || []), payment];
-    await updateSupplier(supplierId, { payments: updatedPayments });
-    showToast('Success', 'Payment added successfully');
-  };
-
-  const deletePayment = async (supplierId: string, paymentId: string) => {
-    if (!user) return;
-
-    const supplier = suppliers.find(s => s.id === supplierId);
-    if (!supplier) return;
-
-    const updatedPayments = (supplier.payments || []).filter((p: any) => p.id !== paymentId);
-    await updateSupplier(supplierId, { payments: updatedPayments });
-    showToast('Success', 'Payment deleted successfully');
-  };
-
   // Settings methods
   const updateBillingTemplate = async (template: BillingTemplate) => {
     if (!user) return;
@@ -764,10 +764,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     addSupplier,
     updateSupplier,
     deleteSupplier,
-    addPurchaseBill,
-    deletePurchaseBill,
-    addPayment,
-    deletePayment,
     updateBillingTemplate,
     updateInventoryStock,
     updateInventoryAfterSale,
