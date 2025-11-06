@@ -45,7 +45,7 @@ interface ScannedProduct extends Product {
 }
 
 const Pos = () => {
-  const { products, categories, addOrder, findProductByBarcode, updateInventoryAfterSale, customers, addCustomer, updateCustomer } = useCloudData();
+  const { products, categories, addOrder, findProductByBarcode, updateInventoryAfterSale, customers, addCustomer, updateCustomer, billingTemplate } = useCloudData();
   const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState<string>('1');
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -429,12 +429,11 @@ const Pos = () => {
       return;
     }
     
-    // Get billing template from localStorage or use defaults
-    const storedTemplate = localStorage.getItem("billingTemplate");
-    const billingTemplate = storedTemplate ? JSON.parse(storedTemplate) : {
+    const template = billingTemplate || {
       shopName: "Kothari's Dry Fruits & More",
       address: "89, Sukan Mall, Nr. CIMS Hospital, Science City Road, Ahmedabad, Gujarat 380060",
       phone: "+91 75677 00090",
+      gstNumber: "",
       logoUrl: "/lovable-uploads/6ab04e40-2860-4562-bace-e35da6383972.png",
       footerText: ["Thank you for shopping with us!", "Visit again soon!"]
     };
@@ -546,11 +545,11 @@ const Pos = () => {
       <body>
         <div class="receipt">
           <div class="header">
-            <img src="${billingTemplate.logoUrl}" class="logo" alt="Logo">
-            <div class="title">${billingTemplate.shopName}</div>
-            <div class="info">${billingTemplate.address}</div>
-            <div class="info">Phone: ${billingTemplate.phone}</div>
-            ${billingTemplate.gstNumber ? `<div class="info">GSTIN: ${billingTemplate.gstNumber}</div>` : ''}
+            <img src="${template.logoUrl}" class="logo" alt="Logo">
+            <div class="title">${template.shopName}</div>
+            <div class="info">${template.address}</div>
+            <div class="info">Phone: ${template.phone}</div>
+            ${template.gstNumber ? `<div class="info">GSTIN: ${template.gstNumber}</div>` : ''}
           </div>
         
           <div class="order-info">
@@ -613,7 +612,7 @@ const Pos = () => {
           <div class="divider"></div>
         
           <div class="footer">
-            ${billingTemplate.footerText.map(line => `<p>${line}</p>`).join('')}
+            ${template.footerText.map(line => `<p>${line}</p>`).join('')}
           </div>
         </div>
         <script>

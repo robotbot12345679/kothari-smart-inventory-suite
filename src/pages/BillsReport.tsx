@@ -66,7 +66,7 @@ import { generateInvoiceNumber } from "@/services/InvoiceService";
 import { downloadInvoicePDF } from "@/lib/pdf-exporter";
 
 const BillsReport = () => {
-  const { orders, updateOrderPaymentStatus } = useCloudData();
+  const { orders, updateOrderPaymentStatus, billingTemplate } = useCloudData();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
@@ -117,7 +117,15 @@ const BillsReport = () => {
   // Function to download receipts directly
   const downloadReceipt = async (order: Order) => {
     try {
-      await downloadInvoicePDF(order);
+      const template = billingTemplate || {
+        shopName: "Kothari's Dry Fruits & More",
+        address: "89, Sukan Mall, Nr. CIMS Hospital, Science City Road, Ahmedabad, Gujarat 380060",
+        phone: "+91 75677 00090",
+        gstNumber: "",
+        logoUrl: "/lovable-uploads/6ab04e40-2860-4562-bace-e35da6383972.png",
+        footerText: ["Thank you for shopping with us!", "Visit again soon!"]
+      };
+      await downloadInvoicePDF(order, template);
       toast({
         title: "Download Started",
         description: "Your invoice has been downloaded successfully"
@@ -142,7 +150,16 @@ const BillsReport = () => {
       return;
     }
 
-    sendInvoiceViaWhatsApp(selectedOrder, customerPhone);
+    const template = billingTemplate || {
+      shopName: "Kothari's Dry Fruits & More",
+      address: "89, Sukan Mall, Nr. CIMS Hospital, Science City Road, Ahmedabad, Gujarat 380060",
+      phone: "+91 75677 00090",
+      gstNumber: "",
+      logoUrl: "/lovable-uploads/6ab04e40-2860-4562-bace-e35da6383972.png",
+      footerText: ["Thank you for shopping with us!", "Visit again soon!"]
+    };
+
+    sendInvoiceViaWhatsApp(selectedOrder, template, customerPhone);
     
     toast({
       title: "WhatsApp Message Ready",
@@ -165,17 +182,20 @@ const BillsReport = () => {
       return;
     }
     
-    // Get billing template from localStorage or use defaults
-    const storedTemplate = localStorage.getItem("billingTemplate");
-    const billingTemplate = storedTemplate ? JSON.parse(storedTemplate) : {
-      shopName: "Kothari's Dry Fruits & More"
+    const template = billingTemplate || {
+      shopName: "Kothari's Dry Fruits & More",
+      address: "89, Sukan Mall, Nr. CIMS Hospital, Science City Road, Ahmedabad, Gujarat 380060",
+      phone: "+91 75677 00090",
+      gstNumber: "",
+      logoUrl: "/lovable-uploads/6ab04e40-2860-4562-bace-e35da6383972.png",
+      footerText: ["Thank you for shopping with us!", "Visit again soon!"]
     };
     
     const invoiceNumber = generateInvoiceNumber(selectedOrder.id);
     const orderDate = new Date(selectedOrder.order_date);
     const formattedDate = format(orderDate, 'PP');
     
-    const subject = `Invoice ${invoiceNumber} - ${billingTemplate.shopName}`;
+    const subject = `Invoice ${invoiceNumber} - ${template.shopName}`;
     const body = messageText || 
       `Dear ${selectedOrder.customer_name || ""},
 
@@ -184,10 +204,10 @@ Please find attached your invoice #${invoiceNumber} for Rs. ${selectedOrder.tota
 Thank you for shopping with us!
 
 Regards,
-${billingTemplate.shopName}`;
+${template.shopName}`;
     
     // First, generate the PDF in a new window
-    createPrintableInvoice(selectedOrder);
+    createPrintableInvoice(selectedOrder, template);
     
     // After a short delay to allow the PDF to initialize, open the email client
     setTimeout(() => {

@@ -66,11 +66,20 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
     <div className="bg-white p-6 max-w-4xl mx-auto font-sans print:p-0">
       <InvoiceControls onPrint={handlePrint} onDownload={handleDownload} onShare={handleWhatsAppShare} onEmail={handleEmailShare} onClose={onClose} />
       <div className="border border-gray-200 p-8 rounded-lg print:border-0">
-        <InvoiceHeader billingTemplate={template} invoiceNumber={invoiceNumber} invoiceDate={invoiceDate} paymentStatus={order.payment_status || "Paid"} />
+        <InvoiceHeader 
+          shopName={template.shopName}
+          address={template.address}
+          phone={template.phone}
+          gstNumber={template.gstNumber}
+          logoUrl={template.logoUrl}
+          invoiceNumber={invoiceNumber} 
+          invoiceDate={invoiceDate} 
+          paymentStatus={order.payment_status || "Paid"} 
+        />
         <CustomerInfo customerName={customerName} customerPhone={order.customer_phone} customerEmail={order.customer_email} shippingAddress={order.shipping_address} />
         <InvoiceItems items={order.items} />
         <InvoiceTotals subtotal={order.subtotal || 0} total={order.total} paid={order.payment_status === "Paid" ? order.total : 0} />
-        <InvoiceFooter billingTemplate={template} />
+        <InvoiceFooter footerText={template.footerText} />
       </div>
     </div>
   );
