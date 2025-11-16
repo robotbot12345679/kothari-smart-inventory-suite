@@ -38,7 +38,7 @@ const Auth = () => {
 
     try {
       // Validate hardcoded credentials
-      if (username.trim() !== 'Sparsh' || password !== '0906') {
+      if (username.trim() !== 'Sparsh' || password !== '090611') {
         toast({
           title: 'Invalid credentials',
           description: 'The username or password you entered is incorrect.',
@@ -51,7 +51,7 @@ const Auth = () => {
       // Authenticate with Supabase using the actual account
       const { error } = await supabase.auth.signInWithPassword({
         email: 'spu0906@gmail.com',
-        password: 'Sparsh@0906',
+        password: '090611',
       });
 
       if (error) {
@@ -94,11 +94,11 @@ const Auth = () => {
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter password (4 characters)"
+                placeholder="Enter password (6 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                maxLength={4}
+                maxLength={6}
                 autoComplete="current-password"
               />
             </div>
