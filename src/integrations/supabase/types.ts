@@ -14,7 +14,329 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          address: string | null
+          birthday: string | null
+          city: string | null
+          created_at: string
+          email: string | null
+          id: string
+          last_order_date: string | null
+          name: string
+          notes: string | null
+          order_history: Json | null
+          phone: string | null
+          pincode: string | null
+          state: string | null
+          status: string | null
+          total_orders: number | null
+          total_spent: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          birthday?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_order_date?: string | null
+          name: string
+          notes?: string | null
+          order_history?: Json | null
+          phone?: string | null
+          pincode?: string | null
+          state?: string | null
+          status?: string | null
+          total_orders?: number | null
+          total_spent?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          birthday?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_order_date?: string | null
+          name?: string
+          notes?: string | null
+          order_history?: Json | null
+          phone?: string | null
+          pincode?: string | null
+          state?: string | null
+          status?: string | null
+          total_orders?: number | null
+          total_spent?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          created_at: string
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          gst: number | null
+          id: string
+          items: Json
+          order_date: string | null
+          order_status: string | null
+          payment_method: string | null
+          payment_status: string | null
+          shipping_address: string | null
+          status: string | null
+          subtotal: number | null
+          total: number
+          tracking_number: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          gst?: number | null
+          id?: string
+          items: Json
+          order_date?: string | null
+          order_status?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          shipping_address?: string | null
+          status?: string | null
+          subtotal?: number | null
+          total: number
+          tracking_number?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          gst?: number | null
+          id?: string
+          items?: Json
+          order_date?: string | null
+          order_status?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          shipping_address?: string | null
+          status?: string | null
+          subtotal?: number | null
+          total?: number
+          tracking_number?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          barcode: string | null
+          category: string | null
+          created_at: string
+          description: string | null
+          expiry_date: string | null
+          id: string
+          image: string | null
+          image_url: string | null
+          is_active: boolean | null
+          min_stock: number | null
+          name: string
+          price: number
+          price_includes_gst: boolean | null
+          sku: string | null
+          stock: number | null
+          unit: string | null
+          updated_at: string
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          barcode?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          expiry_date?: string | null
+          id?: string
+          image?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          min_stock?: number | null
+          name: string
+          price: number
+          price_includes_gst?: boolean | null
+          sku?: string | null
+          stock?: number | null
+          unit?: string | null
+          updated_at?: string
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          barcode?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          expiry_date?: string | null
+          id?: string
+          image?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          min_stock?: number | null
+          name?: string
+          price?: number
+          price_includes_gst?: boolean | null
+          sku?: string | null
+          stock?: number | null
+          unit?: string | null
+          updated_at?: string
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          billing_template: Json
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_template?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_template?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          bills: Json | null
+          contact_person: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          payments: Json | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          bills?: Json | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          payments?: Json | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          bills?: Json | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          payments?: Json | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
