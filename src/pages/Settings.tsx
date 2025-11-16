@@ -1,7 +1,5 @@
 import React from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BillingSettings from "@/components/settings/BillingSettings";
-import AccountSettings from "@/components/settings/AccountSettings";
 import { useCloudData } from "@/context/CloudDataContext";
 
 const Settings = () => {
@@ -116,30 +114,17 @@ const Settings = () => {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground">
-          Manage your account settings and billing preferences.
+          Manage your billing preferences and receipt template.
         </p>
       </div>
 
-      <Tabs defaultValue="account">
-        <TabsList>
-          <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="billing">Billing</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="account" className="mt-6">
-          <AccountSettings />
-        </TabsContent>
-        
-        <TabsContent value="billing" className="mt-6">
-          {billingTemplate && (
-            <BillingSettings 
-              billingTemplate={billingTemplate}
-              onSave={handleSaveTemplate}
-              onPrintTest={handlePrintTestReceipt}
-            />
-          )}
-        </TabsContent>
-      </Tabs>
+      {billingTemplate && (
+        <BillingSettings 
+          billingTemplate={billingTemplate}
+          onSave={handleSaveTemplate}
+          onPrintTest={handlePrintTestReceipt}
+        />
+      )}
     </div>
   );
 };

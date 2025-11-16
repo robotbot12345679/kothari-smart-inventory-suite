@@ -249,40 +249,54 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Set up auth and real-time subscriptions
+  // Auto-authenticate and set up real-time subscriptions
   useEffect(() => {
-    // Set up auth state listener
+    const initializeApp = async () => {
+      // Auto-authenticate with hardcoded credentials
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      
+      if (!existingSession) {
+        // Sign in automatically
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: 'spu0906@gmail.com',
+          password: '090611',
+        });
+        
+        if (error) {
+          console.error('Auto-login failed:', error);
+          setLoading(false);
+          return;
+        }
+        
+        setSession(data.session);
+        setUser(data.user);
+        if (data.user) {
+          fetchAllData(data.user.id);
+        }
+      } else {
+        setSession(existingSession);
+        setUser(existingSession.user);
+        if (existingSession.user) {
+          fetchAllData(existingSession.user.id);
+        }
+      }
+    };
+
+    // Set up auth state listener for session refreshes
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
-        if (currentSession?.user) {
+        if (currentSession?.user && !user) {
           setTimeout(() => {
             fetchAllData(currentSession.user.id);
           }, 0);
-        } else {
-          setProducts([]);
-          setCategories([]);
-          setCustomers([]);
-          setOrders([]);
-          setSuppliers([]);
-          setLoading(false);
         }
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      
-      if (currentSession?.user) {
-        fetchAllData(currentSession.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
+    initializeApp();
 
     return () => {
       authSubscription.unsubscribe();
