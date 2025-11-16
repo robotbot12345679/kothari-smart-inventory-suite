@@ -94,11 +94,11 @@ const Auth = () => {
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter password (6 characters)"
+                placeholder="Enter password (up to 10 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                maxLength={6}
+                maxLength={10}
                 autoComplete="current-password"
               />
             </div>
