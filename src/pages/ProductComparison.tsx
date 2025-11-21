@@ -5,11 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowUp, ArrowDown, TrendingUp, TrendingDown, Download, Home } from "lucide-react";
-import { useSupplierData } from "@/hooks/useSupplierData";
+import { useCloudSupplierData } from "@/hooks/useCloudSupplierData";
 import { useNavigate } from "react-router-dom";
 
 const ProductComparison = () => {
-  const { getProductComparison } = useSupplierData();
+  const { getProductComparison } = useCloudSupplierData();
   const navigate = useNavigate();
   const productComparison = useMemo(() => getProductComparison(), []);
 

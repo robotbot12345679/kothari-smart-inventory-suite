@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Upload, BarChart3, Building2, FileText, CreditCard, DollarSign, Receipt } from "lucide-react";
-import { useSupplierData } from "@/hooks/useSupplierData";
+import { useCloudSupplierData } from "@/hooks/useCloudSupplierData";
 import { formatCurrency } from "@/utils/indianNumberFormat";
 import SupplierList from "@/components/suppliers/SupplierList";
 import SupplierStats from "@/components/suppliers/SupplierStats";
@@ -32,7 +32,7 @@ const SupplierManagement = () => {
     deletePayment,
     deleteSupplier,
     getSupplierAnalytics
-  } = useSupplierData();
+  } = useCloudSupplierData();
 
   const [selectedSupplier, setSelectedSupplier] = useState<number | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
