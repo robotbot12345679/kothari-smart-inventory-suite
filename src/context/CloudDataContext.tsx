@@ -154,6 +154,12 @@ interface CloudDataContextType {
   addSupplier: (supplier: Omit<Supplier, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateSupplier: (id: string, updates: Partial<Supplier>) => Promise<void>;
   deleteSupplier: (id: string) => Promise<void>;
+  addSupplierBill: (supplierId: string, bill: any) => Promise<void>;
+  updateSupplierBill: (supplierId: string, billId: string, updates: any) => Promise<void>;
+  deleteSupplierBill: (supplierId: string, billId: string) => Promise<void>;
+  addSupplierPayment: (supplierId: string, payment: any) => Promise<void>;
+  updateSupplierPayment: (supplierId: string, paymentId: string, updates: any) => Promise<void>;
+  deleteSupplierPayment: (supplierId: string, paymentId: string) => Promise<void>;
   
   // Settings methods
   updateBillingTemplate: (template: BillingTemplate) => Promise<void>;
@@ -662,6 +668,96 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Supplier bill methods
+  const addSupplierBill = async (supplierId: string, bill: any) => {
+    if (!user) return;
+
+    const supplier = suppliers.find(s => s.id === supplierId);
+    if (!supplier) {
+      showToast('Error', 'Supplier not found', 'destructive');
+      return;
+    }
+
+    const newBill = {
+      ...bill,
+      id: bill.id || `PB-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      createdDate: new Date().toISOString()
+    };
+
+    const updatedBills = [...(supplier.bills || []), newBill];
+    await updateSupplier(supplierId, { bills: updatedBills });
+    showToast('Success', 'Purchase bill added successfully');
+  };
+
+  const updateSupplierBill = async (supplierId: string, billId: string, updates: any) => {
+    if (!user) return;
+
+    const supplier = suppliers.find(s => s.id === supplierId);
+    if (!supplier) return;
+
+    const updatedBills = (supplier.bills || []).map((bill: any) =>
+      bill.id === billId ? { ...bill, ...updates } : bill
+    );
+
+    await updateSupplier(supplierId, { bills: updatedBills });
+  };
+
+  const deleteSupplierBill = async (supplierId: string, billId: string) => {
+    if (!user) return;
+
+    const supplier = suppliers.find(s => s.id === supplierId);
+    if (!supplier) return;
+
+    const updatedBills = (supplier.bills || []).filter((bill: any) => bill.id !== billId);
+    await updateSupplier(supplierId, { bills: updatedBills });
+    showToast('Success', 'Bill deleted successfully');
+  };
+
+  // Supplier payment methods
+  const addSupplierPayment = async (supplierId: string, payment: any) => {
+    if (!user) return;
+
+    const supplier = suppliers.find(s => s.id === supplierId);
+    if (!supplier) {
+      showToast('Error', 'Supplier not found', 'destructive');
+      return;
+    }
+
+    const newPayment = {
+      ...payment,
+      id: payment.id || `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      createdDate: new Date().toISOString()
+    };
+
+    const updatedPayments = [...(supplier.payments || []), newPayment];
+    await updateSupplier(supplierId, { payments: updatedPayments });
+    showToast('Success', 'Payment recorded successfully');
+  };
+
+  const updateSupplierPayment = async (supplierId: string, paymentId: string, updates: any) => {
+    if (!user) return;
+
+    const supplier = suppliers.find(s => s.id === supplierId);
+    if (!supplier) return;
+
+    const updatedPayments = (supplier.payments || []).map((payment: any) =>
+      payment.id === paymentId ? { ...payment, ...updates } : payment
+    );
+
+    await updateSupplier(supplierId, { payments: updatedPayments });
+  };
+
+  const deleteSupplierPayment = async (supplierId: string, paymentId: string) => {
+    if (!user) return;
+
+    const supplier = suppliers.find(s => s.id === supplierId);
+    if (!supplier) return;
+
+    const updatedPayments = (supplier.payments || []).filter((payment: any) => payment.id !== paymentId);
+    await updateSupplier(supplierId, { payments: updatedPayments });
+    showToast('Success', 'Payment deleted successfully');
+  };
+
   // Settings methods
   const updateBillingTemplate = async (template: BillingTemplate) => {
     if (!user) return;
@@ -778,6 +874,12 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     addSupplier,
     updateSupplier,
     deleteSupplier,
+    addSupplierBill,
+    updateSupplierBill,
+    deleteSupplierBill,
+    addSupplierPayment,
+    updateSupplierPayment,
+    deleteSupplierPayment,
     updateBillingTemplate,
     updateInventoryStock,
     updateInventoryAfterSale,
