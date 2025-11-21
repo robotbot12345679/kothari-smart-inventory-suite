@@ -198,17 +198,17 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     toast({ title, description, variant });
   };
 
-  // Fetch all data
-  const fetchAllData = async (userId: string) => {
+  // Fetch all data - public access without user filtering
+  const fetchAllData = async () => {
     setLoading(true);
     try {
       const [productsRes, categoriesRes, customersRes, ordersRes, suppliersRes, settingsRes] = await Promise.all([
-        supabase.from('products').select('*').eq('user_id', userId),
-        supabase.from('categories').select('*').eq('user_id', userId),
-        supabase.from('customers').select('*').eq('user_id', userId),
-        supabase.from('orders').select('*').eq('user_id', userId),
-        supabase.from('suppliers').select('*').eq('user_id', userId),
-        supabase.from('settings').select('*').eq('user_id', userId).maybeSingle()
+        supabase.from('products').select('*'),
+        supabase.from('categories').select('*'),
+        supabase.from('customers').select('*'),
+        supabase.from('orders').select('*'),
+        supabase.from('suppliers').select('*'),
+        supabase.from('settings').select('*').maybeSingle()
       ]);
 
       if (productsRes.error) throw productsRes.error;
@@ -255,97 +255,56 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Auto-authenticate and set up real-time subscriptions
+  // Initialize app without authentication
   useEffect(() => {
-    const initializeApp = async () => {
-      // Auto-authenticate with hardcoded credentials
-      const { data: { session: existingSession } } = await supabase.auth.getSession();
-      
-      if (!existingSession) {
-        // Sign in automatically
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: 'spu0906@gmail.com',
-          password: '090611',
-        });
-        
-        if (error) {
-          console.error('Auto-login failed:', error);
-          setLoading(false);
-          return;
-        }
-        
-        setSession(data.session);
-        setUser(data.user);
-        if (data.user) {
-          fetchAllData(data.user.id);
-        }
-      } else {
-        setSession(existingSession);
-        setUser(existingSession.user);
-        if (existingSession.user) {
-          fetchAllData(existingSession.user.id);
-        }
-      }
-    };
-
-    // Set up auth state listener for session refreshes
-    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        
-        if (currentSession?.user && !user) {
-          setTimeout(() => {
-            fetchAllData(currentSession.user.id);
-          }, 0);
-        }
-      }
-    );
-
-    initializeApp();
-
-    return () => {
-      authSubscription.unsubscribe();
-    };
+    // Load all data immediately without authentication
+    fetchAllData();
   }, []);
 
-  // Set up real-time subscriptions when user is available
+  // Set up real-time subscriptions for all data changes with notifications
   useEffect(() => {
-    if (!user) return;
-
     const newChannel = supabase
       .channel('schema-db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products', filter: `user_id=eq.${user.id}` },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' },
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setProducts(prev => [...prev, payload.new as Product]);
+            showToast('Product Added', `${(payload.new as Product).name} was added`, 'default');
           } else if (payload.eventType === 'UPDATE') {
             setProducts(prev => prev.map(p => p.id === payload.new.id ? payload.new as Product : p));
+            showToast('Product Updated', `${(payload.new as Product).name} was updated`, 'default');
           } else if (payload.eventType === 'DELETE') {
             setProducts(prev => prev.filter(p => p.id !== payload.old.id));
+            showToast('Product Deleted', 'A product was deleted', 'default');
           }
         })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${user.id}` },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' },
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setCategories(prev => [...prev, payload.new as Category]);
+            showToast('Category Added', `${(payload.new as Category).name} was added`, 'default');
           } else if (payload.eventType === 'UPDATE') {
             setCategories(prev => prev.map(c => c.id === payload.new.id ? payload.new as Category : c));
+            showToast('Category Updated', `${(payload.new as Category).name} was updated`, 'default');
           } else if (payload.eventType === 'DELETE') {
             setCategories(prev => prev.filter(c => c.id !== payload.old.id));
+            showToast('Category Deleted', 'A category was deleted', 'default');
           }
         })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers', filter: `user_id=eq.${user.id}` },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' },
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setCustomers(prev => [...prev, payload.new as Customer]);
+            showToast('Customer Added', `${(payload.new as Customer).name} was added`, 'default');
           } else if (payload.eventType === 'UPDATE') {
             setCustomers(prev => prev.map(c => c.id === payload.new.id ? payload.new as Customer : c));
+            showToast('Customer Updated', `${(payload.new as Customer).name} was updated`, 'default');
           } else if (payload.eventType === 'DELETE') {
             setCustomers(prev => prev.filter(c => c.id !== payload.old.id));
+            showToast('Customer Deleted', 'A customer was deleted', 'default');
           }
         })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}` },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' },
         (payload) => {
           const orderData = { 
             ...payload.new, 
@@ -354,13 +313,16 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
           
           if (payload.eventType === 'INSERT') {
             setOrders(prev => [...prev, orderData]);
+            showToast('Order Added', `Order for ${orderData.customer_name || 'customer'} was added`, 'default');
           } else if (payload.eventType === 'UPDATE') {
             setOrders(prev => prev.map(o => o.id === orderData.id ? orderData : o));
+            showToast('Order Updated', `Order ${orderData.id.slice(0, 8)} was updated`, 'default');
           } else if (payload.eventType === 'DELETE') {
             setOrders(prev => prev.filter(o => o.id !== payload.old.id));
+            showToast('Order Deleted', 'An order was deleted', 'default');
           }
         })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers', filter: `user_id=eq.${user.id}` },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers' },
         (payload) => {
           const supplierData = { 
             ...payload.new, 
@@ -370,10 +332,13 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
           
           if (payload.eventType === 'INSERT') {
             setSuppliers(prev => [...prev, supplierData]);
+            showToast('Supplier Added', `${supplierData.name} was added`, 'default');
           } else if (payload.eventType === 'UPDATE') {
             setSuppliers(prev => prev.map(s => s.id === supplierData.id ? supplierData : s));
+            showToast('Supplier Updated', `${supplierData.name} was updated`, 'default');
           } else if (payload.eventType === 'DELETE') {
             setSuppliers(prev => prev.filter(s => s.id !== payload.old.id));
+            showToast('Supplier Deleted', 'A supplier was deleted', 'default');
           }
         })
       .subscribe();
@@ -385,20 +350,15 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
         supabase.removeChannel(newChannel);
       }
     };
-  }, [user]);
+  }, []);
 
   // Product methods
   const addProduct = async (productData: Omit<Product, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) {
-      showToast('Error', 'You must be logged in to add products', 'destructive');
-      return;
-    }
-
     try {
       productSchema.parse(productData);
       const { error } = await supabase
         .from('products')
-        .insert([{ ...productData, user_id: user.id }]);
+        .insert([{ ...productData, user_id: 'default' }]);
       
       if (error) throw error;
     } catch (error: any) {
@@ -411,11 +371,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
-    if (!user) {
-      showToast('Error', 'You must be logged in', 'destructive');
-      return;
-    }
-
     try {
       productSchema.partial().parse(updates);
       const { error } = await supabase
@@ -434,11 +389,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteProduct = async (id: string) => {
-    if (!user) {
-      showToast('Error', 'You must be logged in', 'destructive');
-      return;
-    }
-
     const { error } = await supabase
       .from('products')
       .delete()
@@ -455,16 +405,11 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Category methods
   const addCategory = async (name: string) => {
-    if (!user) {
-      showToast('Error', 'You must be logged in', 'destructive');
-      return;
-    }
-
     try {
       categorySchema.parse({ name });
       const { error } = await supabase
         .from('categories')
-        .insert([{ name, user_id: user.id }]);
+        .insert([{ name, user_id: 'default' }]);
       
       if (error) throw error;
     } catch (error: any) {
@@ -477,8 +422,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateCategory = async (id: string, name: string) => {
-    if (!user) return;
-
     try {
       categorySchema.parse({ name });
       const { error } = await supabase
@@ -497,8 +440,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteCategory = async (id: string) => {
-    if (!user) return;
-
     const { error } = await supabase
       .from('categories')
       .delete()
@@ -511,13 +452,11 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Customer methods
   const addCustomer = async (customerData: Omit<Customer, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
-
     try {
       customerSchema.parse(customerData);
       const { error } = await supabase
         .from('customers')
-        .insert([{ ...customerData, user_id: user.id }]);
+        .insert([{ ...customerData, user_id: 'default' }]);
       
       if (error) throw error;
     } catch (error: any) {
@@ -530,8 +469,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateCustomer = async (id: string, updates: Partial<Customer>) => {
-    if (!user) return;
-
     try {
       customerSchema.partial().parse(updates);
       const { error } = await supabase
@@ -550,8 +487,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteCustomer = async (id: string) => {
-    if (!user) return;
-
     const { error } = await supabase
       .from('customers')
       .delete()
@@ -564,13 +499,11 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Order methods
   const addOrder = async (orderData: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
-
     try {
       orderSchema.parse(orderData);
       const { error } = await supabase
         .from('orders')
-        .insert([{ ...orderData, user_id: user.id }]);
+        .insert([{ ...orderData, user_id: 'default' }]);
       
       if (error) throw error;
     } catch (error: any) {
@@ -583,8 +516,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateOrder = async (id: string, updates: Partial<Order>) => {
-    if (!user) return;
-
     try {
       orderSchema.partial().parse(updates);
       const { error } = await supabase
@@ -603,8 +534,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteOrder = async (id: string) => {
-    if (!user) return;
-
     const { error } = await supabase
       .from('orders')
       .delete()
@@ -617,13 +546,11 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Supplier methods
   const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
-
     try {
       supplierSchema.parse(supplierData);
       const { error } = await supabase
         .from('suppliers')
-        .insert([{ ...supplierData, user_id: user.id }]);
+        .insert([{ ...supplierData, user_id: 'default' }]);
       
       if (error) throw error;
     } catch (error: any) {
@@ -636,8 +563,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateSupplier = async (id: string, updates: Partial<Supplier>) => {
-    if (!user) return;
-
     try {
       supplierSchema.partial().parse(updates);
       const { error } = await supabase
@@ -656,8 +581,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteSupplier = async (id: string) => {
-    if (!user) return;
-
     const { error } = await supabase
       .from('suppliers')
       .delete()
@@ -670,8 +593,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Supplier bill methods
   const addSupplierBill = async (supplierId: string, bill: any) => {
-    if (!user) return;
-
     const supplier = suppliers.find(s => s.id === supplierId);
     if (!supplier) {
       showToast('Error', 'Supplier not found', 'destructive');
@@ -690,8 +611,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateSupplierBill = async (supplierId: string, billId: string, updates: any) => {
-    if (!user) return;
-
     const supplier = suppliers.find(s => s.id === supplierId);
     if (!supplier) return;
 
@@ -703,8 +622,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteSupplierBill = async (supplierId: string, billId: string) => {
-    if (!user) return;
-
     const supplier = suppliers.find(s => s.id === supplierId);
     if (!supplier) return;
 
@@ -715,8 +632,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Supplier payment methods
   const addSupplierPayment = async (supplierId: string, payment: any) => {
-    if (!user) return;
-
     const supplier = suppliers.find(s => s.id === supplierId);
     if (!supplier) {
       showToast('Error', 'Supplier not found', 'destructive');
@@ -735,8 +650,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateSupplierPayment = async (supplierId: string, paymentId: string, updates: any) => {
-    if (!user) return;
-
     const supplier = suppliers.find(s => s.id === supplierId);
     if (!supplier) return;
 
@@ -748,8 +661,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteSupplierPayment = async (supplierId: string, paymentId: string) => {
-    if (!user) return;
-
     const supplier = suppliers.find(s => s.id === supplierId);
     if (!supplier) return;
 
@@ -760,14 +671,11 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Settings methods
   const updateBillingTemplate = async (template: BillingTemplate) => {
-    if (!user) return;
-
     try {
       // Check if settings exist
       const { data: existing } = await supabase
         .from('settings')
         .select('id')
-        .eq('user_id', user.id)
         .maybeSingle();
 
       if (existing) {
@@ -775,14 +683,14 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
         const { error } = await supabase
           .from('settings')
           .update({ billing_template: template as any })
-          .eq('user_id', user.id);
+          .eq('id', existing.id);
         
         if (error) throw error;
       } else {
         // Insert new settings
         const { error } = await supabase
           .from('settings')
-          .insert([{ user_id: user.id, billing_template: template as any }]);
+          .insert([{ user_id: 'default', billing_template: template as any }]);
         
         if (error) throw error;
       }
@@ -796,11 +704,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Inventory methods
   const updateInventoryStock = async (id: string, additionalStock: number) => {
-    if (!user) {
-      showToast('Error', 'You must be logged in', 'destructive');
-      return;
-    }
-
     const product = products.find(p => p.id === id);
     if (!product) {
       showToast('Error', 'Product not found', 'destructive');
@@ -813,8 +716,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateInventoryAfterSale = async (cartItems: Array<{id: string, quantity: number}>) => {
-    if (!user) return;
-
     for (const item of cartItems) {
       const product = products.find(p => p.id === item.id);
       if (product) {
@@ -825,11 +726,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateOrderPaymentStatus = async (orderId: string, updates: Partial<Order>) => {
-    if (!user) {
-      showToast('Error', 'You must be logged in', 'destructive');
-      return;
-    }
-
     try {
       orderSchema.partial().parse(updates);
       const { error } = await supabase
