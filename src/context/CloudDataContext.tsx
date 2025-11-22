@@ -5,6 +5,8 @@ import { RealtimeChannel, User, Session } from '@supabase/supabase-js';
 import { productSchema, customerSchema, categorySchema, orderSchema, supplierSchema } from '@/lib/validation';
 import { z } from 'zod';
 
+const DEFAULT_USER_ID = '00000000-0000-0000-0000-000000000000';
+
 // Types
 export interface Product {
   id: string;
@@ -367,7 +369,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
       productSchema.parse(productData);
       const { data, error } = await supabase
         .from('products')
-        .insert([{ ...productData, user_id: 'default' }])
+        .insert([{ ...productData, user_id: DEFAULT_USER_ID }])
         .select();
       
       if (error) {
@@ -432,7 +434,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
       categorySchema.parse({ name });
       const { error } = await supabase
         .from('categories')
-        .insert([{ name, user_id: 'default' }]);
+        .insert([{ name, user_id: DEFAULT_USER_ID }]);
       
       if (error) throw error;
     } catch (error: any) {
@@ -479,7 +481,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
       customerSchema.parse(customerData);
       const { error } = await supabase
         .from('customers')
-        .insert([{ ...customerData, user_id: 'default' }]);
+        .insert([{ ...customerData, user_id: DEFAULT_USER_ID }]);
       
       if (error) throw error;
     } catch (error: any) {
@@ -526,7 +528,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
       orderSchema.parse(orderData);
       const { error } = await supabase
         .from('orders')
-        .insert([{ ...orderData, user_id: 'default' }]);
+        .insert([{ ...orderData, user_id: DEFAULT_USER_ID }]);
       
       if (error) throw error;
     } catch (error: any) {
@@ -573,7 +575,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
       supplierSchema.parse(supplierData);
       const { error } = await supabase
         .from('suppliers')
-        .insert([{ ...supplierData, user_id: 'default' }]);
+        .insert([{ ...supplierData, user_id: DEFAULT_USER_ID }]);
       
       if (error) throw error;
     } catch (error: any) {
@@ -713,7 +715,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
         // Insert new settings
         const { error } = await supabase
           .from('settings')
-          .insert([{ user_id: 'default', billing_template: template as any }]);
+          .insert([{ user_id: DEFAULT_USER_ID, billing_template: template as any }]);
         
         if (error) throw error;
       }
