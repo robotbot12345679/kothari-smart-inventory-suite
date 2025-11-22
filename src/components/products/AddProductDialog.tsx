@@ -171,9 +171,9 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDe
         unit: (formData.unit as 'g' | 'kg' | 'box' | 'pcs') || 'g',
         price_includes_gst: true,
         expiry_date: expiryDate || null,
-        min_stock: formData.min_stock || null,
+        min_stock: formData.min_stock ? Number(formData.min_stock) : 0,
         is_active: formData.is_active !== undefined ? formData.is_active : true,
-        image_url: null
+        image_url: imageFilename || null
       };
       
       if (isEditing && product) {
