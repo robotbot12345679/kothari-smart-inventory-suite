@@ -177,13 +177,13 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDe
       };
       
       if (isEditing && product) {
-        updateProduct(product.id, productData);
+        await updateProduct(product.id, productData);
         toast({
           title: "Product Updated",
           description: `${formData.name} has been updated successfully.`
         });
       } else {
-        addProduct(productData);
+        await addProduct(productData);
         toast({
           title: "Product Added",
           description: `${formData.name} has been added successfully.`
