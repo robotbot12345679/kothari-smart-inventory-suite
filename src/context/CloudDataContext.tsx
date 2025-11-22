@@ -218,6 +218,14 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
       if (suppliersRes.error) throw suppliersRes.error;
       if (settingsRes.error) throw settingsRes.error;
 
+      console.log('Fetched data:', {
+        products: productsRes.data?.length,
+        categories: categoriesRes.data?.length,
+        customers: customersRes.data?.length,
+        orders: ordersRes.data?.length,
+        suppliers: suppliersRes.data?.length
+      });
+
       setProducts(productsRes.data || []);
       setCategories(categoriesRes.data || []);
       setCustomers((customersRes.data || []).map(c => ({
@@ -249,6 +257,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
         });
       }
     } catch (error) {
+      console.error('Error fetching data:', error);
       showToast('Error', 'Failed to load data', 'destructive');
     } finally {
       setLoading(false);
@@ -356,35 +365,49 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   const addProduct = async (productData: Omit<Product, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     try {
       productSchema.parse(productData);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('products')
-        .insert([{ ...productData, user_id: 'default' }]);
+        .insert([{ ...productData, user_id: 'default' }])
+        .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw error;
+      }
+      console.log('Product added successfully:', data);
     } catch (error: any) {
+      console.error('Error in addProduct:', error);
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
       } else {
-        showToast('Error', 'Failed to add product', 'destructive');
+        showToast('Error', `Failed to add product: ${error.message || 'Unknown error'}`, 'destructive');
       }
+      throw error;
     }
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
       productSchema.partial().parse(updates);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('products')
         .update(updates)
-        .eq('id', id);
+        .eq('id', id)
+        .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
+      console.log('Product updated successfully:', data);
     } catch (error: any) {
+      console.error('Error in updateProduct:', error);
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
       } else {
-        showToast('Error', 'Failed to update product', 'destructive');
+        showToast('Error', `Failed to update product: ${error.message || 'Unknown error'}`, 'destructive');
       }
+      throw error;
     }
   };
 
