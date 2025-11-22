@@ -4,11 +4,11 @@ export const productSchema = z.object({
   name: z.string().trim().min(1, 'Product name is required').max(200, 'Name too long'),
   price: z.number().positive('Price must be positive').max(999999, 'Price too high'),
   stock: z.number().int('Stock must be a whole number').min(0, 'Stock cannot be negative'),
-  min_stock: z.number().int('Min stock must be a whole number').min(0, 'Min stock cannot be negative'),
+  min_stock: z.number().int('Min stock must be a whole number').min(0, 'Min stock cannot be negative').nullable().optional(),
   category: z.string().max(100, 'Category name too long').optional(),
   barcode: z.string().max(50, 'Barcode too long').optional(),
   description: z.string().max(1000, 'Description too long').optional(),
-  image_url: z.string().url('Invalid image URL').optional().or(z.literal('')),
+  image_url: z.string().url('Invalid image URL').nullable().optional().or(z.literal('')),
 });
 
 export const customerSchema = z.object({
