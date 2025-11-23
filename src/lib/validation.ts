@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 export const productSchema = z.object({
   name: z.string().trim().min(1, 'Product name is required').max(200, 'Name too long'),
-  price: z.number().positive('Price must be positive').max(999999, 'Price too high'),
+  // Allow zero-price products (e.g. free samples) but cap maximum value
+  price: z.number().min(0, 'Price must be at least 0').max(999999, 'Price too high'),
   stock: z.number().int('Stock must be a whole number').min(0, 'Stock cannot be negative'),
   min_stock: z.number().int('Min stock must be a whole number').min(0, 'Min stock cannot be negative').nullable().optional(),
   category: z.string().max(100, 'Category name too long').optional(),
