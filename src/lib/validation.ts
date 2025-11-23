@@ -8,7 +8,8 @@ export const productSchema = z.object({
   category: z.string().max(100, 'Category name too long').optional(),
   barcode: z.string().max(50, 'Barcode too long').optional(),
   description: z.string().max(1000, 'Description too long').optional(),
-  image_url: z.string().url('Invalid image URL').nullable().optional().or(z.literal('')),
+  // Image field stores a filename or relative path, not a full URL
+  image_url: z.string().max(500, 'Image path too long').nullable().optional().or(z.literal('')),
 });
 
 export const customerSchema = z.object({
