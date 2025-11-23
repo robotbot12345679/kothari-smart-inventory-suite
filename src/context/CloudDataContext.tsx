@@ -5,7 +5,7 @@ import { RealtimeChannel, User, Session } from '@supabase/supabase-js';
 import { productSchema, customerSchema, categorySchema, orderSchema, supplierSchema } from '@/lib/validation';
 import { z } from 'zod';
 
-const DEFAULT_USER_ID = '00000000-0000-0000-0000-000000000000';
+const DEFAULT_USER_ID = 'ce4e31ba-703b-4402-948d-1f2ecc219ba4';
 
 // Types
 export interface Product {
