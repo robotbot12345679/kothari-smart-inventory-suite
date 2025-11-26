@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { RealtimeChannel, User, Session } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { productSchema, customerSchema, categorySchema, orderSchema, supplierSchema } from '@/lib/validation';
 import { z } from 'zod';
 
@@ -192,9 +192,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   const [billingTemplate, setBillingTemplate] = useState<BillingTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Real-time channel
-  const [channel, setChannel] = useState<RealtimeChannel | null>(null);
-
   // Utility function
   const showToast = (title: string, description: string, variant: 'default' | 'destructive' = 'default') => {
     toast({ title, description, variant });
@@ -272,97 +269,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     fetchAllData();
   }, []);
 
-  // Set up real-time subscriptions for all data changes with notifications
-  useEffect(() => {
-    const newChannel = supabase
-      .channel('schema-db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setProducts(prev => [...prev, payload.new as Product]);
-            showToast('Product Added', `${(payload.new as Product).name} was added`, 'default');
-          } else if (payload.eventType === 'UPDATE') {
-            setProducts(prev => prev.map(p => p.id === payload.new.id ? payload.new as Product : p));
-            showToast('Product Updated', `${(payload.new as Product).name} was updated`, 'default');
-          } else if (payload.eventType === 'DELETE') {
-            setProducts(prev => prev.filter(p => p.id !== payload.old.id));
-            showToast('Product Deleted', 'A product was deleted', 'default');
-          }
-        })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setCategories(prev => [...prev, payload.new as Category]);
-            showToast('Category Added', `${(payload.new as Category).name} was added`, 'default');
-          } else if (payload.eventType === 'UPDATE') {
-            setCategories(prev => prev.map(c => c.id === payload.new.id ? payload.new as Category : c));
-            showToast('Category Updated', `${(payload.new as Category).name} was updated`, 'default');
-          } else if (payload.eventType === 'DELETE') {
-            setCategories(prev => prev.filter(c => c.id !== payload.old.id));
-            showToast('Category Deleted', 'A category was deleted', 'default');
-          }
-        })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setCustomers(prev => [...prev, payload.new as Customer]);
-            showToast('Customer Added', `${(payload.new as Customer).name} was added`, 'default');
-          } else if (payload.eventType === 'UPDATE') {
-            setCustomers(prev => prev.map(c => c.id === payload.new.id ? payload.new as Customer : c));
-            showToast('Customer Updated', `${(payload.new as Customer).name} was updated`, 'default');
-          } else if (payload.eventType === 'DELETE') {
-            setCustomers(prev => prev.filter(c => c.id !== payload.old.id));
-            showToast('Customer Deleted', 'A customer was deleted', 'default');
-          }
-        })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' },
-        (payload) => {
-          const orderData = { 
-            ...payload.new, 
-            items: Array.isArray((payload.new as any)?.items) ? (payload.new as any).items : [] 
-          } as Order;
-          
-          if (payload.eventType === 'INSERT') {
-            setOrders(prev => [...prev, orderData]);
-            showToast('Order Added', `Order for ${orderData.customer_name || 'customer'} was added`, 'default');
-          } else if (payload.eventType === 'UPDATE') {
-            setOrders(prev => prev.map(o => o.id === orderData.id ? orderData : o));
-            showToast('Order Updated', `Order ${orderData.id.slice(0, 8)} was updated`, 'default');
-          } else if (payload.eventType === 'DELETE') {
-            setOrders(prev => prev.filter(o => o.id !== payload.old.id));
-            showToast('Order Deleted', 'An order was deleted', 'default');
-          }
-        })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers' },
-        (payload) => {
-          const supplierData = { 
-            ...payload.new, 
-            bills: Array.isArray((payload.new as any)?.bills) ? (payload.new as any).bills : [],
-            payments: Array.isArray((payload.new as any)?.payments) ? (payload.new as any).payments : []
-          } as Supplier;
-          
-          if (payload.eventType === 'INSERT') {
-            setSuppliers(prev => [...prev, supplierData]);
-            showToast('Supplier Added', `${supplierData.name} was added`, 'default');
-          } else if (payload.eventType === 'UPDATE') {
-            setSuppliers(prev => prev.map(s => s.id === supplierData.id ? supplierData : s));
-            showToast('Supplier Updated', `${supplierData.name} was updated`, 'default');
-          } else if (payload.eventType === 'DELETE') {
-            setSuppliers(prev => prev.filter(s => s.id !== payload.old.id));
-            showToast('Supplier Deleted', 'A supplier was deleted', 'default');
-          }
-        })
-      .subscribe();
-
-    setChannel(newChannel);
-
-    return () => {
-      if (newChannel) {
-        supabase.removeChannel(newChannel);
-      }
-    };
-  }, []);
-
   // Product methods
   const addProduct = async (productData: Omit<Product, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     try {
@@ -376,7 +282,10 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
         console.error('Supabase insert error:', error);
         throw error;
       }
-      console.log('Product added successfully:', data);
+
+      if (data && data[0]) {
+        setProducts(prev => [...prev, data[0] as Product]);
+      }
     } catch (error: any) {
       console.error('Error in addProduct:', error);
       if (error instanceof z.ZodError) {
@@ -401,7 +310,10 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
         console.error('Supabase update error:', error);
         throw error;
       }
-      console.log('Product updated successfully:', data);
+
+      if (data && data[0]) {
+        setProducts(prev => prev.map(p => p.id === id ? (data[0] as Product) : p));
+      }
     } catch (error: any) {
       console.error('Error in updateProduct:', error);
       if (error instanceof z.ZodError) {
@@ -421,7 +333,10 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     
     if (error) {
       showToast('Error', 'Failed to delete product', 'destructive');
+      return;
     }
+
+    setProducts(prev => prev.filter(p => p.id !== id));
   };
 
   const findProductByBarcode = (barcode: string) => {
@@ -479,11 +394,22 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   const addCustomer = async (customerData: Omit<Customer, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     try {
       customerSchema.parse(customerData);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('customers')
-        .insert([{ ...customerData, user_id: DEFAULT_USER_ID }]);
+        .insert([{ ...customerData, user_id: DEFAULT_USER_ID }])
+        .select();
       
       if (error) throw error;
+
+      if (data && data[0]) {
+        const normalized = {
+          ...(data[0] as any),
+          order_history: Array.isArray((data[0] as any).order_history)
+            ? ((data[0] as any).order_history as string[])
+            : [],
+        } as Customer;
+        setCustomers(prev => [...prev, normalized]);
+      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
@@ -496,12 +422,23 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   const updateCustomer = async (id: string, updates: Partial<Customer>) => {
     try {
       customerSchema.partial().parse(updates);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('customers')
         .update(updates)
-        .eq('id', id);
+        .eq('id', id)
+        .select();
       
       if (error) throw error;
+
+      if (data && data[0]) {
+        const normalized = {
+          ...(data[0] as any),
+          order_history: Array.isArray((data[0] as any).order_history)
+            ? ((data[0] as any).order_history as string[])
+            : [],
+        } as Customer;
+        setCustomers(prev => prev.map(c => c.id === id ? normalized : c));
+      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
@@ -519,18 +456,30 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     
     if (error) {
       showToast('Error', 'Failed to delete customer', 'destructive');
+      return;
     }
+
+    setCustomers(prev => prev.filter(c => c.id !== id));
   };
 
   // Order methods
   const addOrder = async (orderData: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     try {
       orderSchema.parse(orderData);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('orders')
-        .insert([{ ...orderData, user_id: DEFAULT_USER_ID }]);
+        .insert([{ ...orderData, user_id: DEFAULT_USER_ID }])
+        .select();
       
       if (error) throw error;
+
+      if (data && data[0]) {
+        const normalized = {
+          ...(data[0] as any),
+          items: Array.isArray((data[0] as any).items) ? (data[0] as any).items : [],
+        } as Order;
+        setOrders(prev => [...prev, normalized]);
+      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
@@ -539,16 +488,24 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
       }
     }
   };
-
   const updateOrder = async (id: string, updates: Partial<Order>) => {
     try {
       orderSchema.partial().parse(updates);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('orders')
         .update(updates)
-        .eq('id', id);
+        .eq('id', id)
+        .select();
       
       if (error) throw error;
+
+      if (data && data[0]) {
+        const normalized = {
+          ...(data[0] as any),
+          items: Array.isArray((data[0] as any).items) ? (data[0] as any).items : [],
+        } as Order;
+        setOrders(prev => prev.map(o => o.id === id ? normalized : o));
+      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
@@ -566,18 +523,31 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     
     if (error) {
       showToast('Error', 'Failed to delete order', 'destructive');
+      return;
     }
+
+    setOrders(prev => prev.filter(o => o.id !== id));
   };
 
   // Supplier methods
   const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     try {
       supplierSchema.parse(supplierData);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('suppliers')
-        .insert([{ ...supplierData, user_id: DEFAULT_USER_ID }]);
+        .insert([{ ...supplierData, user_id: DEFAULT_USER_ID }])
+        .select();
       
       if (error) throw error;
+
+      if (data && data[0]) {
+        const normalized = {
+          ...(data[0] as any),
+          bills: Array.isArray((data[0] as any).bills) ? (data[0] as any).bills : [],
+          payments: Array.isArray((data[0] as any).payments) ? (data[0] as any).payments : [],
+        } as Supplier;
+        setSuppliers(prev => [...prev, normalized]);
+      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
@@ -590,12 +560,22 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   const updateSupplier = async (id: string, updates: Partial<Supplier>) => {
     try {
       supplierSchema.partial().parse(updates);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('suppliers')
         .update(updates)
-        .eq('id', id);
+        .eq('id', id)
+        .select();
       
       if (error) throw error;
+
+      if (data && data[0]) {
+        const normalized = {
+          ...(data[0] as any),
+          bills: Array.isArray((data[0] as any).bills) ? (data[0] as any).bills : [],
+          payments: Array.isArray((data[0] as any).payments) ? (data[0] as any).payments : [],
+        } as Supplier;
+        setSuppliers(prev => prev.map(s => s.id === id ? normalized : s));
+      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
@@ -613,7 +593,10 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     
     if (error) {
       showToast('Error', 'Failed to delete supplier', 'destructive');
+      return;
     }
+
+    setSuppliers(prev => prev.filter(s => s.id !== id));
   };
 
   // Supplier bill methods
@@ -753,12 +736,21 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   const updateOrderPaymentStatus = async (orderId: string, updates: Partial<Order>) => {
     try {
       orderSchema.partial().parse(updates);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('orders')
         .update(updates)
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .select();
       
       if (error) throw error;
+
+      if (data && data[0]) {
+        const normalized = {
+          ...(data[0] as any),
+          items: Array.isArray((data[0] as any).items) ? (data[0] as any).items : [],
+        } as Order;
+        setOrders(prev => prev.map(o => o.id === orderId ? normalized : o));
+      }
       showToast('Success', 'Order payment status updated');
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -768,7 +760,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
       }
     }
   };
-
   const value = {
     user,
     session,
