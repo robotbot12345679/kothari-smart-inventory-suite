@@ -147,7 +147,7 @@ interface CloudDataContextType {
   deleteCustomer: (id: string) => Promise<void>;
   
   // Order methods
-  addOrder: (order: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  addOrder: (order: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<Order | null>;
   updateOrder: (id: string, updates: Partial<Order>) => Promise<void>;
   deleteOrder: (id: string) => Promise<void>;
   updateOrderPaymentStatus: (orderId: string, updates: Partial<Order>) => Promise<void>;
@@ -463,7 +463,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Order methods
-  const addOrder = async (orderData: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+  const addOrder = async (orderData: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Order | null> => {
     try {
       orderSchema.parse(orderData);
       const { data, error } = await supabase
@@ -479,13 +479,16 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
           items: Array.isArray((data[0] as any).items) ? (data[0] as any).items : [],
         } as Order;
         setOrders(prev => [...prev, normalized]);
+        return normalized;
       }
+      return null;
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
       } else {
         showToast('Error', 'Failed to add order', 'destructive');
       }
+      return null;
     }
   };
   const updateOrder = async (id: string, updates: Partial<Order>) => {

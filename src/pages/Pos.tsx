@@ -305,39 +305,10 @@ const Pos = () => {
     }
     
     try {
-      // Add customer to database if only name is provided and customer doesn't exist
-      if (customerInfo.name.trim() && !matchedCustomer) {
-        const newCustomer: Omit<Customer, 'id' | 'created_at' | 'updated_at' | 'user_id'> = {
-          name: customerInfo.name,
-          phone: customerInfo.phone || null,
-          email: customerInfo.email || null,
-          city: null,
-          state: null,
-          address: null,
-          pincode: null,
-          notes: null,
-          birthday: null,
-          total_orders: 1,
-          total_spent: total,
-          last_order_date: new Date().toISOString(),
-          status: 'Active',
-          order_history: [orderId]
-        };
-        await addCustomer(newCustomer);
-      } else if (matchedCustomer) {
-        // Update existing customer's order count, spending, and order history
-        await updateCustomer(matchedCustomer.id, {
-          total_orders: (matchedCustomer.total_orders || 0) + 1,
-          total_spent: (matchedCustomer.total_spent || 0) + total,
-          last_order_date: new Date().toISOString(),
-          order_history: [...(matchedCustomer.order_history || []), orderId]
-        });
-      }
-
-      // Update inventory stock levels after a successful sale
+      // Update inventory stock levels first
       await updateInventoryAfterSale(cart);
       
-      // Build order payload for Supabase (omit invalid customer_id)
+      // Build order payload for Supabase
       const orderPayload: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'> = {
         items: cart,
         subtotal,
@@ -353,15 +324,43 @@ const Pos = () => {
         shipping_address: null,
         tracking_number: null,
         status: 'completed',
-        // customer_id will be conditionally added below
+        customer_id: matchedCustomer?.id || null
       };
-
-      if (matchedCustomer?.id) {
-        (orderPayload as any).customer_id = matchedCustomer.id;
-      }
       
-      // Add the order to the system (this updates shared orders state)
-      await addOrder(orderPayload);
+      // Add the order and get the created order with database ID
+      const createdOrder = await addOrder(orderPayload);
+      
+      // Now update customer database with the real order ID from database
+      if (createdOrder?.id) {
+        if (customerInfo.name.trim() && !matchedCustomer) {
+          // Add new customer with the order ID
+          const newCustomer: Omit<Customer, 'id' | 'created_at' | 'updated_at' | 'user_id'> = {
+            name: customerInfo.name,
+            phone: customerInfo.phone || null,
+            email: customerInfo.email || null,
+            city: null,
+            state: null,
+            address: null,
+            pincode: null,
+            notes: null,
+            birthday: null,
+            total_orders: 1,
+            total_spent: total,
+            last_order_date: new Date().toISOString(),
+            status: 'Active',
+            order_history: [createdOrder.id]
+          };
+          await addCustomer(newCustomer);
+        } else if (matchedCustomer) {
+          // Update existing customer with the new order ID
+          await updateCustomer(matchedCustomer.id, {
+            total_orders: (matchedCustomer.total_orders || 0) + 1,
+            total_spent: (matchedCustomer.total_spent || 0) + total,
+            last_order_date: new Date().toISOString(),
+            order_history: [...(matchedCustomer.order_history || []), createdOrder.id]
+          });
+        }
+      }
 
       // Create order object for display
       const newOrder: Order = {

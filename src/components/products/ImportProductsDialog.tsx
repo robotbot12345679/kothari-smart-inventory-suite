@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import * as XLSX from 'xlsx';
 import {
   Dialog,
   DialogContent,
@@ -55,11 +56,28 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
     }
   };
 
+  const parseExcelOrCSV = async (file: File): Promise<Record<string, any>[]> => {
+    const fileName = file.name.toLowerCase();
+    
+    if (fileName.endsWith('.csv')) {
+      const content = await file.text();
+      return parseCSV(content);
+    } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      return XLSX.utils.sheet_to_json(worksheet);
+    }
+    
+    throw new Error('Unsupported file format');
+  };
+
   const handleImport = async () => {
     if (!file) {
       toast({
         title: "No file selected",
-        description: "Please select a CSV file to import.",
+        description: "Please select a CSV or Excel file to import.",
         variant: "destructive"
       });
       return;
@@ -68,13 +86,12 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
     try {
       setImporting(true);
       
-      const content = await file.text();
-      const csvData = parseCSV(content);
+      const data = await parseExcelOrCSV(file);
       
-      if (csvData.length === 0) {
+      if (data.length === 0) {
         toast({
-          title: "Empty CSV file",
-          description: "The CSV file doesn't contain any data.",
+          title: "Empty file",
+          description: "The file doesn't contain any data.",
           variant: "destructive"
         });
         setImporting(false);
@@ -82,13 +99,13 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
       }
 
       const requiredFields = ['name', 'price'];
-      const headers = Object.keys(csvData[0]);
+      const headers = Object.keys(data[0]);
       const missingFields = requiredFields.filter(field => !headers.includes(field));
 
       if (missingFields.length > 0) {
         toast({
           title: "Missing required fields",
-          description: `Your CSV is missing the following required fields: ${missingFields.join(', ')}`,
+          description: `Your file is missing the following required fields: ${missingFields.join(', ')}`,
           variant: "destructive"
         });
         setImporting(false);
@@ -98,16 +115,16 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
       let importedCount = 0;
       const defaultCategory = categories[0]?.name || "All";
 
-      for (const row of csvData) {
+      for (const row of data) {
         try {
           const newProduct: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'> = {
             name: row.name || "Unknown Product",
-            sku: row.sku || `SKU-${Date.now() + importedCount}`,
-            price: parseFloat(row.price) || 0,
+            sku: row.sku?.toString() || `SKU-${Date.now() + importedCount}`,
+            price: parseFloat(row.price?.toString() || "0") || 0,
             category: row.category || defaultCategory,
             description: row.description || "",
-            stock: parseInt(row.stock || "0", 10),
-            weight: parseFloat(row.weight || "1"),
+            stock: parseInt(row.stock?.toString() || "0", 10),
+            weight: parseFloat(row.weight?.toString() || "1"),
             unit: (row.unit as 'g' | 'kg' | 'box' | 'pcs') || 'g',
             image: "",
             is_active: true,
@@ -118,7 +135,7 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
             min_stock: null
           };
 
-          addProduct(newProduct);
+          await addProduct(newProduct);
           importedCount++;
         } catch (err) {
           console.error("Error importing product row:", row, err);
@@ -130,12 +147,13 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
         description: `Successfully imported ${importedCount} products.`
       });
       
+      setFile(null);
       onOpenChange(false);
     } catch (error) {
       console.error("Import error:", error);
       toast({
         title: "Import Failed",
-        description: "Failed to import products. Please check your CSV file format.",
+        description: "Failed to import products. Please check your file format.",
         variant: "destructive"
       });
     } finally {
@@ -166,15 +184,15 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Import Products from CSV</DialogTitle>
+          <DialogTitle>Import Products from CSV/Excel</DialogTitle>
           <DialogDescription>
-            Upload a CSV file to import product data in bulk.
+            Upload a CSV or Excel file to import product data in bulk.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="flex justify-between items-center">
-            <Label htmlFor="csv-file">CSV File</Label>
+            <Label htmlFor="csv-file">CSV or Excel File</Label>
             <Button 
               variant="outline" 
               size="sm" 
@@ -189,7 +207,7 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
           <Input 
             id="csv-file" 
             type="file" 
-            accept=".csv" 
+            accept=".csv,.xlsx,.xls" 
             onChange={handleFileChange} 
           />
           
