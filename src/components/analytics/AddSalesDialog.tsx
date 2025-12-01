@@ -37,13 +37,22 @@ const AddSalesDialog = () => {
       return;
     }
 
-    // Create a new manual order entry
+    // Create a new manual order entry (must include at least one item for validation)
     const manualOrder = {
       order_date: new Date(date).toISOString(),
       order_status: "Delivered",
       payment_status: "Paid",
       payment_method: "Cash",
-      items: [],
+      // Single summary line item so analytics & dashboard treat this as a real sale
+      items: [
+        {
+          name: "Manual Sales Entry",
+          quantity: 1,
+          price: parseFloat(totalSales),
+          unit: "pcs",
+          weight: 0,
+        },
+      ],
       total: parseFloat(totalSales),
       subtotal: parseFloat(totalSales),
       gst: 0,
