@@ -323,10 +323,10 @@ const Pos = () => {
           status: 'Active',
           order_history: [orderId]
         };
-        addCustomer(newCustomer);
+        await addCustomer(newCustomer);
       } else if (matchedCustomer) {
         // Update existing customer's order count, spending, and order history
-        updateCustomer(matchedCustomer.id, {
+        await updateCustomer(matchedCustomer.id, {
           total_orders: (matchedCustomer.total_orders || 0) + 1,
           total_spent: (matchedCustomer.total_spent || 0) + total,
           last_order_date: new Date().toISOString(),
@@ -335,10 +335,10 @@ const Pos = () => {
       }
 
       // Update inventory stock levels after a successful sale
-      updateInventoryAfterSale(cart);
+      await updateInventoryAfterSale(cart);
       
-      // Add the order to the system
-      await addOrder({
+      // Build order payload for Supabase (omit invalid customer_id)
+      const orderPayload: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'> = {
         items: cart,
         subtotal,
         gst: 0,
@@ -347,14 +347,21 @@ const Pos = () => {
         payment_status: 'Paid',
         order_date: new Date().toISOString(),
         order_status: 'Delivered',
-        customer_name: customerInfo.name || "Guest Customer",
+        customer_name: customerInfo.name || 'Guest Customer',
         customer_phone: customerInfo.phone || null,
         customer_email: customerInfo.email || null,
         shipping_address: null,
         tracking_number: null,
         status: 'completed',
-        customer_id: matchedCustomer?.id || null
-      });
+        // customer_id will be conditionally added below
+      };
+
+      if (matchedCustomer?.id) {
+        (orderPayload as any).customer_id = matchedCustomer.id;
+      }
+      
+      // Add the order to the system (this updates shared orders state)
+      await addOrder(orderPayload);
 
       // Create order object for display
       const newOrder: Order = {
