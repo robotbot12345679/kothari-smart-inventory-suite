@@ -1,11 +1,13 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { User, Session } from '@supabase/supabase-js';
 import { productSchema, customerSchema, categorySchema, orderSchema, supplierSchema } from '@/lib/validation';
 import { z } from 'zod';
 
-const DEFAULT_USER_ID = 'ce4e31ba-703b-4402-948d-1f2ecc219ba4';
+// Silent auto-login credentials (single-user mode)
+const AUTO_LOGIN_EMAIL = 'spu0906@gmail.com';
+const AUTO_LOGIN_PASSWORD = '090611';
 
 // Types
 export interface Product {
@@ -191,23 +193,24 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [billingTemplate, setBillingTemplate] = useState<BillingTemplate | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authInitialized, setAuthInitialized] = useState(false);
   
   // Utility function
   const showToast = (title: string, description: string, variant: 'default' | 'destructive' = 'default') => {
     toast({ title, description, variant });
   };
 
-  // Fetch all data - public access without user filtering
-  const fetchAllData = async () => {
+  // Fetch all data for authenticated user
+  const fetchAllData = useCallback(async (userId: string) => {
     setLoading(true);
     try {
       const [productsRes, categoriesRes, customersRes, ordersRes, suppliersRes, settingsRes] = await Promise.all([
-        supabase.from('products').select('*'),
-        supabase.from('categories').select('*'),
-        supabase.from('customers').select('*'),
-        supabase.from('orders').select('*'),
-        supabase.from('suppliers').select('*'),
-        supabase.from('settings').select('*').maybeSingle()
+        supabase.from('products').select('*').eq('user_id', userId),
+        supabase.from('categories').select('*').eq('user_id', userId),
+        supabase.from('customers').select('*').eq('user_id', userId),
+        supabase.from('orders').select('*').eq('user_id', userId),
+        supabase.from('suppliers').select('*').eq('user_id', userId),
+        supabase.from('settings').select('*').eq('user_id', userId).maybeSingle()
       ]);
 
       if (productsRes.error) throw productsRes.error;
@@ -216,14 +219,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
       if (ordersRes.error) throw ordersRes.error;
       if (suppliersRes.error) throw suppliersRes.error;
       if (settingsRes.error) throw settingsRes.error;
-
-      console.log('Fetched data:', {
-        products: productsRes.data?.length,
-        categories: categoriesRes.data?.length,
-        customers: customersRes.data?.length,
-        orders: ordersRes.data?.length,
-        suppliers: suppliersRes.data?.length
-      });
 
       setProducts(productsRes.data || []);
       setCategories(categoriesRes.data || []);
@@ -245,7 +240,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
       if (settingsRes.data?.billing_template) {
         setBillingTemplate(settingsRes.data.billing_template as unknown as BillingTemplate);
       } else {
-        // Set default billing template
         setBillingTemplate({
           shopName: "Kothari's Dry Fruits & More",
           address: "89, Sukan Mall, Nr. CIMS Hospital, Science City Road, Ahmedabad, Gujarat 380060",
@@ -261,21 +255,104 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Initialize app without authentication
+  // Silent auto-login function
+  const performSilentLogin = useCallback(async () => {
+    try {
+      // First check if already logged in
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      
+      if (existingSession?.user) {
+        setSession(existingSession);
+        setUser(existingSession.user);
+        setAuthInitialized(true);
+        return existingSession.user;
+      }
+
+      // Try to sign in
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: AUTO_LOGIN_EMAIL,
+        password: AUTO_LOGIN_PASSWORD,
+      });
+
+      if (error) {
+        // If user doesn't exist, create account
+        if (error.message.includes('Invalid login credentials')) {
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: AUTO_LOGIN_EMAIL,
+            password: AUTO_LOGIN_PASSWORD,
+          });
+          
+          if (signUpError) {
+            console.error('Silent signup failed:', signUpError);
+            throw signUpError;
+          }
+          
+          if (signUpData.user) {
+            setSession(signUpData.session);
+            setUser(signUpData.user);
+            setAuthInitialized(true);
+            return signUpData.user;
+          }
+        } else {
+          throw error;
+        }
+      }
+
+      if (data?.user) {
+        setSession(data.session);
+        setUser(data.user);
+        setAuthInitialized(true);
+        return data.user;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Silent login error:', error);
+      setAuthInitialized(true);
+      return null;
+    }
+  }, []);
+
+  // Initialize auth and fetch data
   useEffect(() => {
-    // Load all data immediately without authentication
-    fetchAllData();
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+      
+      // Fetch data when user logs in
+      if (newSession?.user && authInitialized) {
+        setTimeout(() => {
+          fetchAllData(newSession.user.id);
+        }, 0);
+      }
+    });
+
+    // Perform silent login on mount
+    performSilentLogin().then((loggedInUser) => {
+      if (loggedInUser) {
+        fetchAllData(loggedInUser.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // Product methods
   const addProduct = async (productData: Omit<Product, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    if (!user) {
+      showToast('Error', 'Authentication required', 'destructive');
+      throw new Error('User not authenticated');
+    }
     try {
       productSchema.parse(productData);
       const { data, error } = await supabase
         .from('products')
-        .insert([{ ...productData, user_id: DEFAULT_USER_ID }])
+        .insert([{ ...productData, user_id: user.id }])
         .select();
       
       if (error) {
@@ -345,11 +422,15 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Category methods
   const addCategory = async (name: string) => {
+    if (!user) {
+      showToast('Error', 'Authentication required', 'destructive');
+      return;
+    }
     try {
       categorySchema.parse({ name });
       const { error } = await supabase
         .from('categories')
-        .insert([{ name, user_id: DEFAULT_USER_ID }]);
+        .insert([{ name, user_id: user.id }]);
       
       if (error) throw error;
     } catch (error: any) {
@@ -392,11 +473,15 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Customer methods
   const addCustomer = async (customerData: Omit<Customer, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    if (!user) {
+      showToast('Error', 'Authentication required', 'destructive');
+      return;
+    }
     try {
       customerSchema.parse(customerData);
       const { data, error } = await supabase
         .from('customers')
-        .insert([{ ...customerData, user_id: DEFAULT_USER_ID }])
+        .insert([{ ...customerData, user_id: user.id }])
         .select();
       
       if (error) throw error;
@@ -464,11 +549,15 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Order methods
   const addOrder = async (orderData: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Order | null> => {
+    if (!user) {
+      showToast('Error', 'Authentication required', 'destructive');
+      return null;
+    }
     try {
       orderSchema.parse(orderData);
       const { data, error } = await supabase
         .from('orders')
-        .insert([{ ...orderData, user_id: DEFAULT_USER_ID }])
+        .insert([{ ...orderData, user_id: user.id }])
         .select();
       
       if (error) throw error;
@@ -534,11 +623,15 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Supplier methods
   const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    if (!user) {
+      showToast('Error', 'Authentication required', 'destructive');
+      return;
+    }
     try {
       supplierSchema.parse(supplierData);
       const { data, error } = await supabase
         .from('suppliers')
-        .insert([{ ...supplierData, user_id: DEFAULT_USER_ID }])
+        .insert([{ ...supplierData, user_id: user.id }])
         .select();
       
       if (error) throw error;
@@ -682,11 +775,16 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Settings methods
   const updateBillingTemplate = async (template: BillingTemplate) => {
+    if (!user) {
+      showToast('Error', 'Authentication required', 'destructive');
+      return;
+    }
     try {
-      // Check if settings exist
+      // Check if settings exist for this user
       const { data: existing } = await supabase
         .from('settings')
         .select('id')
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (existing) {
@@ -701,7 +799,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
         // Insert new settings
         const { error } = await supabase
           .from('settings')
-          .insert([{ user_id: DEFAULT_USER_ID, billing_template: template as any }]);
+          .insert([{ user_id: user.id, billing_template: template as any }]);
         
         if (error) throw error;
       }
