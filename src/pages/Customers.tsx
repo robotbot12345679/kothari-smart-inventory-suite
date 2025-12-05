@@ -78,24 +78,40 @@ const Customers = () => {
     ? totalRevenue / customers.length
     : 0;
 
-  const handleAddCustomer = () => {
+  const handleAddCustomer = async () => {
     if (newCustomer.name && newCustomer.phone) {
-      addCustomer({
-        name: newCustomer.name,
-        email: newCustomer.email || null,
-        phone: newCustomer.phone,
-        address: null,
-        city: null,
-        state: null,
-        pincode: null,
-        notes: null,
-        birthday: newCustomer.birthday || null,
-        total_orders: 0,
-        total_spent: 0,
-        status: 'Active'
+      try {
+        await addCustomer({
+          name: newCustomer.name,
+          email: newCustomer.email || '',
+          phone: newCustomer.phone,
+          address: '',
+          city: '',
+          state: '',
+          pincode: '',
+          notes: '',
+          birthday: newCustomer.birthday || '',
+          total_orders: 0,
+          total_spent: 0,
+          status: 'Active',
+          last_order_date: null,
+          order_history: []
+        });
+        toast({
+          title: "Success",
+          description: "Customer added successfully"
+        });
+        setNewCustomer({});
+        setIsAddCustomerOpen(false);
+      } catch (error) {
+        console.error('Error adding customer:', error);
+      }
+    } else {
+      toast({
+        title: "Error",
+        description: "Please fill in name and phone number",
+        variant: "destructive"
       });
-      setNewCustomer({});
-      setIsAddCustomerOpen(false);
     }
   };
 

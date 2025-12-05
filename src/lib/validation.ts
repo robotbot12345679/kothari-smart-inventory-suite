@@ -15,9 +15,19 @@ export const productSchema = z.object({
 
 export const customerSchema = z.object({
   name: z.string().trim().min(1, 'Customer name is required').max(100, 'Name too long'),
-  email: z.string().email('Invalid email').max(255, 'Email too long').optional().or(z.literal('')),
-  phone: z.string().max(20, 'Phone number too long').optional().or(z.literal('')),
-  address: z.string().max(500, 'Address too long').optional().or(z.literal('')),
+  email: z.string().email('Invalid email').max(255, 'Email too long').optional().nullable().or(z.literal('')),
+  phone: z.string().max(20, 'Phone number too long').optional().nullable().or(z.literal('')),
+  address: z.string().max(500, 'Address too long').optional().nullable().or(z.literal('')),
+  city: z.string().max(100, 'City name too long').optional().nullable().or(z.literal('')),
+  state: z.string().max(100, 'State name too long').optional().nullable().or(z.literal('')),
+  pincode: z.string().max(10, 'Pincode too long').optional().nullable().or(z.literal('')),
+  notes: z.string().max(500, 'Notes too long').optional().nullable().or(z.literal('')),
+  birthday: z.string().optional().nullable().or(z.literal('')),
+  total_orders: z.number().int().min(0).optional().nullable(),
+  total_spent: z.number().min(0).optional().nullable(),
+  status: z.string().optional().nullable(),
+  last_order_date: z.string().optional().nullable(),
+  order_history: z.array(z.any()).optional().nullable(),
 });
 
 export const categorySchema = z.object({
