@@ -113,18 +113,30 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
       }
 
       let importedCount = 0;
-      const defaultCategory = categories[0]?.name || "All";
+      const validCategories = ["All", "Dry Fruits", "Nuts", "Seeds", "Spices", "Dried Fruits"];
 
       for (const row of data) {
         try {
           // Handle various column name formats (case-insensitive)
           const getName = () => row.name || row.Name || row.NAME || "Unknown Product";
-          const getSku = () => row.sku || row.SKU || row.Sku || `SKU-${Date.now() + importedCount}`;
+          const getSku = () => {
+            const sku = row.sku || row.SKU || row.Sku;
+            if (sku && sku.toString().trim()) {
+              return sku.toString().trim();
+            }
+            return `SKU-${Date.now()}-${importedCount}`;
+          };
           const getPrice = () => {
             const val = row.price || row.Price || row.PRICE || "0";
             return parseFloat(val.toString().replace(/[^0-9.]/g, '')) || 0;
           };
-          const getCategory = () => row.category || row.Category || row.CATEGORY || defaultCategory;
+          const getCategory = () => {
+            const cat = row.category || row.Category || row.CATEGORY || "All";
+            // Map "Dried Fruits" to "Dry Fruits" for consistency
+            if (cat === "Dried Fruits") return "Dry Fruits";
+            // Check if category is valid, otherwise default to "All"
+            return validCategories.includes(cat) ? cat : "All";
+          };
           const getDescription = () => row.description || row.Description || row.DESCRIPTION || "";
           const getStock = () => {
             const val = row.stock || row.Stock || row.STOCK || "0";
@@ -135,13 +147,17 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
             return parseFloat(val.toString().replace(/[^0-9.]/g, '')) || 1;
           };
           const getUnit = () => {
-            const val = row.unit || row.Unit || row.UNIT || 'g';
-            return ['g', 'kg', 'box', 'pcs'].includes(val.toLowerCase()) ? val.toLowerCase() : 'g';
+            const val = (row.unit || row.Unit || row.UNIT || 'g').toString().toLowerCase();
+            return ['g', 'kg', 'box', 'pcs'].includes(val) ? val : 'g';
+          };
+          const getBarcode = () => {
+            const barcode = row.barcode || row.Barcode || row.BARCODE;
+            return barcode ? barcode.toString().trim() : null;
           };
 
           const newProduct: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'> = {
             name: getName(),
-            sku: getSku().toString(),
+            sku: getSku(),
             price: getPrice(),
             category: getCategory(),
             description: getDescription(),
@@ -151,7 +167,7 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
             image: "",
             is_active: true,
             price_includes_gst: true,
-            barcode: null,
+            barcode: getBarcode(),
             image_url: null,
             expiry_date: null,
             min_stock: 0

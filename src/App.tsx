@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -16,6 +15,7 @@ import Inventory from './pages/Inventory';
 import BillsReport from './pages/BillsReport';
 import SupplierManagement from './pages/SupplierManagement';
 import ProductComparison from './pages/ProductComparison';
+import Admin from './pages/Admin';
 import { CloudDataProvider } from './context/CloudDataContext';
 import { Toaster } from './components/ui/toaster';
 
@@ -44,6 +44,7 @@ const App = () => {
                     <Route path="/bills" element={<BillsReport />} />
                     <Route path="/suppliers" element={<SupplierManagement />} />
                     <Route path="/product-comparison" element={<ProductComparison />} />
+                    <Route path="/admin" element={<Admin />} />
                   </Routes>
                 </MainLayout>
               }
