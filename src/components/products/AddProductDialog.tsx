@@ -251,15 +251,15 @@ const AddProductDialog = ({ open, onOpenChange, product, defaultUnit = 'g', onDe
                     onValueChange={(value) => handleSelectChange(value, "category")}
                     required
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-background">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.name}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
+                    <SelectContent className="bg-background z-50">
+                      <SelectItem value="All">All</SelectItem>
+                      <SelectItem value="Dry Fruits">Dry Fruits</SelectItem>
+                      <SelectItem value="Nuts">Nuts</SelectItem>
+                      <SelectItem value="Seeds">Seeds</SelectItem>
+                      <SelectItem value="Spices">Spices</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
