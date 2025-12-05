@@ -1,7 +1,7 @@
 project_id = "tsnozsletuytigsrmzvz"
 
 [functions.upload-product-image]
-verify_jwt = false
+verify_jwt = true
 
 [functions.delete-product-image]
-verify_jwt = false
+verify_jwt = true
