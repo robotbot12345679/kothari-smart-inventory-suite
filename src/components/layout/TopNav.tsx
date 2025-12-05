@@ -1,15 +1,18 @@
-
 import React from "react";
-import { Menu, Bell, Sun, Moon, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Menu, Bell, Sun, Moon, Search, Settings, Users, Package, BarChart3, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/components/theme-provider";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface TopNavProps {
   onMenuToggle: () => void;
@@ -17,6 +20,7 @@ interface TopNavProps {
 
 const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
   const { setTheme } = useTheme();
+  const navigate = useNavigate();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -72,13 +76,43 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-2 text-sm font-normal"
-          >
-            <span>Admin</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2 text-sm font-normal"
+              >
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                    AD
+                  </AvatarFallback>
+                </Avatar>
+                <span className="hidden sm:inline">Admin</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Admin Panel</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/products')}>
+                <Package className="mr-2 h-4 w-4" />
+                Manage Products
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/customers')}>
+                <Users className="mr-2 h-4 w-4" />
+                Manage Customers
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/analytics')}>
+                <BarChart3 className="mr-2 h-4 w-4" />
+                View Analytics
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

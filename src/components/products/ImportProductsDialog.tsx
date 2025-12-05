@@ -117,22 +117,44 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
 
       for (const row of data) {
         try {
+          // Handle various column name formats (case-insensitive)
+          const getName = () => row.name || row.Name || row.NAME || "Unknown Product";
+          const getSku = () => row.sku || row.SKU || row.Sku || `SKU-${Date.now() + importedCount}`;
+          const getPrice = () => {
+            const val = row.price || row.Price || row.PRICE || "0";
+            return parseFloat(val.toString().replace(/[^0-9.]/g, '')) || 0;
+          };
+          const getCategory = () => row.category || row.Category || row.CATEGORY || defaultCategory;
+          const getDescription = () => row.description || row.Description || row.DESCRIPTION || "";
+          const getStock = () => {
+            const val = row.stock || row.Stock || row.STOCK || "0";
+            return parseInt(val.toString().replace(/[^0-9]/g, ''), 10) || 0;
+          };
+          const getWeight = () => {
+            const val = row.weight || row.Weight || row.WEIGHT || "1";
+            return parseFloat(val.toString().replace(/[^0-9.]/g, '')) || 1;
+          };
+          const getUnit = () => {
+            const val = row.unit || row.Unit || row.UNIT || 'g';
+            return ['g', 'kg', 'box', 'pcs'].includes(val.toLowerCase()) ? val.toLowerCase() : 'g';
+          };
+
           const newProduct: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'> = {
-            name: row.name || "Unknown Product",
-            sku: row.sku?.toString() || `SKU-${Date.now() + importedCount}`,
-            price: parseFloat(row.price?.toString() || "0") || 0,
-            category: row.category || defaultCategory,
-            description: row.description || "",
-            stock: parseInt(row.stock?.toString() || "0", 10),
-            weight: parseFloat(row.weight?.toString() || "1"),
-            unit: (row.unit as 'g' | 'kg' | 'box' | 'pcs') || 'g',
+            name: getName(),
+            sku: getSku().toString(),
+            price: getPrice(),
+            category: getCategory(),
+            description: getDescription(),
+            stock: getStock(),
+            weight: getWeight(),
+            unit: getUnit() as 'g' | 'kg' | 'box' | 'pcs',
             image: "",
             is_active: true,
             price_includes_gst: true,
             barcode: null,
             image_url: null,
             expiry_date: null,
-            min_stock: null
+            min_stock: 0
           };
 
           await addProduct(newProduct);
