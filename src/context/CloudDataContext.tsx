@@ -5,9 +5,8 @@ import { User, Session } from '@supabase/supabase-js';
 import { productSchema, customerSchema, categorySchema, orderSchema, supplierSchema } from '@/lib/validation';
 import { z } from 'zod';
 
-// Silent auto-login credentials (single-user mode)
-const AUTO_LOGIN_EMAIL = 'spu0906@gmail.com';
-const AUTO_LOGIN_PASSWORD = '090611';
+// Single-user mode - fixed user ID for all database operations (no authentication required)
+const FIXED_USER_ID = 'single-user-mode';
 
 // Types
 export interface Product {
@@ -193,24 +192,23 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [billingTemplate, setBillingTemplate] = useState<BillingTemplate | null>(null);
   const [loading, setLoading] = useState(true);
-  const [authInitialized, setAuthInitialized] = useState(false);
   
   // Utility function
   const showToast = (title: string, description: string, variant: 'default' | 'destructive' = 'default') => {
     toast({ title, description, variant });
   };
 
-  // Fetch all data for authenticated user
-  const fetchAllData = useCallback(async (userId: string) => {
+  // Fetch all data (no authentication required)
+  const fetchAllData = useCallback(async () => {
     setLoading(true);
     try {
       const [productsRes, categoriesRes, customersRes, ordersRes, suppliersRes, settingsRes] = await Promise.all([
-        supabase.from('products').select('*').eq('user_id', userId),
-        supabase.from('categories').select('*').eq('user_id', userId),
-        supabase.from('customers').select('*').eq('user_id', userId),
-        supabase.from('orders').select('*').eq('user_id', userId),
-        supabase.from('suppliers').select('*').eq('user_id', userId),
-        supabase.from('settings').select('*').eq('user_id', userId).maybeSingle()
+        supabase.from('products').select('*'),
+        supabase.from('categories').select('*'),
+        supabase.from('customers').select('*'),
+        supabase.from('orders').select('*'),
+        supabase.from('suppliers').select('*'),
+        supabase.from('settings').select('*').maybeSingle()
       ]);
 
       if (productsRes.error) throw productsRes.error;
@@ -257,102 +255,19 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // Silent auto-login function
-  const performSilentLogin = useCallback(async () => {
-    try {
-      // First check if already logged in
-      const { data: { session: existingSession } } = await supabase.auth.getSession();
-      
-      if (existingSession?.user) {
-        setSession(existingSession);
-        setUser(existingSession.user);
-        setAuthInitialized(true);
-        return existingSession.user;
-      }
-
-      // Try to sign in
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: AUTO_LOGIN_EMAIL,
-        password: AUTO_LOGIN_PASSWORD,
-      });
-
-      if (error) {
-        // If user doesn't exist, create account
-        if (error.message.includes('Invalid login credentials')) {
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email: AUTO_LOGIN_EMAIL,
-            password: AUTO_LOGIN_PASSWORD,
-          });
-          
-          if (signUpError) {
-            console.error('Silent signup failed:', signUpError);
-            throw signUpError;
-          }
-          
-          if (signUpData.user) {
-            setSession(signUpData.session);
-            setUser(signUpData.user);
-            setAuthInitialized(true);
-            return signUpData.user;
-          }
-        } else {
-          throw error;
-        }
-      }
-
-      if (data?.user) {
-        setSession(data.session);
-        setUser(data.user);
-        setAuthInitialized(true);
-        return data.user;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Silent login error:', error);
-      setAuthInitialized(true);
-      return null;
-    }
-  }, []);
-
-  // Initialize auth and fetch data
+  // Initialize and fetch data immediately (no authentication required)
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-      
-      // Fetch data when user logs in
-      if (newSession?.user && authInitialized) {
-        setTimeout(() => {
-          fetchAllData(newSession.user.id);
-        }, 0);
-      }
-    });
-
-    // Perform silent login on mount
-    performSilentLogin().then((loggedInUser) => {
-      if (loggedInUser) {
-        fetchAllData(loggedInUser.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    fetchAllData();
   }, []);
 
   // Product methods
   const addProduct = async (productData: Omit<Product, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) {
-      showToast('Error', 'Authentication required', 'destructive');
-      throw new Error('User not authenticated');
-    }
+    const userId = user?.id || FIXED_USER_ID;
     try {
       productSchema.parse(productData);
       const { data, error } = await supabase
         .from('products')
-        .insert([{ ...productData, user_id: user.id }])
+        .insert([{ ...productData, user_id: userId }])
         .select();
       
       if (error) {

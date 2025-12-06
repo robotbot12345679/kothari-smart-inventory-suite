@@ -24,7 +24,7 @@ interface ImportProductsDialogProps {
 }
 
 const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps) => {
-  const { addProduct, categories, user, loading } = useCloudData();
+  const { addProduct, categories } = useCloudData();
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
@@ -78,15 +78,6 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
       toast({
         title: "No file selected",
         description: "Please select a CSV or Excel file to import.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please wait for the system to initialize and try again.",
         variant: "destructive"
       });
       return;
@@ -272,14 +263,6 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
             Required columns: name (price is optional)
           </div>
           
-          {!user && (
-            <Alert variant="destructive">
-              <AlertDescription>
-                System is initializing. Please wait before importing.
-              </AlertDescription>
-            </Alert>
-          )}
-          
           <Alert>
             <AlertDescription>
               Products will be imported with default values for any missing fields.
@@ -291,8 +274,8 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleImport} disabled={!file || importing || !user || loading}>
-            {importing ? "Importing..." : loading ? "Initializing..." : "Import Products"}
+          <Button onClick={handleImport} disabled={!file || importing}>
+            {importing ? "Importing..." : "Import Products"}
           </Button>
         </DialogFooter>
       </DialogContent>
