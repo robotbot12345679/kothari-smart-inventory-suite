@@ -24,7 +24,7 @@ interface ImportProductsDialogProps {
 }
 
 const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps) => {
-  const { addProduct, categories } = useCloudData();
+  const { addProduct, categories, user, loading } = useCloudData();
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
@@ -83,10 +83,22 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
       return;
     }
 
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please wait for the system to initialize and try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setImporting(true);
       
       const data = await parseExcelOrCSV(file);
+      
+      console.log("Parsed data:", data);
+      console.log("First row keys:", data.length > 0 ? Object.keys(data[0]) : "No data");
       
       if (data.length === 0) {
         toast({
@@ -98,14 +110,15 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
         return;
       }
 
-      const requiredFields = ['name', 'price'];
-      const headers = Object.keys(data[0]);
-      const missingFields = requiredFields.filter(field => !headers.includes(field));
+      // Case-insensitive header check
+      const headers = Object.keys(data[0]).map(h => h.toLowerCase());
+      const hasName = headers.some(h => h === 'name' || h === 'product' || h === 'product name');
+      const hasPrice = headers.some(h => h === 'price' || h === 'cost' || h === 'amount');
 
-      if (missingFields.length > 0) {
+      if (!hasName) {
         toast({
-          title: "Missing required fields",
-          description: `Your file is missing the following required fields: ${missingFields.join(', ')}`,
+          title: "Missing required field",
+          description: "Your file is missing the 'name' column.",
           variant: "destructive"
         });
         setImporting(false);
@@ -117,62 +130,68 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
 
       for (const row of data) {
         try {
-          // Handle various column name formats (case-insensitive)
-          const getName = () => row.name || row.Name || row.NAME || "Unknown Product";
-          const getSku = () => {
-            const sku = row.sku || row.SKU || row.Sku;
-            if (sku && sku.toString().trim()) {
-              return sku.toString().trim();
+          // Get value helper function - checks all case variations
+          const getValue = (keys: string[]): any => {
+            for (const key of keys) {
+              if (row[key] !== undefined && row[key] !== null && row[key] !== '') {
+                return row[key];
+              }
             }
-            return `SKU-${Date.now()}-${importedCount}`;
-          };
-          const getPrice = () => {
-            const val = row.price || row.Price || row.PRICE || "0";
-            return parseFloat(val.toString().replace(/[^0-9.]/g, '')) || 0;
-          };
-          const getCategory = () => {
-            const cat = row.category || row.Category || row.CATEGORY || "All";
-            // Map "Dried Fruits" to "Dry Fruits" for consistency
-            if (cat === "Dried Fruits") return "Dry Fruits";
-            // Check if category is valid, otherwise default to "All"
-            return validCategories.includes(cat) ? cat : "All";
-          };
-          const getDescription = () => row.description || row.Description || row.DESCRIPTION || "";
-          const getStock = () => {
-            const val = row.stock || row.Stock || row.STOCK || "0";
-            return parseInt(val.toString().replace(/[^0-9]/g, ''), 10) || 0;
-          };
-          const getWeight = () => {
-            const val = row.weight || row.Weight || row.WEIGHT || "1";
-            return parseFloat(val.toString().replace(/[^0-9.]/g, '')) || 1;
-          };
-          const getUnit = () => {
-            const val = (row.unit || row.Unit || row.UNIT || 'g').toString().toLowerCase();
-            return ['g', 'kg', 'box', 'pcs'].includes(val) ? val : 'g';
-          };
-          const getBarcode = () => {
-            const barcode = row.barcode || row.Barcode || row.BARCODE;
-            return barcode ? barcode.toString().trim() : null;
+            return undefined;
           };
 
+          const name = getValue(['name', 'Name', 'NAME', 'product', 'Product', 'PRODUCT', 'product name', 'Product Name']);
+          if (!name) {
+            console.log("Skipping row without name:", row);
+            continue;
+          }
+
+          const skuVal = getValue(['sku', 'SKU', 'Sku', 'code', 'Code', 'CODE']);
+          const sku = skuVal ? skuVal.toString().trim() : `SKU-${Date.now()}-${importedCount}`;
+          
+          const priceVal = getValue(['price', 'Price', 'PRICE', 'cost', 'Cost', 'COST']);
+          const price = priceVal ? parseFloat(priceVal.toString().replace(/[^0-9.]/g, '')) || 0 : 0;
+          
+          const categoryVal = getValue(['category', 'Category', 'CATEGORY', 'type', 'Type']);
+          let category = categoryVal || 'All';
+          if (category === 'Dried Fruits') category = 'Dry Fruits';
+          if (!validCategories.includes(category)) category = 'All';
+          
+          const descVal = getValue(['description', 'Description', 'DESCRIPTION', 'desc', 'Desc']);
+          const description = descVal || '';
+          
+          const stockVal = getValue(['stock', 'Stock', 'STOCK', 'quantity', 'Quantity', 'qty', 'Qty']);
+          const stock = stockVal ? parseInt(stockVal.toString().replace(/[^0-9]/g, ''), 10) || 0 : 0;
+          
+          const weightVal = getValue(['weight', 'Weight', 'WEIGHT']);
+          const weight = weightVal ? parseFloat(weightVal.toString().replace(/[^0-9.]/g, '')) || 1 : 1;
+          
+          const unitVal = getValue(['unit', 'Unit', 'UNIT']);
+          const unitStr = unitVal ? unitVal.toString().toLowerCase() : 'g';
+          const unit = ['g', 'kg', 'box', 'pcs'].includes(unitStr) ? unitStr : 'g';
+          
+          const barcodeVal = getValue(['barcode', 'Barcode', 'BARCODE', 'bar code', 'Bar Code']);
+          const barcode = barcodeVal ? barcodeVal.toString().trim() : null;
+
           const newProduct: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'> = {
-            name: getName(),
-            sku: getSku(),
-            price: getPrice(),
-            category: getCategory(),
-            description: getDescription(),
-            stock: getStock(),
-            weight: getWeight(),
-            unit: getUnit() as 'g' | 'kg' | 'box' | 'pcs',
+            name: name.toString().trim(),
+            sku,
+            price,
+            category,
+            description,
+            stock,
+            weight,
+            unit: unit as 'g' | 'kg' | 'box' | 'pcs',
             image: "",
             is_active: true,
             price_includes_gst: true,
-            barcode: getBarcode(),
+            barcode,
             image_url: null,
             expiry_date: null,
             min_stock: 0
           };
 
+          console.log("Importing product:", newProduct);
           await addProduct(newProduct);
           importedCount++;
         } catch (err) {
@@ -250,8 +269,16 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
           />
           
           <div className="text-xs text-muted-foreground">
-            Required columns: name, price
+            Required columns: name (price is optional)
           </div>
+          
+          {!user && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                System is initializing. Please wait before importing.
+              </AlertDescription>
+            </Alert>
+          )}
           
           <Alert>
             <AlertDescription>
@@ -264,8 +291,8 @@ const ImportProductsDialog = ({ open, onOpenChange }: ImportProductsDialogProps)
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleImport} disabled={!file || importing}>
-            {importing ? "Importing..." : "Import Products"}
+          <Button onClick={handleImport} disabled={!file || importing || !user || loading}>
+            {importing ? "Importing..." : loading ? "Initializing..." : "Import Products"}
           </Button>
         </DialogFooter>
       </DialogContent>
