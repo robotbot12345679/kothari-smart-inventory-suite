@@ -23,6 +23,7 @@ import {
   Share,
   Check
 } from "lucide-react";
+import { escapeHtml, escapeHtmlArray } from "@/lib/htmlUtils";
 import {
   Dialog,
   DialogContent,
@@ -551,18 +552,18 @@ const Pos = () => {
       <body>
         <div class="receipt">
           <div class="header">
-            <img src="${template.logoUrl}" class="logo" alt="Logo">
-            <div class="title">${template.shopName}</div>
-            <div class="info">${template.address}</div>
-            <div class="info">Phone: ${template.phone}</div>
-            ${template.gstNumber ? `<div class="info">GSTIN: ${template.gstNumber}</div>` : ''}
+            <img src="${escapeHtml(template.logoUrl)}" class="logo" alt="Logo">
+            <div class="title">${escapeHtml(template.shopName)}</div>
+            <div class="info">${escapeHtml(template.address)}</div>
+            <div class="info">Phone: ${escapeHtml(template.phone)}</div>
+            ${template.gstNumber ? `<div class="info">GSTIN: ${escapeHtml(template.gstNumber)}</div>` : ''}
           </div>
         
           <div class="order-info">
-            <div class="info">Order #: ${order.id}</div>
-            <div class="info">Date: ${formattedDate} ${formattedTime}</div>
-            <div class="info">Customer: ${order.customer_name || 'Guest'}</div>
-            ${order.customer_phone ? `<div class="info">Phone: ${order.customer_phone}</div>` : ''}
+            <div class="info">Order #: ${escapeHtml(order.id)}</div>
+            <div class="info">Date: ${escapeHtml(formattedDate)} ${escapeHtml(formattedTime)}</div>
+            <div class="info">Customer: ${escapeHtml(order.customer_name || 'Guest')}</div>
+            ${order.customer_phone ? `<div class="info">Phone: ${escapeHtml(order.customer_phone)}</div>` : ''}
           </div>
         
           <div class="divider"></div>
@@ -579,8 +580,8 @@ const Pos = () => {
             <tbody>
               ${order.items.map(item => `
                 <tr>
-                  <td>${item.name}</td>
-                  <td>${item.quantity} ${item.quantity > 1 ? "items" : "item"}</td>
+                  <td>${escapeHtml(item.name)}</td>
+                  <td>${escapeHtml(String(item.quantity))} ${item.quantity > 1 ? "items" : "item"}</td>
                   <td class="item-price">₹${item.price.toFixed(2)}</td>
                   <td class="item-price">₹${(item.price * item.quantity).toFixed(2)}</td>
                 </tr>
@@ -592,7 +593,7 @@ const Pos = () => {
               </tr>
               <tr>
                 <td colspan="3">Payment Method</td>
-                <td class="item-price">${order.payment_method?.toUpperCase() || 'CASH'}</td>
+                <td class="item-price">${escapeHtml(order.payment_method?.toUpperCase() || 'CASH')}</td>
               </tr>
               ${order.payment_method === 'cash' ? `
                 <tr>
@@ -610,7 +611,7 @@ const Pos = () => {
           ${showQrCode ? `
           <div class="qr-code">
             <p>Scan to pay via UPI:</p>
-            <img src="${upiQrCode}" alt="UPI QR Code">
+            <img src="${escapeHtml(upiQrCode)}" alt="UPI QR Code">
             <p>UPI ID: ashokkothari738@oksbi</p>
           </div>
           ` : ''}
@@ -618,7 +619,7 @@ const Pos = () => {
           <div class="divider"></div>
         
           <div class="footer">
-            ${template.footerText.map(line => `<p>${line}</p>`).join('')}
+            ${escapeHtmlArray(template.footerText).map(line => `<p>${line}</p>`).join('')}
           </div>
         </div>
         <script>

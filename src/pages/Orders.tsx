@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Filter, Plus, Calendar, Package, FileDown, Printer, Trash } from "lucide-react";
+import { escapeHtml } from "@/lib/htmlUtils";
 import {
   Table,
   TableBody,
@@ -99,9 +100,9 @@ const Orders = () => {
           <p>Date: ${format(new Date(order.order_date), 'PPP')}</p>
         </div>
         <div class="order-info">
-          ${order.customer_name ? `<p><strong>Customer:</strong> ${order.customer_name}</p>` : ''}
-          ${order.customer_phone ? `<p><strong>Phone:</strong> ${order.customer_phone}</p>` : ''}
-          ${order.customer_email ? `<p><strong>Email:</strong> ${order.customer_email}</p>` : ''}
+          ${order.customer_name ? `<p><strong>Customer:</strong> ${escapeHtml(order.customer_name)}</p>` : ''}
+          ${order.customer_phone ? `<p><strong>Phone:</strong> ${escapeHtml(order.customer_phone)}</p>` : ''}
+          ${order.customer_email ? `<p><strong>Email:</strong> ${escapeHtml(order.customer_email)}</p>` : ''}
         </div>
         <table class="items-table">
           <thead>
@@ -115,8 +116,8 @@ const Orders = () => {
           <tbody>
             ${order.items.map(item => `
               <tr>
-                <td>${item.name}</td>
-                <td>${item.quantity} ${item.unit}</td>
+                <td>${escapeHtml(item.name)}</td>
+                <td>${escapeHtml(String(item.quantity))} ${escapeHtml(item.unit)}</td>
                 <td>₹${item.price.toFixed(2)}</td>
                 <td>₹${(item.price * item.quantity).toFixed(2)}</td>
               </tr>
@@ -127,8 +128,8 @@ const Orders = () => {
           <p><strong>Subtotal:</strong> ₹${order.subtotal.toFixed(2)}</p>
           <p><strong>GST (Included):</strong> ₹${order.gst.toFixed(2)}</p>
           <p><strong>Total:</strong> ₹${order.total.toFixed(2)}</p>
-          <p><strong>Payment Status:</strong> ${order.payment_status}</p>
-          <p><strong>Payment Method:</strong> ${order.payment_method}</p>
+          <p><strong>Payment Status:</strong> ${escapeHtml(order.payment_status)}</p>
+          <p><strong>Payment Method:</strong> ${escapeHtml(order.payment_method)}</p>
         </div>
         ${isUpiPayment ? `
           <div class="qr-code">
