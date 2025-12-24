@@ -1,6 +1,7 @@
 import React from "react";
 import BillingSettings from "@/components/settings/BillingSettings";
 import { useCloudData } from "@/context/CloudDataContext";
+import { escapeHtml, escapeHtmlArray } from "@/lib/htmlUtils";
 
 const Settings = () => {
   const { billingTemplate, updateBillingTemplate } = useCloudData();
@@ -68,11 +69,11 @@ const Settings = () => {
       <body>
         <div class="receipt">
           <div class="header">
-            <img src="${billingTemplate.logoUrl}" alt="Shop logo" class="logo" />
-            <h1 class="title">${billingTemplate.shopName}</h1>
-            <p class="info">${billingTemplate.address}</p>
-            <p class="info">${billingTemplate.phone}</p>
-            <p class="info">${billingTemplate.gstNumber ? 'GSTIN: ' + billingTemplate.gstNumber : ''}</p>
+            <img src="${escapeHtml(billingTemplate.logoUrl)}" alt="Shop logo" class="logo" />
+            <h1 class="title">${escapeHtml(billingTemplate.shopName)}</h1>
+            <p class="info">${escapeHtml(billingTemplate.address)}</p>
+            <p class="info">${escapeHtml(billingTemplate.phone)}</p>
+            <p class="info">${billingTemplate.gstNumber ? 'GSTIN: ' + escapeHtml(billingTemplate.gstNumber) : ''}</p>
           </div>
           <table>
             <thead>
@@ -96,7 +97,7 @@ const Settings = () => {
             </tbody>
           </table>
           <div class="footer">
-            ${billingTemplate.footerText.map(line => `<p>${line}</p>`).join('')}
+            ${escapeHtmlArray(billingTemplate.footerText).map(line => `<p>${line}</p>`).join('')}
           </div>
         </div>
       </body>

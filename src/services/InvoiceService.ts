@@ -1,6 +1,6 @@
-
 import { Order } from "@/types/pos";
 import { BillingTemplate } from "@/context/CloudDataContext";
+import { escapeHtml, escapeHtmlArray } from "@/lib/htmlUtils";
 
 // Function to get default billing template
 export const getDefaultBillingTemplate = (): BillingTemplate => {
@@ -184,30 +184,30 @@ export const createPrintableInvoice = (order: Order, billingTemplate: BillingTem
       <div class="invoice-container">
         <div class="header">
           <div>
-            <img class="logo" src="${logoUrl}" alt="${billingTemplate.shopName}">
+            <img class="logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(billingTemplate.shopName)}">
             <div style="margin-top: 10px;">
-              <div>${billingTemplate.shopName}</div>
-              <div style="font-size: 14px; color: #666;">${billingTemplate.address}</div>
-              <div style="font-size: 14px; color: #666;">${billingTemplate.phone}</div>
-              ${billingTemplate.gstNumber ? `<div style="font-size: 14px; color: #666;">GSTIN: ${billingTemplate.gstNumber}</div>` : ''}
+              <div>${escapeHtml(billingTemplate.shopName)}</div>
+              <div style="font-size: 14px; color: #666;">${escapeHtml(billingTemplate.address)}</div>
+              <div style="font-size: 14px; color: #666;">${escapeHtml(billingTemplate.phone)}</div>
+              ${billingTemplate.gstNumber ? `<div style="font-size: 14px; color: #666;">GSTIN: ${escapeHtml(billingTemplate.gstNumber)}</div>` : ''}
             </div>
           </div>
           <div style="text-align: right;">
             <div class="invoice-title">INVOICE</div>
-            <div class="invoice-number">${invoiceNumber}</div>
+            <div class="invoice-number">${escapeHtml(invoiceNumber)}</div>
             <div class="dates">
-              <div>Date: ${invoiceDate}</div>
+              <div>Date: ${escapeHtml(invoiceDate)}</div>
             </div>
-            <div class="status-badge ${order.payment_status !== 'Paid' ? 'unpaid-badge' : ''}">${order.payment_status || 'PAID'}</div>
+            <div class="status-badge ${order.payment_status !== 'Paid' ? 'unpaid-badge' : ''}">${escapeHtml(order.payment_status || 'PAID')}</div>
           </div>
         </div>
         
         <div class="client-info">
           <div class="section-title">Bill To:</div>
-          ${customerName ? `<div style="font-weight: 500;">${customerName}</div>` : ''}
-          ${order.customer_phone ? `<div>Phone: ${order.customer_phone}</div>` : ''}
-          ${order.customer_email ? `<div>Email: ${order.customer_email}</div>` : ''}
-          ${order.shipping_address ? `<div>${order.shipping_address}</div>` : ''}
+          ${customerName ? `<div style="font-weight: 500;">${escapeHtml(customerName)}</div>` : ''}
+          ${order.customer_phone ? `<div>Phone: ${escapeHtml(order.customer_phone)}</div>` : ''}
+          ${order.customer_email ? `<div>Email: ${escapeHtml(order.customer_email)}</div>` : ''}
+          ${order.shipping_address ? `<div>${escapeHtml(order.shipping_address)}</div>` : ''}
         </div>
         
         <table>
@@ -223,10 +223,10 @@ export const createPrintableInvoice = (order: Order, billingTemplate: BillingTem
             ${order.items.map(item => `
               <tr>
                 <td>
-                  <div class="item-name">${item.name}</div>
-                  <div class="item-description">${item.weight}${item.unit}</div>
+                  <div class="item-name">${escapeHtml(item.name)}</div>
+                  <div class="item-description">${escapeHtml(String(item.weight))}${escapeHtml(item.unit)}</div>
                 </td>
-                <td>${item.quantity} ${item.quantity > 1 ? "items" : "item"}</td>
+                <td>${escapeHtml(String(item.quantity))} ${item.quantity > 1 ? "items" : "item"}</td>
                 <td>₹${item.price.toFixed(2)}</td>
                 <td class="amount-col">₹${(item.price * item.quantity).toFixed(2)}</td>
               </tr>
@@ -273,7 +273,7 @@ export const createPrintableInvoice = (order: Order, billingTemplate: BillingTem
         ` : ''}
         
         <div class="footer">
-          ${billingTemplate.footerText.map(line => `<p>${line}</p>`).join('')}
+          ${escapeHtmlArray(billingTemplate.footerText).map(line => `<p>${line}</p>`).join('')}
         </div>
       </div>
     </body>
