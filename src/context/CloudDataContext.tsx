@@ -6,8 +6,9 @@ import { productSchema, customerSchema, categorySchema, orderSchema, supplierSch
 import { z } from 'zod';
 
 // Single-user mode - fixed user ID for all database operations (no authentication required)
-const FIXED_USER_ID = 'single-user-mode';
-
+// Use a REAL UUID because the `user_id` columns in Supabase are UUID typed.
+// Using an invalid UUID (e.g. "single-user-mode") will make inserts fail.
+const FIXED_USER_ID = 'ce4e31ba-703b-4402-948d-1f2ecc219ba4';
 // Types
 export interface Product {
   id: string;
