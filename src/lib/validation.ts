@@ -2,15 +2,20 @@ import { z } from 'zod';
 
 export const productSchema = z.object({
   name: z.string().trim().min(1, 'Product name is required').max(200, 'Name too long'),
-  // Allow zero-price products (e.g. free samples) but cap maximum value
   price: z.number().min(0, 'Price must be at least 0').max(999999, 'Price too high'),
   stock: z.number().int('Stock must be a whole number').min(0, 'Stock cannot be negative'),
   min_stock: z.number().int('Min stock must be a whole number').min(0, 'Min stock cannot be negative').nullable().optional(),
-  category: z.string().max(100, 'Category name too long').optional(),
-  barcode: z.string().max(50, 'Barcode too long').optional(),
-  description: z.string().max(1000, 'Description too long').optional(),
-  // Image field stores a filename or relative path, not a full URL
+  category: z.string().max(100, 'Category name too long').optional().nullable().or(z.literal('')),
+  barcode: z.string().max(50, 'Barcode too long').optional().nullable().or(z.literal('')),
+  description: z.string().max(1000, 'Description too long').optional().nullable().or(z.literal('')),
   image_url: z.string().max(500, 'Image path too long').nullable().optional().or(z.literal('')),
+  image: z.string().max(500, 'Image path too long').optional().nullable().or(z.literal('')),
+  sku: z.string().max(100, 'SKU too long').optional().nullable().or(z.literal('')),
+  unit: z.string().max(20, 'Unit too long').optional().nullable().or(z.literal('')),
+  weight: z.number().min(0, 'Weight cannot be negative').optional().nullable(),
+  is_active: z.boolean().optional().nullable(),
+  price_includes_gst: z.boolean().optional().nullable(),
+  expiry_date: z.string().optional().nullable().or(z.literal('')),
 });
 
 export const customerSchema = z.object({
