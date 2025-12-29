@@ -338,17 +338,19 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Category methods
   const addCategory = async (name: string) => {
-    if (!user) {
-      showToast('Error', 'Authentication required', 'destructive');
-      return;
-    }
+    const userId = user?.id || FIXED_USER_ID;
     try {
       categorySchema.parse({ name });
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('categories')
-        .insert([{ name, user_id: user.id }]);
+        .insert([{ name, user_id: userId }])
+        .select();
       
       if (error) throw error;
+
+      if (data && data[0]) {
+        setCategories(prev => [...prev, data[0] as Category]);
+      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
@@ -389,15 +391,12 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Customer methods
   const addCustomer = async (customerData: Omit<Customer, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) {
-      showToast('Error', 'Authentication required', 'destructive');
-      return;
-    }
+    const userId = user?.id || FIXED_USER_ID;
     try {
       customerSchema.parse(customerData);
       const { data, error } = await supabase
         .from('customers')
-        .insert([{ ...customerData, user_id: user.id }])
+        .insert([{ ...customerData, user_id: userId }])
         .select();
       
       if (error) throw error;
@@ -465,15 +464,12 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Order methods
   const addOrder = async (orderData: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Order | null> => {
-    if (!user) {
-      showToast('Error', 'Authentication required', 'destructive');
-      return null;
-    }
+    const userId = user?.id || FIXED_USER_ID;
     try {
       orderSchema.parse(orderData);
       const { data, error } = await supabase
         .from('orders')
-        .insert([{ ...orderData, user_id: user.id }])
+        .insert([{ ...orderData, user_id: userId }])
         .select();
       
       if (error) throw error;
@@ -539,15 +535,12 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Supplier methods
   const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) {
-      showToast('Error', 'Authentication required', 'destructive');
-      return;
-    }
+    const userId = user?.id || FIXED_USER_ID;
     try {
       supplierSchema.parse(supplierData);
       const { data, error } = await supabase
         .from('suppliers')
-        .insert([{ ...supplierData, user_id: user.id }])
+        .insert([{ ...supplierData, user_id: userId }])
         .select();
       
       if (error) throw error;
