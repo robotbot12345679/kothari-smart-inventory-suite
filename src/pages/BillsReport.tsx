@@ -102,7 +102,9 @@ const BillsReport = () => {
       (order.order_date && format(new Date(order.order_date), "yyyy-MM-dd") === format(date, "yyyy-MM-dd"));
 
     // Filter by source (POS vs Orders)
-    const orderSource = order.id && order.id.startsWith("ORD") ? "pos" : "orders";
+    // POS orders store the human-friendly code in `tracking_number` (ORD...)
+    const orderRef = (order as any).tracking_number || order.id;
+    const orderSource = typeof orderRef === 'string' && orderRef.startsWith('ORD') ? 'pos' : 'orders';
     const matchesSource = sourceFilter === "all" || orderSource === sourceFilter;
 
     return matchesSearch && matchesPaymentMethod && matchesDate && matchesSource;
@@ -191,7 +193,7 @@ const BillsReport = () => {
       footerText: ["Thank you for shopping with us!", "Visit again soon!"]
     };
     
-    const invoiceNumber = generateInvoiceNumber(selectedOrder.id);
+    const invoiceNumber = generateInvoiceNumber(((selectedOrder as any)?.tracking_number) || (selectedOrder as any).id);
     const orderDate = new Date(selectedOrder.order_date);
     const formattedDate = format(orderDate, 'PP');
     
@@ -431,9 +433,10 @@ ${template.shopName}`;
               {filteredOrders.length > 0 ? (
                 filteredOrders.map((order) => {
                   const orderDate = new Date(order.order_date);
-                  const source = order.id?.startsWith("ORD") ? "POS" : "Order";
+                  const orderRef = (order as any).tracking_number || order.id;
+                  const source = typeof orderRef === 'string' && orderRef.startsWith("ORD") ? "POS" : "Order";
                   const isPaid = order.payment_status === "Paid";
-                  const invoiceNumber = generateInvoiceNumber(order.id);
+                  const invoiceNumber = generateInvoiceNumber(orderRef);
                   
                   return (
                     <TableRow key={order.id}>
