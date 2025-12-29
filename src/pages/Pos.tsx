@@ -323,7 +323,8 @@ const Pos = () => {
         customer_phone: customerInfo.phone || null,
         customer_email: customerInfo.email || null,
         shipping_address: null,
-        tracking_number: null,
+        // Use tracking_number to store the human-friendly POS order code (ORD...)
+        tracking_number: orderId,
         status: 'completed',
         customer_id: matchedCustomer?.id || null
       };
@@ -363,9 +364,9 @@ const Pos = () => {
         }
       }
 
-      // Create order object for display
+      // Create order object for display (use DB id + keep POS code in tracking_number)
       const newOrder: Order = {
-        id: orderId,
+        id: createdOrder?.id || orderId,
         items: cart,
         subtotal,
         gst: 0,
@@ -378,7 +379,7 @@ const Pos = () => {
         customer_phone: customerInfo.phone || null,
         customer_email: customerInfo.email || null,
         shipping_address: null,
-        tracking_number: null,
+        tracking_number: orderId,
         status: 'completed',
         customer_id: matchedCustomer?.id || null,
         user_id: '',

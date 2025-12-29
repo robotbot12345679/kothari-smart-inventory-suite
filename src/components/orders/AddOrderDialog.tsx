@@ -129,6 +129,8 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
       order_date: new Date().toISOString(),
       shipping_address: "",
       order_status: orderStatus as 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled',
+      // Store the human-friendly order code for Bills/Receipts source detection
+      tracking_number: orderId,
       status: "pending",
     };
     
