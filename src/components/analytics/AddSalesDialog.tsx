@@ -25,7 +25,7 @@ const AddSalesDialog = () => {
   const { addOrder } = useCloudData();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!date || !totalSales || isNaN(parseFloat(totalSales))) {
@@ -63,16 +63,21 @@ const AddSalesDialog = () => {
       status: "pending",
     };
 
-    addOrder(manualOrder);
+    try {
+      await addOrder(manualOrder);
 
-    toast({
-      title: "Sales Record Added",
-      description: `Sales data for ${new Date(date).toLocaleDateString()} has been added.`,
-    });
+      toast({
+        title: "Sales Record Added",
+        description: `Sales data for ${new Date(date).toLocaleDateString()} has been added.`,
+      });
 
-    setOpen(false);
-    setDate("");
-    setTotalSales("");
+      setOpen(false);
+      setDate("");
+      setTotalSales("");
+    } catch (error) {
+      // addOrder already shows a destructive toast; prevent unhandled promise rejections
+      console.error('Error adding sales record:', error);
+    }
   };
 
   return (

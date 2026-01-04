@@ -144,13 +144,13 @@ interface CloudDataContextType {
   deleteCategory: (id: string) => Promise<void>;
   
   // Customer methods
-  addCustomer: (customer: Omit<Customer, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<void>;
-  updateCustomer: (id: string, updates: Partial<Customer>) => Promise<void>;
+  addCustomer: (customer: Omit<Customer, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<Customer | null>;
+  updateCustomer: (id: string, updates: Partial<Customer>) => Promise<Customer | null>;
   deleteCustomer: (id: string) => Promise<void>;
   
   // Order methods
   addOrder: (order: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<Order | null>;
-  updateOrder: (id: string, updates: Partial<Order>) => Promise<void>;
+  updateOrder: (id: string, updates: Partial<Order>) => Promise<Order | null>;
   deleteOrder: (id: string) => Promise<void>;
   updateOrderPaymentStatus: (orderId: string, updates: Partial<Order>) => Promise<void>;
   
@@ -423,16 +423,22 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Customer methods
-  const addCustomer = async (customerData: Omit<Customer, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+  const addCustomer = async (
+    customerData: Omit<Customer, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+  ): Promise<Customer | null> => {
     const userId = user?.id || FIXED_USER_ID;
     try {
       customerSchema.parse(customerData);
+
       const { data, error } = await supabase
         .from('customers')
         .insert([{ ...customerData, user_id: userId }])
         .select();
-      
-      if (error) throw error;
+
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw error;
+      }
 
       if (data && data[0]) {
         const normalized = {
@@ -441,18 +447,26 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
             ? ((data[0] as any).order_history as string[])
             : [],
         } as Customer;
-        setCustomers(prev => [...prev, normalized]);
+
+        setCustomers((prev) => [...prev, normalized]);
+        return normalized;
       }
+
+      throw new Error('Customer insert succeeded but returned no rows');
     } catch (error: any) {
+      console.error('Error in addCustomer:', error);
+
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
       } else {
-        showToast('Error', 'Failed to add customer', 'destructive');
+        showToast('Error', `Failed to add customer: ${error.message || 'Unknown error'}`, 'destructive');
       }
+
+      throw error;
     }
   };
 
-  const updateCustomer = async (id: string, updates: Partial<Customer>) => {
+  const updateCustomer = async (id: string, updates: Partial<Customer>): Promise<Customer | null> => {
     try {
       customerSchema.partial().parse(updates);
       const { data, error } = await supabase
@@ -460,8 +474,11 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
         .update(updates)
         .eq('id', id)
         .select();
-      
-      if (error) throw error;
+
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
 
       if (data && data[0]) {
         const normalized = {
@@ -470,14 +487,22 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
             ? ((data[0] as any).order_history as string[])
             : [],
         } as Customer;
-        setCustomers(prev => prev.map(c => c.id === id ? normalized : c));
+
+        setCustomers((prev) => prev.map((c) => (c.id === id ? normalized : c)));
+        return normalized;
       }
+
+      throw new Error('Customer update succeeded but returned no rows');
     } catch (error: any) {
+      console.error('Error in updateCustomer:', error);
+
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
       } else {
-        showToast('Error', 'Failed to update customer', 'destructive');
+        showToast('Error', `Failed to update customer: ${error.message || 'Unknown error'}`, 'destructive');
       }
+
+      throw error;
     }
   };
 
@@ -496,59 +521,95 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Order methods
-  const addOrder = async (orderData: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Order | null> => {
+  const addOrder = async (
+    orderData: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+  ): Promise<Order | null> => {
     const userId = user?.id || FIXED_USER_ID;
+
     try {
-      orderSchema.parse(orderData);
+      // Normalize optional UUID fields: Supabase allows NULL, but our Zod schema requires "missing" (undefined) for optional fields.
+      const normalizedOrderData: any = { ...orderData };
+      if (normalizedOrderData.customer_id == null) {
+        delete normalizedOrderData.customer_id;
+      }
+
+      orderSchema.parse(normalizedOrderData);
+
       const { data, error } = await supabase
         .from('orders')
-        .insert([{ ...orderData, user_id: userId }])
+        .insert([{ ...normalizedOrderData, user_id: userId }])
         .select();
-      
-      if (error) throw error;
+
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw error;
+      }
 
       if (data && data[0]) {
         const normalized = {
           ...(data[0] as any),
           items: Array.isArray((data[0] as any).items) ? (data[0] as any).items : [],
         } as Order;
-        setOrders(prev => [...prev, normalized]);
+
+        setOrders((prev) => [...prev, normalized]);
         return normalized;
       }
-      return null;
+
+      throw new Error('Order insert succeeded but returned no rows');
     } catch (error: any) {
+      console.error('Error in addOrder:', error);
+
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
       } else {
-        showToast('Error', 'Failed to add order', 'destructive');
+        showToast('Error', `Failed to add order: ${error.message || 'Unknown error'}`, 'destructive');
       }
-      return null;
+
+      throw error;
     }
   };
-  const updateOrder = async (id: string, updates: Partial<Order>) => {
+  const updateOrder = async (id: string, updates: Partial<Order>): Promise<Order | null> => {
     try {
-      orderSchema.partial().parse(updates);
+      // Normalize optional UUID fields
+      const normalizedUpdates: any = { ...updates };
+      if (normalizedUpdates.customer_id == null) {
+        delete normalizedUpdates.customer_id;
+      }
+
+      orderSchema.partial().parse(normalizedUpdates);
+
       const { data, error } = await supabase
         .from('orders')
-        .update(updates)
+        .update(normalizedUpdates)
         .eq('id', id)
         .select();
-      
-      if (error) throw error;
+
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
 
       if (data && data[0]) {
         const normalized = {
           ...(data[0] as any),
           items: Array.isArray((data[0] as any).items) ? (data[0] as any).items : [],
         } as Order;
-        setOrders(prev => prev.map(o => o.id === id ? normalized : o));
+
+        setOrders((prev) => prev.map((o) => (o.id === id ? normalized : o)));
+        return normalized;
       }
+
+      throw new Error('Order update succeeded but returned no rows');
     } catch (error: any) {
+      console.error('Error in updateOrder:', error);
+
       if (error instanceof z.ZodError) {
         showToast('Validation Error', error.errors[0].message, 'destructive');
       } else {
-        showToast('Error', 'Failed to update order', 'destructive');
+        showToast('Error', `Failed to update order: ${error.message || 'Unknown error'}`, 'destructive');
       }
+
+      throw error;
     }
   };
 
@@ -557,13 +618,14 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
       .from('orders')
       .delete()
       .eq('id', id);
-    
+
     if (error) {
+      console.error('Supabase delete error:', error);
       showToast('Error', 'Failed to delete order', 'destructive');
-      return;
+      throw error;
     }
 
-    setOrders(prev => prev.filter(o => o.id !== id));
+    setOrders((prev) => prev.filter((o) => o.id !== id));
   };
 
   // Supplier methods
