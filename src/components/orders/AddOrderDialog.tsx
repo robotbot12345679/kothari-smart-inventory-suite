@@ -104,9 +104,9 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
   // No GST as per requirements
   const total = subtotal;
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (cart.length === 0) {
       toast({
         title: "Empty Order",
@@ -133,22 +133,27 @@ const AddOrderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (
       tracking_number: orderId,
       status: "pending",
     };
-    
-    addOrder(newOrder);
-    
-    toast({
-      title: "Order Created",
-      description: `Order #${orderId} has been created successfully.`
-    });
-    
-    // Reset form
-    setCart([]);
-    setCustomerInfo({ name: "", phone: "", email: "" });
-    setSelectedProduct("");
-    setQuantity(1);
-    
-    // Close dialog
-    onOpenChange(false);
+
+    try {
+      await addOrder(newOrder);
+
+      toast({
+        title: "Order Created",
+        description: `Order #${orderId} has been created successfully.`
+      });
+
+      // Reset form
+      setCart([]);
+      setCustomerInfo({ name: "", phone: "", email: "" });
+      setSelectedProduct("");
+      setQuantity(1);
+
+      // Close dialog
+      onOpenChange(false);
+    } catch (error) {
+      // addOrder already shows a destructive toast; prevent unhandled promise rejections
+      console.error('Error creating order:', error);
+    }
   };
   
   return (

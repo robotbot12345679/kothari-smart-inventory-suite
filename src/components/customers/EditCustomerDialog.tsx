@@ -41,9 +41,9 @@ const EditCustomerDialog = ({ open, onOpenChange, customer, onDelete }: EditCust
     }
   }, [customer]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!customer || !formData.name || !formData.phone) {
       toast({
         title: "Error",
@@ -64,12 +64,18 @@ const EditCustomerDialog = ({ open, onOpenChange, customer, onDelete }: EditCust
       status: formData.status || 'Active'
     };
 
-    updateCustomer(customer.id, updatedCustomer);
-    toast({
-      title: "Success",
-      description: "Customer updated successfully"
-    });
-    onOpenChange(false);
+    try {
+      await updateCustomer(customer.id, updatedCustomer);
+
+      toast({
+        title: "Success",
+        description: "Customer updated successfully"
+      });
+      onOpenChange(false);
+    } catch (error) {
+      // updateCustomer already shows a destructive toast; prevent unhandled promise rejections
+      console.error('Error updating customer:', error);
+    }
   };
 
   const handleDelete = () => {

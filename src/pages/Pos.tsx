@@ -46,7 +46,7 @@ interface ScannedProduct extends Product {
 }
 
 const Pos = () => {
-  const { products, categories, addOrder, findProductByBarcode, updateInventoryAfterSale, customers, addCustomer, updateCustomer, billingTemplate } = useCloudData();
+  const { products, categories, addOrder, findProductByBarcode, updateInventoryAfterSale, customers, addCustomer, updateCustomer, updateOrder, deleteOrder, deleteCustomer, updateProduct, billingTemplate } = useCloudData();
   const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState<string>('1');
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -304,11 +304,18 @@ const Pos = () => {
       });
       return;
     }
-    
+
+    // Capture pre-sale stock levels so we can rollback on any failure
+    const stockBeforeSale = new Map<string, number>();
+    cart.forEach((item) => {
+      const product = products.find((p) => p.id === item.id);
+      if (product) stockBeforeSale.set(product.id, product.stock);
+    });
+
+    let createdOrder: Order | null = null;
+    let createdCustomerId: string | null = null;
+
     try {
-      // Update inventory stock levels first
-      await updateInventoryAfterSale(cart);
-      
       // Build order payload for Supabase
       const orderPayload: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'> = {
         items: cart,
@@ -320,24 +327,40 @@ const Pos = () => {
         order_date: new Date().toISOString(),
         order_status: 'Delivered',
         customer_name: customerInfo.name || 'Guest Customer',
-        customer_phone: customerInfo.phone || null,
-        customer_email: customerInfo.email || null,
-        shipping_address: null,
+        customer_phone: customerInfo.phone || '',
+        customer_email: customerInfo.email || '',
+        shipping_address: '',
         // Use tracking_number to store the human-friendly POS order code (ORD...)
         tracking_number: orderId,
         status: 'completed',
-        customer_id: matchedCustomer?.id || null
+        customer_id: matchedCustomer?.id,
       };
-      
-      // Add the order and get the created order with database ID
-      const createdOrder = await addOrder(orderPayload);
-      
-      // Now update customer database with the real order ID from database
-      if (createdOrder?.id) {
-        if (customerInfo.name.trim() && !matchedCustomer) {
-          // Add new customer with the order ID
+
+      // 1) Persist sale (single source of truth)
+      createdOrder = await addOrder(orderPayload);
+      if (!createdOrder?.id) {
+        throw new Error('Order was not persisted');
+      }
+
+      // 2) Update inventory AFTER sale is persisted (so we can rollback by deleting the order)
+      await updateInventoryAfterSale(cart);
+
+      // 3) Optional customer handling (persist + link)
+      const hasCustomerInfo = Boolean(customerInfo.name.trim() || customerInfo.phone.trim() || customerInfo.email.trim());
+
+      if (hasCustomerInfo) {
+        if (matchedCustomer) {
+          await updateCustomer(matchedCustomer.id, {
+            total_orders: (matchedCustomer.total_orders || 0) + 1,
+            total_spent: (matchedCustomer.total_spent || 0) + total,
+            last_order_date: new Date().toISOString(),
+            order_history: [...(matchedCustomer.order_history || []), createdOrder.id],
+          });
+        } else {
+          const inferredName = customerInfo.name.trim() || customerInfo.phone.trim() || 'Customer';
+
           const newCustomer: Omit<Customer, 'id' | 'created_at' | 'updated_at' | 'user_id'> = {
-            name: customerInfo.name,
+            name: inferredName,
             phone: customerInfo.phone || '',
             email: customerInfo.email || '',
             city: '',
@@ -350,72 +373,75 @@ const Pos = () => {
             total_spent: total,
             last_order_date: new Date().toISOString(),
             status: 'Active',
-            order_history: [createdOrder.id]
+            order_history: [createdOrder.id],
           };
-          await addCustomer(newCustomer);
-        } else if (matchedCustomer) {
-          // Update existing customer with the new order ID
-          await updateCustomer(matchedCustomer.id, {
-            total_orders: (matchedCustomer.total_orders || 0) + 1,
-            total_spent: (matchedCustomer.total_spent || 0) + total,
-            last_order_date: new Date().toISOString(),
-            order_history: [...(matchedCustomer.order_history || []), createdOrder.id]
-          });
+
+          const createdCustomer = await addCustomer(newCustomer);
+          createdCustomerId = createdCustomer?.id || null;
+
+          // Link customer to the order record
+          if (createdCustomer?.id) {
+            await updateOrder(createdOrder.id, {
+              customer_id: createdCustomer.id,
+              customer_name: createdCustomer.name,
+              customer_phone: createdCustomer.phone || '',
+              customer_email: createdCustomer.email || '',
+            });
+          }
         }
       }
 
-      // Create order object for display (use DB id + keep POS code in tracking_number)
-      const newOrder: Order = {
-        id: createdOrder?.id || orderId,
-        items: cart,
-        subtotal,
-        gst: 0,
-        total,
-        payment_method: currentTab,
-        payment_status: 'Paid',
-        order_date: new Date().toISOString(),
-        order_status: 'Delivered',
-        customer_name: customerInfo.name || "Guest Customer",
-        customer_phone: customerInfo.phone || null,
-        customer_email: customerInfo.email || null,
-        shipping_address: null,
-        tracking_number: orderId,
-        status: 'completed',
-        customer_id: matchedCustomer?.id || null,
-        user_id: '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
       toast({
         title: "Order Completed",
         description: `Order #${orderId} has been created successfully.`
       });
-      
-      // Set current order for professional invoice
-      setCurrentOrder(newOrder);
-      
+
+      setCurrentOrder(createdOrder);
       setPaymentModalOpen(false);
-      
+
       // Ask if they want to print receipt
       const shouldPrint = window.confirm("Do you want to print a receipt?");
       if (shouldPrint) {
-        printReceipt(newOrder);
+        printReceipt(createdOrder);
       }
-      
+
       // Ask if they want to show professional invoice
       const shouldShowInvoice = window.confirm("Do you want to view/share a professional invoice?");
       if (shouldShowInvoice) {
         setShowProfessionalInvoice(true);
       }
-      
+
       // Reset cart and customer info
       setCart([]);
       setAmountTendered("");
       setCustomerInfo({ name: "", phone: "", email: "" });
       setMatchedCustomer(null);
-      
     } catch (error) {
+      // Compensating rollback to avoid partial/orphaned records
+      try {
+        if (createdOrder?.id) {
+          await deleteOrder(createdOrder.id);
+        }
+      } catch {
+        // ignore rollback errors
+      }
+
+      try {
+        for (const [productId, stock] of stockBeforeSale.entries()) {
+          await updateProduct(productId, { stock });
+        }
+      } catch {
+        // ignore rollback errors
+      }
+
+      try {
+        if (createdCustomerId) {
+          await deleteCustomer(createdCustomerId);
+        }
+      } catch {
+        // ignore rollback errors
+      }
+
       console.error("Error creating order:", error);
       toast({
         title: "Error",
