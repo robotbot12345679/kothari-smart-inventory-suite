@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { User, Session } from '@supabase/supabase-js';
@@ -259,7 +259,40 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   // Initialize and fetch data immediately (no authentication required)
   useEffect(() => {
     fetchAllData();
-  }, []);
+  }, [fetchAllData]);
+
+  // Realtime sync across tabs/devices (keeps Dashboard/Analytics/Bills in sync instantly)
+  const refreshTimeoutRef = useRef<number | null>(null);
+
+  const scheduleRefresh = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      window.clearTimeout(refreshTimeoutRef.current);
+    }
+
+    refreshTimeoutRef.current = window.setTimeout(() => {
+      fetchAllData();
+    }, 250);
+  }, [fetchAllData]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:cloud-data-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, scheduleRefresh)
+      .subscribe();
+
+    return () => {
+      if (refreshTimeoutRef.current) {
+        window.clearTimeout(refreshTimeoutRef.current);
+        refreshTimeoutRef.current = null;
+      }
+      supabase.removeChannel(channel);
+    };
+  }, [scheduleRefresh]);
 
   // Product methods
   const addProduct = async (productData: Omit<Product, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
