@@ -38,7 +38,7 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
     toast({ title: "WhatsApp Sharing", description: "Opening WhatsApp to share invoice..." });
   };
   
-  const handleEmailShare = () => {
+  const handleEmailShare = async () => {
     if (!order.customer_email) {
       toast({ title: "Email Required", description: "Customer email is not available", variant: "destructive" });
       return;
@@ -46,15 +46,15 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
     const subject = `Invoice ${invoiceNumber} - ${template.shopName}`;
     const orderTimeStr = format(orderDate, "MMM dd, yyyy 'at' h:mm a");
     const body = `Hello${customerName ? " " + customerName : ""},\n\nPlease find attached your invoice ${invoiceNumber} for your purchase on ${orderTimeStr}.\n\nThank you for your business!\n\nRegards,\n${template.shopName}`;
-    createPrintableInvoice(order, template);
+    await createPrintableInvoice(order, template);
     setTimeout(() => {
       window.location.href = `mailto:${order.customer_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     }, 500);
     toast({ title: "Email Sharing", description: "Opening email client..." });
   };
   
-  const handleDownload = () => {
-    const printWindow = createPrintableInvoice(order, template);
+  const handleDownload = async () => {
+    const printWindow = await createPrintableInvoice(order, template);
     if (!printWindow) {
       toast({ title: "Download Failed", description: "Could not create download. Please check popup blockers.", variant: "destructive" });
       return;
