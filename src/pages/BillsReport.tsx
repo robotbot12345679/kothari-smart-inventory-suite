@@ -174,7 +174,7 @@ const BillsReport = () => {
   };
 
   // Function to handle sharing invoice via Email
-  const shareInvoiceEmail = () => {
+  const shareInvoiceEmail = async () => {
     if (!selectedOrder || !customerEmail) {
       toast({
         title: "Missing Information",
@@ -209,7 +209,7 @@ Regards,
 ${template.shopName}`;
     
     // First, generate the PDF in a new window
-    createPrintableInvoice(selectedOrder, template);
+    await createPrintableInvoice(selectedOrder, template);
     
     // After a short delay to allow the PDF to initialize, open the email client
     setTimeout(() => {
