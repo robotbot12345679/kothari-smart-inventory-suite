@@ -1,8 +1,71 @@
-
 import { BillingTemplate } from "@/context/CloudDataContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export { createPrintableInvoice } from "./InvoiceService";
 
+/**
+ * Prepare invoice for WhatsApp delivery
+ * Generates PDF, stores in Supabase Storage, and creates signed URL
+ * Returns the prepared invoice data with signed URL
+ */
+export const prepareWhatsAppInvoice = async (
+  orderId: string,
+  billingTemplate: BillingTemplate
+): Promise<{
+  success: boolean;
+  invoice_id?: string;
+  whatsapp_status?: string;
+  signed_url?: string;
+  signed_url_expires_at?: string;
+  error?: string;
+}> => {
+  try {
+    console.log(`[WhatsAppService] Preparing invoice for order: ${orderId}`);
+    
+    const { data, error } = await supabase.functions.invoke("prepare-whatsapp-invoice", {
+      body: {
+        order_id: orderId,
+        billing_template: billingTemplate,
+      },
+    });
+
+    if (error) {
+      console.error("[WhatsAppService] Edge function error:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to prepare invoice",
+      };
+    }
+
+    if (!data?.success) {
+      console.error("[WhatsAppService] Preparation failed:", data?.error);
+      return {
+        success: false,
+        error: data?.error || "Failed to prepare invoice",
+      };
+    }
+
+    console.log("[WhatsAppService] Invoice prepared successfully:", data);
+    return {
+      success: true,
+      invoice_id: data.invoice_id,
+      whatsapp_status: data.whatsapp_status,
+      signed_url: data.signed_url,
+      signed_url_expires_at: data.signed_url_expires_at,
+    };
+  } catch (error) {
+    console.error("[WhatsAppService] Unexpected error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unexpected error occurred",
+    };
+  }
+};
+
+/**
+ * Send invoice via WhatsApp (opens WhatsApp with pre-filled message)
+ * This is the existing functionality - opens WhatsApp Web/App
+ */
 export const sendInvoiceViaWhatsApp = (
   order: any,
   billingTemplate: BillingTemplate,
@@ -47,4 +110,30 @@ ${billingTemplate.shopName}`;
   } catch (error) {
     console.error("Error sharing invoice:", error);
   }
+};
+
+/**
+ * PLACEHOLDER: Future WhatsApp Business API Integration
+ * 
+ * This function will send the invoice directly via WhatsApp Business API
+ * when API access is provided. Currently NOT implemented.
+ * 
+ * When implemented, it will:
+ * 1. Use the stored signed URL from prepareWhatsAppInvoice
+ * 2. Send via WhatsApp Business API with Utility template (Document header)
+ * 3. Update invoice_metadata.whatsapp_status to 'sent' or 'failed'
+ * 
+ * @param invoiceId - The invoice ID to send
+ * @returns Promise with send status
+ */
+export const sendWhatsAppInvoiceViaAPI = async (
+  _invoiceId: string
+): Promise<{ success: boolean; error?: string }> => {
+  // TODO: Implement when WhatsApp Business API access is provided
+  // This is a placeholder that will be replaced with actual API integration
+  console.warn("[WhatsAppService] sendWhatsAppInvoiceViaAPI is not yet implemented. Awaiting WhatsApp API access.");
+  return {
+    success: false,
+    error: "WhatsApp API integration not yet available. Please use the manual sharing option.",
+  };
 };

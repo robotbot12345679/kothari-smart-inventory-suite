@@ -107,6 +107,54 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_metadata: {
+        Row: {
+          created_at: string
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          invoice_id: string
+          invoice_pdf_generated_at: string | null
+          invoice_pdf_path: string | null
+          order_id: string
+          signed_url_expires_at: string | null
+          signed_url_last_generated_at: string | null
+          updated_at: string
+          user_id: string
+          whatsapp_status: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          invoice_id: string
+          invoice_pdf_generated_at?: string | null
+          invoice_pdf_path?: string | null
+          order_id: string
+          signed_url_expires_at?: string | null
+          signed_url_last_generated_at?: string | null
+          updated_at?: string
+          user_id: string
+          whatsapp_status?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          invoice_id?: string
+          invoice_pdf_generated_at?: string | null
+          invoice_pdf_path?: string | null
+          order_id?: string
+          signed_url_expires_at?: string | null
+          signed_url_last_generated_at?: string | null
+          updated_at?: string
+          user_id?: string
+          whatsapp_status?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string
