@@ -4,7 +4,7 @@ import { Order } from "@/types/pos";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import { useCloudData } from "@/context/CloudDataContext";
-import { sendInvoiceViaWhatsApp, createPrintableInvoice } from "@/services/WhatsAppService";
+import { sendInvoiceViaWhatsApp, createPrintableInvoice, prepareWhatsAppInvoice } from "@/services/WhatsAppService";
 import { generateInvoiceNumber, getDefaultBillingTemplate } from "@/services/InvoiceService";
 import InvoiceHeader from "./InvoiceHeader";
 import CustomerInfo from "./CustomerInfo";
@@ -33,7 +33,28 @@ const ProfessionalInvoice = ({ order, onClose }: ProfessionalInvoiceProps) => {
     toast({ title: "Printing", description: "Sending invoice to printer..." });
   };
   
-  const handleWhatsAppShare = () => {
+  const handleWhatsAppShare = async () => {
+    toast({ title: "Preparing Invoice", description: "Generating and storing invoice for WhatsApp..." });
+    
+    try {
+      // Prepare invoice for WhatsApp (generates PDF, stores in Supabase, creates signed URL)
+      const prepareResult = await prepareWhatsAppInvoice(order.id, template);
+      
+      if (prepareResult.success) {
+        console.log("[ProfessionalInvoice] Invoice prepared successfully:", prepareResult);
+        toast({
+          title: "Invoice Ready",
+          description: `Invoice ${prepareResult.invoice_id} prepared for WhatsApp delivery`,
+        });
+      } else {
+        console.warn("[ProfessionalInvoice] Invoice preparation failed:", prepareResult.error);
+      }
+    } catch (error) {
+      console.error("[ProfessionalInvoice] Error preparing invoice:", error);
+      // Continue with text-only sharing even if preparation fails
+    }
+    
+    // Open WhatsApp with pre-filled message
     sendInvoiceViaWhatsApp(order, template);
     toast({ title: "WhatsApp Sharing", description: "Opening WhatsApp to share invoice..." });
   };

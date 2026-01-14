@@ -60,7 +60,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { sendInvoiceViaWhatsApp, createPrintableInvoice } from "@/services/WhatsAppService";
+import { sendInvoiceViaWhatsApp, createPrintableInvoice, prepareWhatsAppInvoice } from "@/services/WhatsAppService";
 import ProfessionalInvoice from "@/components/invoice/ProfessionalInvoice";
 import { generateInvoiceNumber } from "@/services/InvoiceService";
 import { downloadInvoicePDF } from "@/lib/pdf-exporter";
@@ -142,7 +142,7 @@ const BillsReport = () => {
   };
 
   // Function to handle sharing invoice via WhatsApp
-  const shareInvoiceWhatsApp = () => {
+  const shareInvoiceWhatsApp = async () => {
     if (!selectedOrder || !customerPhone) {
       toast({
         title: "Missing Information",
@@ -161,6 +161,30 @@ const BillsReport = () => {
       footerText: ["Thank you for shopping with us!", "Visit again soon!"]
     };
 
+    // First, prepare the invoice for WhatsApp (generates PDF, stores it, creates signed URL)
+    toast({
+      title: "Preparing Invoice",
+      description: "Generating and storing invoice for WhatsApp...",
+    });
+
+    try {
+      const prepareResult = await prepareWhatsAppInvoice(selectedOrder.id, template);
+      
+      if (prepareResult.success) {
+        console.log("[BillsReport] Invoice prepared successfully:", prepareResult);
+        toast({
+          title: "Invoice Ready",
+          description: `Invoice ${prepareResult.invoice_id} prepared for WhatsApp delivery`,
+        });
+      } else {
+        console.warn("[BillsReport] Invoice preparation failed, proceeding with text-only:", prepareResult.error);
+      }
+    } catch (error) {
+      console.error("[BillsReport] Error preparing invoice:", error);
+      // Continue with text-only sharing even if preparation fails
+    }
+
+    // Send via WhatsApp (opens WhatsApp with pre-filled message)
     sendInvoiceViaWhatsApp(selectedOrder, template, customerPhone);
     
     toast({

@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.delete-product-image]
 verify_jwt = true
+
+[functions.prepare-whatsapp-invoice]
+verify_jwt = false
