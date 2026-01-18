@@ -76,6 +76,8 @@ export async function downloadInvoicePDF(order: Order, billingTemplate: BillingT
           margin: 0;
           padding: 0;
           box-sizing: border-box;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
         body {
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -142,23 +144,27 @@ export async function downloadInvoicePDF(order: Order, billingTemplate: BillingT
         }
         .status-badge {
           display: inline-block;
-          background-color: #d4edda;
-          color: #155724;
+          background-color: #d4edda !important;
+          color: #155724 !important;
           padding: 6px 16px;
           border-radius: 20px;
           font-size: 13px;
           font-weight: bold;
           text-transform: uppercase;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
         .unpaid-badge {
-          background-color: #fff3cd;
-          color: #856404;
+          background-color: #fff3cd !important;
+          color: #856404 !important;
         }
         .client-info {
           margin: 30px 0;
           padding: 20px;
-          background-color: #f8f9fa;
+          background-color: #f8f9fa !important;
           border-radius: 8px;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
         .section-title {
           font-size: 14px;
@@ -184,7 +190,7 @@ export async function downloadInvoicePDF(order: Order, billingTemplate: BillingT
           margin-top: 30px;
         }
         th {
-          background-color: #f8f9fa;
+          background-color: #f8f9fa !important;
           text-align: left;
           padding: 14px 12px;
           border-bottom: 2px solid #dee2e6;
@@ -193,6 +199,8 @@ export async function downloadInvoicePDF(order: Order, billingTemplate: BillingT
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
         td {
           padding: 14px 12px;
@@ -219,9 +227,11 @@ export async function downloadInvoicePDF(order: Order, billingTemplate: BillingT
         }
         .totals-table {
           width: 320px;
-          background-color: #f8f9fa;
+          background-color: #f8f9fa !important;
           border-radius: 8px;
           overflow: hidden;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
         .totals-table td {
           padding: 12px 16px;
@@ -234,7 +244,9 @@ export async function downloadInvoicePDF(order: Order, billingTemplate: BillingT
         .total-row {
           font-weight: bold;
           font-size: 18px !important;
-          background-color: #e9ecef;
+          background-color: #e9ecef !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
         .total-row td {
           padding: 16px !important;
@@ -253,9 +265,11 @@ export async function downloadInvoicePDF(order: Order, billingTemplate: BillingT
         .payment-section {
           margin-top: 30px;
           padding: 20px;
-          background-color: #fff3cd;
+          background-color: #fff3cd !important;
           border-radius: 8px;
           border: 1px solid #ffc107;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
         .payment-qr {
           text-align: center;
@@ -277,10 +291,47 @@ export async function downloadInvoicePDF(order: Order, billingTemplate: BillingT
           body {
             padding: 0;
             background-color: #fff;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           .invoice-container {
             border: none;
             padding: 20px;
+          }
+          .client-info {
+            background-color: #f8f9fa !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .status-badge {
+            background-color: #d4edda !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .unpaid-badge {
+            background-color: #fff3cd !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          th {
+            background-color: #f8f9fa !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .totals-table {
+            background-color: #f8f9fa !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .total-row {
+            background-color: #e9ecef !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .payment-section {
+            background-color: #fff3cd !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
         }
       </style>

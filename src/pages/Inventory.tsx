@@ -31,6 +31,15 @@ const Inventory = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const tableRef = React.useRef<HTMLDivElement>(null);
+
+  // Function to scroll to low stock products
+  const scrollToLowStock = () => {
+    setStatusFilter("low-stock");
+    setTimeout(() => {
+      tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
 
   // Filter products based on search and filters
   const filteredProducts = products.filter(product => {
@@ -103,14 +112,17 @@ const Inventory = () => {
             </p>
           </CardContent>
         </Card>
-        <Card className="card-hover">
+        <Card 
+          className="card-hover cursor-pointer transition-all hover:ring-2 hover:ring-destructive/50"
+          onClick={scrollToLowStock}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Low Stock Alerts</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{lowStockCount}</div>
-            <p className="text-xs text-muted-foreground">Products below threshold</p>
+            <div className="text-2xl font-bold text-destructive">{lowStockCount}</div>
+            <p className="text-xs text-muted-foreground">Click to view products below threshold</p>
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -134,7 +146,7 @@ const Inventory = () => {
         </Card>
       </div>
 
-      <div className="bg-white rounded-lg shadow dark:bg-gray-800">
+      <div ref={tableRef} className="bg-white rounded-lg shadow dark:bg-gray-800">
         <div className="p-4 border-b flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -253,9 +265,9 @@ const getStatusColor = (status: string) => {
     case "In Stock":
       return "bg-success/10 text-success border-success/20";
     case "Low Stock":
-      return "bg-warning/10 text-warning border-warning/20";
+      return "bg-destructive/10 text-destructive border-destructive/20 font-semibold";
     case "Out of Stock":
-      return "bg-destructive/10 text-destructive border-destructive/20";
+      return "bg-destructive/20 text-destructive border-destructive/30 font-bold";
     default:
       return "bg-muted/50 text-muted-foreground border-border";
   }
