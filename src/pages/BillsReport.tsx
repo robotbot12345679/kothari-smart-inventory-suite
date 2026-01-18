@@ -85,30 +85,37 @@ const BillsReport = () => {
   const [paymentDate, setPaymentDate] = useState<Date | undefined>(new Date());
   
   // Filter the orders based on search, payment method, and date
-  const filteredOrders = orders.filter((order) => {
-    // Filter by search (order ID or customer name)
-    const matchesSearch =
-      searchQuery === "" ||
-      (order.id && order.id.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (order.customer_name && order.customer_name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredOrders = orders
+    .filter((order) => {
+      // Filter by search (order ID or customer name)
+      const matchesSearch =
+        searchQuery === "" ||
+        (order.id && order.id.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (order.customer_name && order.customer_name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    // Filter by payment method
-    const matchesPaymentMethod =
-      paymentMethodFilter === "all" || order.payment_method === paymentMethodFilter;
+      // Filter by payment method
+      const matchesPaymentMethod =
+        paymentMethodFilter === "all" || order.payment_method === paymentMethodFilter;
 
-    // Filter by date
-    const matchesDate =
-      !date ||
-      (order.order_date && format(new Date(order.order_date), "yyyy-MM-dd") === format(date, "yyyy-MM-dd"));
+      // Filter by date
+      const matchesDate =
+        !date ||
+        (order.order_date && format(new Date(order.order_date), "yyyy-MM-dd") === format(date, "yyyy-MM-dd"));
 
-    // Filter by source (POS vs Orders)
-    // POS orders store the human-friendly code in `tracking_number` (ORD...)
-    const orderRef = (order as any).tracking_number || order.id;
-    const orderSource = typeof orderRef === 'string' && orderRef.startsWith('ORD') ? 'pos' : 'orders';
-    const matchesSource = sourceFilter === "all" || orderSource === sourceFilter;
+      // Filter by source (POS vs Orders)
+      // POS orders store the human-friendly code in `tracking_number` (ORD...)
+      const orderRef = (order as any).tracking_number || order.id;
+      const orderSource = typeof orderRef === 'string' && orderRef.startsWith('ORD') ? 'pos' : 'orders';
+      const matchesSource = sourceFilter === "all" || orderSource === sourceFilter;
 
-    return matchesSearch && matchesPaymentMethod && matchesDate && matchesSource;
-  });
+      return matchesSearch && matchesPaymentMethod && matchesDate && matchesSource;
+    })
+    // Sort by date descending (newest first)
+    .sort((a, b) => {
+      const dateA = new Date(a.order_date || a.created_at).getTime();
+      const dateB = new Date(b.order_date || b.created_at).getTime();
+      return dateB - dateA;
+    });
 
   // Function to print a receipt
   const printReceipt = (order: Order) => {
