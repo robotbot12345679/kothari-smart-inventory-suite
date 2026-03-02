@@ -5,10 +5,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { productSchema, customerSchema, categorySchema, orderSchema, supplierSchema } from '@/lib/validation';
 import { z } from 'zod';
 
-// Single-user mode - fixed user ID for all database operations (no authentication required)
-// Use a REAL UUID because the `user_id` columns in Supabase are UUID typed.
-// Using an invalid UUID (e.g. "single-user-mode") will make inserts fail.
-const FIXED_USER_ID = 'ce4e31ba-703b-4402-948d-1f2ecc219ba4';
+// Auth-based user ID - falls back to empty string (should never happen when auth is required)
 // Types
 export interface Product {
   id: string;
@@ -193,6 +190,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [billingTemplate, setBillingTemplate] = useState<BillingTemplate | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   
   // Utility function
   const showToast = (title: string, description: string, variant: 'default' | 'destructive' = 'default') => {
@@ -256,10 +254,38 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // Initialize and fetch data immediately (no authentication required)
+  // Listen for auth state changes
   useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setAuthChecked(true);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Fetch data when user is authenticated
+  useEffect(() => {
+    if (!authChecked) return;
+    if (user) {
+      fetchAllData();
+    } else {
+      setLoading(false);
+      setProducts([]);
+      setCategories([]);
+      setCustomers([]);
+      setOrders([]);
+      setSuppliers([]);
+      setBillingTemplate(null);
+    }
+  }, [user, authChecked, fetchAllData]);
 
   // Realtime sync across tabs/devices (keeps Dashboard/Analytics/Bills in sync instantly)
   const refreshTimeoutRef = useRef<number | null>(null);
@@ -296,7 +322,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Product methods
   const addProduct = async (productData: Omit<Product, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    const userId = user?.id || FIXED_USER_ID;
+    const userId = user!.id;
     try {
       productSchema.parse(productData);
       const { data, error } = await supabase
@@ -371,7 +397,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Category methods
   const addCategory = async (name: string) => {
-    const userId = user?.id || FIXED_USER_ID;
+    const userId = user!.id;
     try {
       categorySchema.parse({ name });
       const { data, error } = await supabase
@@ -426,7 +452,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   const addCustomer = async (
     customerData: Omit<Customer, 'id' | 'user_id' | 'created_at' | 'updated_at'>
   ): Promise<Customer | null> => {
-    const userId = user?.id || FIXED_USER_ID;
+    const userId = user!.id;
     try {
       customerSchema.parse(customerData);
 
@@ -524,7 +550,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   const addOrder = async (
     orderData: Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>
   ): Promise<Order | null> => {
-    const userId = user?.id || FIXED_USER_ID;
+    const userId = user!.id;
 
     try {
       // Normalize optional UUID fields: Supabase allows NULL, but our Zod schema requires "missing" (undefined) for optional fields.
@@ -630,7 +656,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Supplier methods
   const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    const userId = user?.id || FIXED_USER_ID;
+    const userId = user!.id;
     try {
       supplierSchema.parse(supplierData);
       const { data, error } = await supabase
