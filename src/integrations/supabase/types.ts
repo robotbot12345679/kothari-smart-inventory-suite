@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
@@ -19,7 +19,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
-          is_active: boolean | null
+          is_active: boolean
           name: string
           updated_at: string
           user_id: string
@@ -28,7 +28,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           name: string
           updated_at?: string
           user_id: string
@@ -37,7 +37,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           name?: string
           updated_at?: string
           user_id?: string
@@ -59,9 +59,9 @@ export type Database = {
           phone: string | null
           pincode: string | null
           state: string | null
-          status: string | null
-          total_orders: number | null
-          total_spent: number | null
+          status: string
+          total_orders: number
+          total_spent: number
           updated_at: string
           user_id: string
         }
@@ -79,9 +79,9 @@ export type Database = {
           phone?: string | null
           pincode?: string | null
           state?: string | null
-          status?: string | null
-          total_orders?: number | null
-          total_spent?: number | null
+          status?: string
+          total_orders?: number
+          total_spent?: number
           updated_at?: string
           user_id: string
         }
@@ -99,59 +99,11 @@ export type Database = {
           phone?: string | null
           pincode?: string | null
           state?: string | null
-          status?: string | null
-          total_orders?: number | null
-          total_spent?: number | null
+          status?: string
+          total_orders?: number
+          total_spent?: number
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      invoice_metadata: {
-        Row: {
-          created_at: string
-          customer_name: string | null
-          customer_phone: string | null
-          id: string
-          invoice_id: string
-          invoice_pdf_generated_at: string | null
-          invoice_pdf_path: string | null
-          order_id: string
-          signed_url_expires_at: string | null
-          signed_url_last_generated_at: string | null
-          updated_at: string
-          user_id: string
-          whatsapp_status: string
-        }
-        Insert: {
-          created_at?: string
-          customer_name?: string | null
-          customer_phone?: string | null
-          id?: string
-          invoice_id: string
-          invoice_pdf_generated_at?: string | null
-          invoice_pdf_path?: string | null
-          order_id: string
-          signed_url_expires_at?: string | null
-          signed_url_last_generated_at?: string | null
-          updated_at?: string
-          user_id: string
-          whatsapp_status?: string
-        }
-        Update: {
-          created_at?: string
-          customer_name?: string | null
-          customer_phone?: string | null
-          id?: string
-          invoice_id?: string
-          invoice_pdf_generated_at?: string | null
-          invoice_pdf_path?: string | null
-          order_id?: string
-          signed_url_expires_at?: string | null
-          signed_url_last_generated_at?: string | null
-          updated_at?: string
-          user_id?: string
-          whatsapp_status?: string
         }
         Relationships: []
       }
@@ -162,16 +114,16 @@ export type Database = {
           customer_id: string | null
           customer_name: string | null
           customer_phone: string | null
-          gst: number | null
+          gst: number
           id: string
           items: Json
-          order_date: string | null
-          order_status: string | null
+          order_date: string
+          order_status: string
           payment_method: string | null
-          payment_status: string | null
+          payment_status: string
           shipping_address: string | null
-          status: string | null
-          subtotal: number | null
+          status: string
+          subtotal: number
           total: number
           tracking_number: string | null
           updated_at: string
@@ -183,17 +135,17 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
-          gst?: number | null
+          gst?: number
           id?: string
-          items: Json
-          order_date?: string | null
-          order_status?: string | null
+          items?: Json
+          order_date?: string
+          order_status?: string
           payment_method?: string | null
-          payment_status?: string | null
+          payment_status?: string
           shipping_address?: string | null
-          status?: string | null
-          subtotal?: number | null
-          total: number
+          status?: string
+          subtotal?: number
+          total?: number
           tracking_number?: string | null
           updated_at?: string
           user_id: string
@@ -204,30 +156,22 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
-          gst?: number | null
+          gst?: number
           id?: string
           items?: Json
-          order_date?: string | null
-          order_status?: string | null
+          order_date?: string
+          order_status?: string
           payment_method?: string | null
-          payment_status?: string | null
+          payment_status?: string
           shipping_address?: string | null
-          status?: string | null
-          subtotal?: number | null
+          status?: string
+          subtotal?: number
           total?: number
           tracking_number?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "orders_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       products: {
         Row: {
@@ -239,17 +183,17 @@ export type Database = {
           id: string
           image: string | null
           image_url: string | null
-          is_active: boolean | null
-          min_stock: number | null
+          is_active: boolean
+          min_stock: number
           name: string
           price: number
-          price_includes_gst: boolean | null
+          price_includes_gst: boolean
           sku: string | null
-          stock: number | null
-          unit: string | null
+          stock: number
+          unit: string
           updated_at: string
           user_id: string
-          weight: number | null
+          weight: number
         }
         Insert: {
           barcode?: string | null
@@ -260,17 +204,17 @@ export type Database = {
           id?: string
           image?: string | null
           image_url?: string | null
-          is_active?: boolean | null
-          min_stock?: number | null
+          is_active?: boolean
+          min_stock?: number
           name: string
-          price: number
-          price_includes_gst?: boolean | null
+          price?: number
+          price_includes_gst?: boolean
           sku?: string | null
-          stock?: number | null
-          unit?: string | null
+          stock?: number
+          unit?: string
           updated_at?: string
           user_id: string
-          weight?: number | null
+          weight?: number
         }
         Update: {
           barcode?: string | null
@@ -281,41 +225,17 @@ export type Database = {
           id?: string
           image?: string | null
           image_url?: string | null
-          is_active?: boolean | null
-          min_stock?: number | null
+          is_active?: boolean
+          min_stock?: number
           name?: string
           price?: number
-          price_includes_gst?: boolean | null
+          price_includes_gst?: boolean
           sku?: string | null
-          stock?: number | null
-          unit?: string | null
+          stock?: number
+          unit?: string
           updated_at?: string
           user_id?: string
-          weight?: number | null
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          created_at: string
-          full_name: string | null
-          id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          full_name?: string | null
-          id?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          full_name?: string | null
-          id?: string
-          updated_at?: string
-          user_id?: string
+          weight?: number
         }
         Relationships: []
       }
@@ -346,39 +266,39 @@ export type Database = {
       suppliers: {
         Row: {
           address: string | null
-          bills: Json | null
+          bills: Json
           contact_person: string | null
           created_at: string
           email: string | null
           id: string
           name: string
-          payments: Json | null
+          payments: Json
           phone: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           address?: string | null
-          bills?: Json | null
+          bills?: Json
           contact_person?: string | null
           created_at?: string
           email?: string | null
           id?: string
           name: string
-          payments?: Json | null
+          payments?: Json
           phone?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           address?: string | null
-          bills?: Json | null
+          bills?: Json
           contact_person?: string | null
           created_at?: string
           email?: string | null
           id?: string
           name?: string
-          payments?: Json | null
+          payments?: Json
           phone?: string | null
           updated_at?: string
           user_id?: string
