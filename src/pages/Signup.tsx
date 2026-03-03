@@ -16,13 +16,17 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const withTimeout = async <T,>(promise: Promise<T>, ms = 12000): Promise<T> => {
-    return await Promise.race([
-      promise,
-      new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new Error("Request timed out. Please try again.")), ms)
-      ),
-    ]);
+  const withTimeout = async <T,>(operation: () => Promise<T>, ms = 20000): Promise<T> => {
+    return await new Promise<T>((resolve, reject) => {
+      const timeoutId = window.setTimeout(() => {
+        reject(new Error("AUTH_TIMEOUT"));
+      }, ms);
+
+      operation()
+        .then(resolve)
+        .catch(reject)
+        .finally(() => window.clearTimeout(timeoutId));
+    });
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -46,9 +50,23 @@ const Signup = () => {
         ? userId.toLowerCase().trim()
         : userId.toLowerCase().trim() + EMAIL_DOMAIN;
 
-      const { data, error } = await withTimeout(
-        supabase.auth.signUp({ email, password })
-      );
+      const signUp = () => supabase.auth.signUp({ email, password });
+      let result;
+
+      try {
+        result = await withTimeout(signUp);
+      } catch (firstError: any) {
+        const firstMessage = String(firstError?.message || "").toLowerCase();
+        const shouldRetry =
+          firstMessage.includes("failed to fetch") ||
+          firstMessage.includes("network") ||
+          firstMessage.includes("auth_timeout");
+
+        if (!shouldRetry) throw firstError;
+        result = await withTimeout(signUp);
+      }
+
+      const { data, error } = result;
 
       if (error) {
         toast({ title: "Signup Failed", description: error.message, variant: "destructive" });
@@ -63,9 +81,9 @@ const Signup = () => {
         }
       }
     } catch (err: any) {
-      const message = err?.message?.includes("Failed to fetch") || err?.message?.includes("timed out")
-        ? "Network issue while contacting authentication service. Please retry."
-        : "Something went wrong";
+      const message = err?.message?.includes("Failed to fetch") || err?.message?.toLowerCase?.().includes("network") || err?.message?.includes("AUTH_TIMEOUT")
+        ? "Cannot reach authentication service right now. Please retry in a few seconds."
+        : err?.message || "Something went wrong";
       toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
