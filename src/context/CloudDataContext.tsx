@@ -258,7 +258,14 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let isMounted = true;
 
-    // Get initial session first so auth restoration is ready before downstream queries
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      setSession(session);
+      setUser(session?.user ?? null);
+      setAuthChecked(true);
+    });
+
+    // Resolve initial session after listener is attached to avoid missing early auth events
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!isMounted) return;
       setSession(session);
@@ -266,13 +273,6 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
       setAuthChecked(true);
     }).catch(() => {
       if (!isMounted) return;
-      setAuthChecked(true);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!isMounted) return;
-      setSession(session);
-      setUser(session?.user ?? null);
       setAuthChecked(true);
     });
 
