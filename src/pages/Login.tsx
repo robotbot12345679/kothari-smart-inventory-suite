@@ -15,6 +15,15 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  const withTimeout = async <T,>(promise: Promise<T>, ms = 12000): Promise<T> => {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error("Request timed out. Please try again.")), ms)
+      ),
+    ]);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId.trim() || !password.trim()) {
@@ -24,14 +33,22 @@ const Login = () => {
 
     setLoading(true);
     try {
-      const email = userId.toLowerCase().trim() + EMAIL_DOMAIN;
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const email = userId.toLowerCase().trim().includes("@")
+        ? userId.toLowerCase().trim()
+        : userId.toLowerCase().trim() + EMAIL_DOMAIN;
+
+      const { error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password })
+      );
 
       if (error) {
         toast({ title: "Login Failed", description: "Invalid User ID or Password", variant: "destructive" });
       }
-    } catch (err) {
-      toast({ title: "Error", description: "Something went wrong", variant: "destructive" });
+    } catch (err: any) {
+      const message = err?.message?.includes("Failed to fetch") || err?.message?.includes("timed out")
+        ? "Network issue while contacting authentication service. Please retry."
+        : "Something went wrong";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }

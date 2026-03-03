@@ -16,6 +16,15 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  const withTimeout = async <T,>(promise: Promise<T>, ms = 12000): Promise<T> => {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error("Request timed out. Please try again.")), ms)
+      ),
+    ]);
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId.trim() || !password.trim()) {
@@ -33,19 +42,31 @@ const Signup = () => {
 
     setLoading(true);
     try {
-      const email = userId.toLowerCase().trim() + EMAIL_DOMAIN;
-      const { error } = await supabase.auth.signUp({ email, password });
+      const email = userId.toLowerCase().trim().includes("@")
+        ? userId.toLowerCase().trim()
+        : userId.toLowerCase().trim() + EMAIL_DOMAIN;
+
+      const { data, error } = await withTimeout(
+        supabase.auth.signUp({ email, password })
+      );
 
       if (error) {
         toast({ title: "Signup Failed", description: error.message, variant: "destructive" });
       } else {
-        toast({ title: "Account Created", description: "You can now login with your credentials." });
+        toast({ title: "Account Created", description: "Account created successfully." });
         setUserId("");
         setPassword("");
         setConfirmPassword("");
+
+        if (data?.session) {
+          window.location.href = "/";
+        }
       }
-    } catch (err) {
-      toast({ title: "Error", description: "Something went wrong", variant: "destructive" });
+    } catch (err: any) {
+      const message = err?.message?.includes("Failed to fetch") || err?.message?.includes("timed out")
+        ? "Network issue while contacting authentication service. Please retry."
+        : "Something went wrong";
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
