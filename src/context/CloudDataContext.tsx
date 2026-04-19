@@ -282,12 +282,18 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Fetch data when user is authenticated
+  // Fetch data when user is authenticated - only when user ID actually changes
+  // (avoids reloading when tab regains focus and Supabase fires TOKEN_REFRESHED)
+  const lastFetchedUserIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!authChecked) return;
     if (user) {
-      fetchAllData();
+      if (lastFetchedUserIdRef.current !== user.id) {
+        lastFetchedUserIdRef.current = user.id;
+        fetchAllData();
+      }
     } else {
+      lastFetchedUserIdRef.current = null;
       setLoading(false);
       setProducts([]);
       setCategories([]);
