@@ -197,9 +197,14 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     toast({ title, description, variant });
   };
 
+  // Track whether initial load has completed to avoid showing the loader on background refetches
+  const hasLoadedOnceRef = useRef(false);
+
   // Fetch all data (no authentication required)
   const fetchAllData = useCallback(async () => {
-    setLoading(true);
+    if (!hasLoadedOnceRef.current) {
+      setLoading(true);
+    }
     try {
       const [productsRes, categoriesRes, customersRes, ordersRes, suppliersRes, settingsRes] = await Promise.all([
         supabase.from('products').select('*'),
@@ -246,6 +251,7 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
           footerText: ["Thank you for shopping with us!", "Visit again soon!"]
         });
       }
+      hasLoadedOnceRef.current = true;
     } catch (error) {
       console.error('Error fetching data:', error);
       showToast('Error', 'Failed to load data', 'destructive');
@@ -282,12 +288,18 @@ export const CloudDataProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Fetch data when user is authenticated
+  // Fetch data when user is authenticated - only when user ID actually changes
+  // (avoids reloading when tab regains focus and Supabase fires TOKEN_REFRESHED)
+  const lastFetchedUserIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!authChecked) return;
     if (user) {
-      fetchAllData();
+      if (lastFetchedUserIdRef.current !== user.id) {
+        lastFetchedUserIdRef.current = user.id;
+        fetchAllData();
+      }
     } else {
+      lastFetchedUserIdRef.current = null;
       setLoading(false);
       setProducts([]);
       setCategories([]);
