@@ -45,6 +45,15 @@ import { Customer } from "@/types/pos";
 import EditCustomerDialog from "@/components/customers/EditCustomerDialog";
 import { useToast } from "@/components/ui/use-toast";
 
+const COUNTRY_CODES = [
+  { code: "+91", label: "IN" },
+  { code: "+1", label: "US" },
+  { code: "+44", label: "UK" },
+  { code: "+61", label: "AU" },
+  { code: "+971", label: "AE" },
+  { code: "+65", label: "SG" },
+];
+
 const Customers = () => {
   const { customers, addCustomer, updateCustomer, deleteCustomer, orders } = useCloudData();
   const { toast } = useToast();
@@ -52,11 +61,13 @@ const Customers = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   
   const [newCustomer, setNewCustomer] = useState<Partial<Customer>>({});
+  const [countryCode, setCountryCode] = useState("+91");
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+
 
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = searchQuery === "" || 
@@ -84,8 +95,9 @@ const Customers = () => {
         await addCustomer({
           name: newCustomer.name,
           email: newCustomer.email || '',
-          phone: newCustomer.phone,
-          address: '',
+          phone: countryCode === '+91' ? newCustomer.phone : `${countryCode}${newCustomer.phone}`,
+          address: newCustomer.address || '',
+
           city: '',
           state: '',
           pincode: '',
@@ -102,6 +114,8 @@ const Customers = () => {
           description: "Customer added successfully"
         });
         setNewCustomer({});
+        setCountryCode('+91');
+
         setIsAddCustomerOpen(false);
       } catch (error) {
         console.error('Error adding customer:', error);
@@ -255,17 +269,39 @@ const Customers = () => {
             </div>
             <div>
               <Label htmlFor="phone" className="text-sm font-medium">Phone Number *</Label>
+              <div className="flex gap-2 mt-1">
+                <Select value={countryCode} onValueChange={setCountryCode}>
+                  <SelectTrigger className="w-[110px] border-2 border-muted">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTRY_CODES.map(c => (
+                      <SelectItem key={c.code} value={c.code}>{c.code} {c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="Enter phone number"
+                  className="flex-1 border-2 border-muted focus:border-primary"
+                  value={newCustomer.phone || ''}
+                  onChange={e => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    setNewCustomer(prev => ({ ...prev, phone: value }));
+                  }}
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="address" className="text-sm font-medium">Address</Label>
               <Input
-                id="phone"
-                type="tel"
-                placeholder="Enter phone number"
+                id="address"
+                placeholder="Enter customer address"
                 className="mt-1 border-2 border-muted focus:border-primary"
-                value={newCustomer.phone || ''}
-                onChange={e => {
-                  const value = e.target.value.replace(/\D/g, '');
-                  setNewCustomer(prev => ({ ...prev, phone: value }));
-                }}
-                required
+                value={newCustomer.address || ''}
+                onChange={e => setNewCustomer(prev => ({ ...prev, address: e.target.value }))}
               />
             </div>
             <div>
@@ -279,6 +315,7 @@ const Customers = () => {
                 onChange={e => setNewCustomer(prev => ({ ...prev, email: e.target.value }))}
               />
             </div>
+
             <div>
               <Label htmlFor="birthday" className="text-sm font-medium">Birthday (Optional)</Label>
               <Input

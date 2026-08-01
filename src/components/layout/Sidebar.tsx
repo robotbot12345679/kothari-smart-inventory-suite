@@ -92,12 +92,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
       {/* Sidebar */}
       <div
         className={cn(
-          "bg-sidebar-background border-r border-sidebar-border text-sidebar-foreground transition-all duration-300 z-50",
-          "lg:relative lg:translate-x-0", // Always visible on desktop
-          "fixed inset-y-0 left-0", // Fixed position on mobile
-          open ? "translate-x-0 w-64" : "-translate-x-full w-0 lg:w-64" // Show/hide based on state
+          "bg-sidebar-background border-r border-sidebar-border text-sidebar-foreground transition-all duration-300 z-50 overflow-hidden",
+          "lg:relative lg:translate-x-0",
+          "fixed inset-y-0 left-0",
+          open ? "translate-x-0 w-64" : "-translate-x-full w-0 lg:w-0 lg:border-r-0"
         )}
       >
+
         <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
           <div className="flex items-center">
             <img

@@ -45,19 +45,31 @@ interface ScannedProduct extends Product {
   scannedQuantity: number;
 }
 
+const POS_DRAFT_KEY = "pos-draft-order";
+
+const loadDraft = () => {
+  try {
+    const raw = localStorage.getItem(POS_DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 const Pos = () => {
   const { products, categories, addOrder, findProductByBarcode, updateInventoryAfterSale, customers, addCustomer, updateCustomer, updateOrder, deleteOrder, deleteCustomer, updateProduct, billingTemplate } = useCloudData();
   const { toast } = useToast();
+  const draft = React.useMemo(() => loadDraft(), []);
   const [activeCategory, setActiveCategory] = useState<string>('1');
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(draft?.cart ?? []);
   const [paymentModalOpen, setPaymentModalOpen] = useState<boolean>(false);
   const [barcodeModalOpen, setBarcodeModalOpen] = useState<boolean>(false);
   const [barcodeInput, setBarcodeInput] = useState<string>("");
   const [scannedProducts, setScannedProducts] = useState<ScannedProduct[]>([]);
   const [amountTendered, setAmountTendered] = useState<string>("");
   const [currentTab, setCurrentTab] = useState<string>("upi");
-  const [customerInfo, setCustomerInfo] = useState({
+  const [customerInfo, setCustomerInfo] = useState(draft?.customerInfo ?? {
     name: "",
     phone: "",
     email: ""
@@ -65,9 +77,23 @@ const Pos = () => {
   const [matchedCustomer, setMatchedCustomer] = useState<Customer | null>(null);
   const [showProfessionalInvoice, setShowProfessionalInvoice] = useState<boolean>(false);
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
-  
+
+  // Persist the in-progress order so switching tabs never wipes it
+  useEffect(() => {
+    try {
+      if (cart.length === 0 && !customerInfo.name && !customerInfo.phone && !customerInfo.email) {
+        localStorage.removeItem(POS_DRAFT_KEY);
+      } else {
+        localStorage.setItem(POS_DRAFT_KEY, JSON.stringify({ cart, customerInfo }));
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, [cart, customerInfo]);
+
   const orderId = useUniqueId("ORD");
   const barcodeInputRef = useRef<HTMLInputElement>(null);
+
   
   useEffect(() => {
     if (barcodeModalOpen && barcodeInputRef.current) {
@@ -1025,13 +1051,20 @@ const Pos = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="customer-phone">Phone Number</Label>
-                <Input 
-                  id="customer-phone" 
-                  placeholder="Optional" 
-                  value={customerInfo.phone}
-                  onChange={(e) => handleCustomerInfoChange('phone', e.target.value)}
-                />
+                <div className="flex">
+                  <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">
+                    +91
+                  </span>
+                  <Input
+                    id="customer-phone"
+                    className="rounded-l-none"
+                    placeholder="Optional"
+                    value={customerInfo.phone}
+                    onChange={(e) => handleCustomerInfoChange('phone', e.target.value.replace(/\D/g, ''))}
+                  />
+                </div>
               </div>
+
             </div>
             
             {matchedCustomer && (
