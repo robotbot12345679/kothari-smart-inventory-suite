@@ -125,7 +125,7 @@ const InsightsCard: React.FC<InsightsCardProps> = ({
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="mt-2 text-red-700 border-red-300 hover:bg-red-50 text-xs h-7"
+                className="mt-2 bg-white text-red-700 border-red-300 hover:bg-red-100 hover:text-red-800 text-xs h-7"
                 onClick={() => navigate('/inventory')}
               >
                 Update Stock
