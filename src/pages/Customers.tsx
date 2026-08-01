@@ -296,10 +296,11 @@ const Customers = () => {
             </div>
             <div>
               <Label htmlFor="address" className="text-sm font-medium">Address</Label>
-              <Input
+              <Textarea
                 id="address"
                 placeholder="Enter customer address"
-                className="mt-1 border-2 border-muted focus:border-primary"
+                rows={2}
+                className="mt-1 border-2 border-muted focus:border-primary min-h-[42px] resize-y whitespace-pre-wrap break-words"
                 value={newCustomer.address || ''}
                 onChange={e => setNewCustomer(prev => ({ ...prev, address: e.target.value }))}
               />
