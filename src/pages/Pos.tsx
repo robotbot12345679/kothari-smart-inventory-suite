@@ -1012,7 +1012,7 @@ const Pos = () => {
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
         <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto border-emerald-200">
           <div className="flex flex-col items-center text-center pt-2">
-            <div className="h-16 w-16 rounded-full bg-emerald-100 flex items-center justify-center animate-scale-in">
+            <div className="h-16 w-16 rounded-full bg-emerald-100 flex items-center justify-center">
               <CheckCircle2 className="h-9 w-9 text-emerald-600" />
             </div>
             <DialogHeader className="mt-3">
