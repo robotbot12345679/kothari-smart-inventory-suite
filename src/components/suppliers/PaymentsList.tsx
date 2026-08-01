@@ -123,6 +123,15 @@ const PaymentsList: React.FC<PaymentsListProps> = ({ payments, onDelete }) => {
           </TableBody>
         </Table>
       </CardContent>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(o) => !o && setPendingDelete(null)}
+        title="Delete payment?"
+        description={pendingDelete ? `Are you sure you want to delete the payment of ₹${pendingDelete.amount.toLocaleString()}? This cannot be undone.` : undefined}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={confirmDelete}
+      />
     </Card>
   );
 };

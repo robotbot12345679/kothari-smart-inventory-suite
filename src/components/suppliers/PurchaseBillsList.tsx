@@ -123,6 +123,15 @@ const PurchaseBillsList: React.FC<PurchaseBillsListProps> = ({ bills, onDelete }
           </TableBody>
         </Table>
       </CardContent>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(o) => !o && setPendingDelete(null)}
+        title="Delete bill?"
+        description={pendingDelete ? `Are you sure you want to delete bill ${pendingDelete.number}? This cannot be undone.` : undefined}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={confirmDelete}
+      />
     </Card>
   );
 };
