@@ -18,6 +18,7 @@ import QuickAddBillDialog from "@/components/suppliers/QuickAddBillDialog";
 import PurchaseBillsList from "@/components/suppliers/PurchaseBillsList";
 import PaymentsList from "@/components/suppliers/PaymentsList";
 import { Supplier } from "@/types/supplier";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 const SupplierManagement = () => {
   const {
@@ -377,6 +378,16 @@ const SupplierManagement = () => {
         suppliers={suppliers}
         selectedSupplierId={selectedSupplier}
         onAdd={addPurchaseBill}
+      />
+
+      <ConfirmDialog
+        open={pendingSupplierDelete !== null}
+        onOpenChange={(o) => !o && setPendingSupplierDelete(null)}
+        title="Delete supplier?"
+        description="This will also delete all related bills and payments. This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={confirmDeleteSupplier}
       />
     </div>
   );
