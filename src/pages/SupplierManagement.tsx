@@ -18,6 +18,7 @@ import QuickAddBillDialog from "@/components/suppliers/QuickAddBillDialog";
 import PurchaseBillsList from "@/components/suppliers/PurchaseBillsList";
 import PaymentsList from "@/components/suppliers/PaymentsList";
 import { Supplier } from "@/types/supplier";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 const SupplierManagement = () => {
   const {
@@ -100,13 +101,19 @@ const SupplierManagement = () => {
     deletePayment(paymentId);
   };
 
+  const [pendingSupplierDelete, setPendingSupplierDelete] = React.useState<number | null>(null);
+
   const handleDeleteSupplier = (supplierId: number) => {
-    if (window.confirm('Are you sure you want to delete this supplier? This will also delete all related bills and payments.')) {
-      deleteSupplier(supplierId);
-      if (selectedSupplier === supplierId) {
-        setSelectedSupplier(null);
-      }
+    setPendingSupplierDelete(supplierId);
+  };
+
+  const confirmDeleteSupplier = () => {
+    if (pendingSupplierDelete === null) return;
+    deleteSupplier(pendingSupplierDelete);
+    if (selectedSupplier === pendingSupplierDelete) {
+      setSelectedSupplier(null);
     }
+    setPendingSupplierDelete(null);
   };
 
   const handleEditSupplier = (supplier: Supplier) => {
@@ -371,6 +378,16 @@ const SupplierManagement = () => {
         suppliers={suppliers}
         selectedSupplierId={selectedSupplier}
         onAdd={addPurchaseBill}
+      />
+
+      <ConfirmDialog
+        open={pendingSupplierDelete !== null}
+        onOpenChange={(o) => !o && setPendingSupplierDelete(null)}
+        title="Delete supplier?"
+        description="This will also delete all related bills and payments. This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={confirmDeleteSupplier}
       />
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Search, Filter, UserPlus, Users, Phone, Mail, FileDown, Trash } from "lucide-react";
 import {
   Dialog,
@@ -296,10 +297,11 @@ const Customers = () => {
             </div>
             <div>
               <Label htmlFor="address" className="text-sm font-medium">Address</Label>
-              <Input
+              <Textarea
                 id="address"
                 placeholder="Enter customer address"
-                className="mt-1 border-2 border-muted focus:border-primary"
+                rows={2}
+                className="mt-1 border-2 border-muted focus:border-primary min-h-[42px] resize-y whitespace-pre-wrap break-words"
                 value={newCustomer.address || ''}
                 onChange={e => setNewCustomer(prev => ({ ...prev, address: e.target.value }))}
               />

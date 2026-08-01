@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { FileText, Calendar, DollarSign, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { PurchaseBill } from "@/types/supplier";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 interface PurchaseBillsListProps {
   bills: PurchaseBill[];
@@ -15,15 +16,20 @@ interface PurchaseBillsListProps {
 
 const PurchaseBillsList: React.FC<PurchaseBillsListProps> = ({ bills, onDelete }) => {
   const { toast } = useToast();
+  const [pendingDelete, setPendingDelete] = React.useState<{ id: string; number: string } | null>(null);
 
   const handleDelete = (billId: string, billNumber: string) => {
-    if (window.confirm(`Are you sure you want to delete bill ${billNumber}?`)) {
-      onDelete?.(billId);
-      toast({
-        title: "Bill Deleted",
-        description: `Bill ${billNumber} has been deleted successfully.`,
-      });
-    }
+    setPendingDelete({ id: billId, number: billNumber });
+  };
+
+  const confirmDelete = () => {
+    if (!pendingDelete) return;
+    onDelete?.(pendingDelete.id);
+    toast({
+      title: "Bill Deleted",
+      description: `Bill ${pendingDelete.number} has been deleted successfully.`,
+    });
+    setPendingDelete(null);
   };
 
   if (bills.length === 0) {
@@ -117,6 +123,15 @@ const PurchaseBillsList: React.FC<PurchaseBillsListProps> = ({ bills, onDelete }
           </TableBody>
         </Table>
       </CardContent>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(o) => !o && setPendingDelete(null)}
+        title="Delete bill?"
+        description={pendingDelete ? `Are you sure you want to delete bill ${pendingDelete.number}? This cannot be undone.` : undefined}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={confirmDelete}
+      />
     </Card>
   );
 };

@@ -77,7 +77,7 @@ const StatsCards: React.FC<StatsCardsProps> = ({
         </CardContent>
       </Card>
       
-      <Card className="card-hover">
+      <Card className="card-hover cursor-pointer" onClick={() => navigate('/products')}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Product Count</CardTitle>
           <Package className="h-4 w-4 text-primary" />
