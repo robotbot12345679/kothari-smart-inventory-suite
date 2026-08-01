@@ -1051,13 +1051,20 @@ const Pos = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="customer-phone">Phone Number</Label>
-                <Input 
-                  id="customer-phone" 
-                  placeholder="Optional" 
-                  value={customerInfo.phone}
-                  onChange={(e) => handleCustomerInfoChange('phone', e.target.value)}
-                />
+                <div className="flex">
+                  <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">
+                    +91
+                  </span>
+                  <Input
+                    id="customer-phone"
+                    className="rounded-l-none"
+                    placeholder="Optional"
+                    value={customerInfo.phone}
+                    onChange={(e) => handleCustomerInfoChange('phone', e.target.value.replace(/\D/g, ''))}
+                  />
+                </div>
               </div>
+
             </div>
             
             {matchedCustomer && (
