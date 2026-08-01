@@ -100,13 +100,19 @@ const SupplierManagement = () => {
     deletePayment(paymentId);
   };
 
+  const [pendingSupplierDelete, setPendingSupplierDelete] = React.useState<number | null>(null);
+
   const handleDeleteSupplier = (supplierId: number) => {
-    if (window.confirm('Are you sure you want to delete this supplier? This will also delete all related bills and payments.')) {
-      deleteSupplier(supplierId);
-      if (selectedSupplier === supplierId) {
-        setSelectedSupplier(null);
-      }
+    setPendingSupplierDelete(supplierId);
+  };
+
+  const confirmDeleteSupplier = () => {
+    if (pendingSupplierDelete === null) return;
+    deleteSupplier(pendingSupplierDelete);
+    if (selectedSupplier === pendingSupplierDelete) {
+      setSelectedSupplier(null);
     }
+    setPendingSupplierDelete(null);
   };
 
   const handleEditSupplier = (supplier: Supplier) => {

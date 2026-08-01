@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CreditCard, Calendar, DollarSign, Image, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Payment } from "@/types/supplier";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 interface PaymentsListProps {
   payments: Payment[];
@@ -16,14 +17,20 @@ interface PaymentsListProps {
 const PaymentsList: React.FC<PaymentsListProps> = ({ payments, onDelete }) => {
   const { toast } = useToast();
 
+  const [pendingDelete, setPendingDelete] = React.useState<{ id: string; amount: number } | null>(null);
+
   const handleDelete = (paymentId: string, amount: number) => {
-    if (window.confirm(`Are you sure you want to delete payment of ₹${amount.toLocaleString()}?`)) {
-      onDelete?.(paymentId);
-      toast({
-        title: "Payment Deleted",
-        description: `Payment of ₹${amount.toLocaleString()} has been deleted successfully.`,
-      });
-    }
+    setPendingDelete({ id: paymentId, amount });
+  };
+
+  const confirmDelete = () => {
+    if (!pendingDelete) return;
+    onDelete?.(pendingDelete.id);
+    toast({
+      title: "Payment Deleted",
+      description: `Payment of ₹${pendingDelete.amount.toLocaleString()} has been deleted successfully.`,
+    });
+    setPendingDelete(null);
   };
 
   if (payments.length === 0) {
