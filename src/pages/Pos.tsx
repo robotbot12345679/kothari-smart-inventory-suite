@@ -77,6 +77,8 @@ const Pos = () => {
   const [matchedCustomer, setMatchedCustomer] = useState<Customer | null>(null);
   const [showProfessionalInvoice, setShowProfessionalInvoice] = useState<boolean>(false);
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
+  const [successCustomer, setSuccessCustomer] = useState<{ name: string; phone: string; email: string } | null>(null);
 
   // Persist the in-progress order so switching tabs never wipes it
   useEffect(() => {
