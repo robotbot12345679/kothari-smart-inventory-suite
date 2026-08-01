@@ -114,6 +114,8 @@ const Customers = () => {
           description: "Customer added successfully"
         });
         setNewCustomer({});
+        setCountryCode('+91');
+
         setIsAddCustomerOpen(false);
       } catch (error) {
         console.error('Error adding customer:', error);
