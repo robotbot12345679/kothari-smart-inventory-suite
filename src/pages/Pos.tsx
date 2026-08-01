@@ -21,7 +21,10 @@ import {
   Barcode,
   Package,
   Share,
-  Check
+  Check,
+  CheckCircle2,
+  Printer,
+  FileText
 } from "lucide-react";
 import { escapeHtml, escapeHtmlArray } from "@/lib/htmlUtils";
 import {
