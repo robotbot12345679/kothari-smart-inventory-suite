@@ -23,7 +23,6 @@ import {
   Share,
   Check,
   CheckCircle2,
-  Printer,
   FileText
 } from "lucide-react";
 import { escapeHtml, escapeHtmlArray } from "@/lib/htmlUtils";
