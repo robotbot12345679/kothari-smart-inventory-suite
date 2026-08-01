@@ -424,18 +424,9 @@ const Pos = () => {
 
       setCurrentOrder(createdOrder);
       setPaymentModalOpen(false);
+      setSuccessCustomer({ ...customerInfo });
+      setShowSuccessModal(true);
 
-      // Ask if they want to print receipt
-      const shouldPrint = window.confirm("Do you want to print a receipt?");
-      if (shouldPrint) {
-        printReceipt(createdOrder);
-      }
-
-      // Ask if they want to show professional invoice
-      const shouldShowInvoice = window.confirm("Do you want to view/share a professional invoice?");
-      if (shouldShowInvoice) {
-        setShowProfessionalInvoice(true);
-      }
 
       // Reset cart and customer info
       setCart([]);
