@@ -1008,6 +1008,87 @@ const Pos = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Payment Success Confirmation */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto border-emerald-200">
+          <div className="flex flex-col items-center text-center pt-2">
+            <div className="h-16 w-16 rounded-full bg-emerald-100 flex items-center justify-center animate-scale-in">
+              <CheckCircle2 className="h-9 w-9 text-emerald-600" />
+            </div>
+            <DialogHeader className="mt-3">
+              <DialogTitle className="text-emerald-700 text-xl">Payment Successful</DialogTitle>
+              <DialogDescription>
+                Order #{currentOrder?.id?.slice(0, 8).toUpperCase()} has been completed.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          {currentOrder && (
+            <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50/60 p-4 text-left">
+              <p className="text-sm font-semibold text-emerald-800 mb-2">Order Summary</p>
+              <div className="space-y-1 max-h-52 overflow-y-auto">
+                {currentOrder.items?.map((item, i) => (
+                  <div key={i} className="flex justify-between text-sm">
+                    <span className="truncate pr-2">
+                      {item.name} <span className="text-muted-foreground">× {item.quantity}</span>
+                    </span>
+                    <span className="font-medium">₹{(item.price * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between border-t border-emerald-200 mt-2 pt-2 text-base font-bold text-emerald-800">
+                <span>Total Paid</span>
+                <span>₹{Number(currentOrder.total || 0).toFixed(2)}</span>
+              </div>
+              {currentOrder.payment_method && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Payment method: {currentOrder.payment_method}
+                </p>
+              )}
+            </div>
+          )}
+
+          {(successCustomer?.name || successCustomer?.phone || successCustomer?.email) && (
+            <div className="rounded-lg border p-4 text-left">
+              <p className="text-sm font-semibold mb-2">Customer Details</p>
+              {successCustomer?.name && <p className="text-sm">{successCustomer.name}</p>}
+              {successCustomer?.phone && (
+                <p className="text-sm text-muted-foreground">{successCustomer.phone}</p>
+              )}
+              {successCustomer?.email && (
+                <p className="text-sm text-muted-foreground">{successCustomer.email}</p>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => currentOrder && printReceipt(currentOrder)}
+            >
+              <Printer className="h-4 w-4 mr-2" /> Print Receipt
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => {
+                setShowSuccessModal(false);
+                setShowProfessionalInvoice(true);
+              }}
+            >
+              <FileText className="h-4 w-4 mr-2" /> View Invoice
+            </Button>
+            <Button
+              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => setShowSuccessModal(false)}
+            >
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Professional Invoice Dialog */}
       <Dialog open={showProfessionalInvoice} onOpenChange={setShowProfessionalInvoice}>
         <DialogContent className="sm:max-w-[850px] max-h-[90vh] overflow-y-auto p-0">
