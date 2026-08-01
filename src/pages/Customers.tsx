@@ -95,8 +95,9 @@ const Customers = () => {
         await addCustomer({
           name: newCustomer.name,
           email: newCustomer.email || '',
-          phone: newCustomer.phone,
-          address: '',
+          phone: countryCode === '+91' ? newCustomer.phone : `${countryCode}${newCustomer.phone}`,
+          address: newCustomer.address || '',
+
           city: '',
           state: '',
           pincode: '',
