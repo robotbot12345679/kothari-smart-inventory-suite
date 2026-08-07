@@ -32,10 +32,11 @@ const OAuthConsent = () => {
       }
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session) {
-        const next = window.location.pathname + window.location.search;
-        window.location.href = "/?next=" + encodeURIComponent(next);
+        if (active) setNeedsLogin(true);
         return;
       }
+      if (active) setNeedsLogin(false);
+
       const { data, error: detailsError } = await oauth().getAuthorizationDetails(authorizationId);
       if (!active) return;
       if (detailsError) {
