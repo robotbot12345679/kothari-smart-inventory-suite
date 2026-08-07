@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShieldCheck } from "lucide-react";
+import Login from "./Login";
 
 type AuthClient = { name?: string; client_name?: string; logo_uri?: string };
 type AuthDetails = { client?: AuthClient; redirect_url?: string; redirect_to?: string; scopes?: string[] };
@@ -22,6 +23,7 @@ const OAuthConsent = () => {
   const [details, setDetails] = useState<AuthDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [needsLogin, setNeedsLogin] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -53,7 +55,16 @@ const OAuthConsent = () => {
     return () => {
       active = false;
     };
-  }, [authorizationId]);
+  }, [authorizationId, needsLogin]);
+
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) setNeedsLogin(false);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  if (needsLogin) return <Login />;
 
   const decide = async (approve: boolean) => {
     setBusy(true);
