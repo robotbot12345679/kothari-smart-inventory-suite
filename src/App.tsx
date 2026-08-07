@@ -84,7 +84,9 @@ const App = () => {
         <Router>
           <Routes>
             <Route path="/signup" element={<Signup />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/*" element={<AppRoutes />} />
+
           </Routes>
           <Toaster />
         </Router>
