@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://dlzfgzyrmttfoimevnxb.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "kothari-smart-inventory-suite",
+      "version": "0.1.0",
+      "title": "Kothari-smart-inventory-suite"
+    },
+    "tools": [
+      {
+        "name": "list_products",
+        "title": "List products",
+        "description": "List inventory products for the signed-in user, optionally filtered by a name/SKU/barcode search term or by low stock.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Case-insensitive match on product name."
+            },
+            "category": {
+              "type": "string",
+              "description": "Filter by product category."
+            },
+            "lowStockOnly": {
+              "type": "boolean",
+              "description": "Only return products at or below their minimum stock level."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Maximum rows to return (default 50)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_product_stock",
+        "title": "Update product stock",
+        "description": "Set or adjust the stock quantity of one product owned by the signed-in user. Use `mode: 'adjust'` to add/subtract, `mode: 'set'` to overwrite.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "productId": {
+              "type": "string",
+              "description": "The product's id."
+            },
+            "quantity": {
+              "type": "number",
+              "description": "Quantity to set, or the delta when adjusting (may be negative)."
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "set",
+                "adjust"
+              ],
+              "description": "Defaults to 'adjust'."
+            }
+          },
+          "required": [
+            "productId",
+            "quantity"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_orders",
+        "title": "List orders",
+        "description": "List recent sales orders for the signed-in user, newest first, optionally filtered by status or date range.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "description": "Filter by order_status, e.g. 'completed' or 'pending'."
+            },
+            "fromDate": {
+              "type": "string",
+              "description": "ISO date; only orders on or after this date."
+            },
+            "toDate": {
+              "type": "string",
+              "description": "ISO date; only orders on or before this date."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Maximum rows to return (default 25)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_customers",
+        "title": "List customers",
+        "description": "List or search customers of the signed-in user, including contact details and lifetime spend.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Case-insensitive match on customer name."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Maximum rows to return (default 25)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "sales_summary",
+        "title": "Sales summary",
+        "description": "Summarise sales totals, order count and top-selling products for the signed-in user over a date range.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "fromDate": {
+              "type": "string",
+              "description": "ISO date; defaults to 30 days ago."
+            },
+            "toDate": {
+              "type": "string",
+              "description": "ISO date; defaults to now."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
