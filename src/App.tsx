@@ -18,6 +18,8 @@ import ProductComparison from './pages/ProductComparison';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import OAuthConsent from './pages/OAuthConsent';
+
 import { CloudDataProvider, useCloudData } from './context/CloudDataContext';
 import { Toaster } from './components/ui/toaster';
 
@@ -82,7 +84,9 @@ const App = () => {
         <Router>
           <Routes>
             <Route path="/signup" element={<Signup />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/*" element={<AppRoutes />} />
+
           </Routes>
           <Toaster />
         </Router>
