@@ -173,15 +173,20 @@ const Customers = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
         <div className="flex items-center gap-2">
+          <Button className="gap-1" variant="outline" onClick={() => setIsImportOpen(true)}>
+            <FileUp className="h-4 w-4" />
+            Import
+          </Button>
           <Button 
             className="gap-1" 
             variant="outline"
             onClick={() => {
-              const csvHeaders = ['Name', 'Phone', 'Email', 'City', 'State', 'Birthday', 'Total Orders', 'Total Spent', 'Last Order Date', 'Status'];
+              const csvHeaders = ['Name', 'Phone', 'Email', 'Address', 'City', 'State', 'Birthday', 'Total Orders', 'Total Spent', 'Last Order Date', 'Status'];
               const csvData = customers.map(customer => ({
                 'Name': customer.name,
                 'Phone': customer.phone,
                 'Email': customer.email || '',
+                'Address': customer.address || '',
                 'City': customer.city || '',
                 'State': customer.state || '',
                 'Birthday': customer.birthday || '',
