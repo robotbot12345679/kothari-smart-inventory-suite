@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Filter, UserPlus, Users, Phone, Mail, FileDown, Trash } from "lucide-react";
+import { Search, Filter, UserPlus, Users, Phone, Mail, FileDown, FileUp, Trash } from "lucide-react";
 import {
   Dialog,
   DialogContent,
