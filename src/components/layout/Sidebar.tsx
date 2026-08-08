@@ -92,7 +92,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
       {/* Sidebar */}
       <div
         className={cn(
-          "bg-sidebar-background border-r border-sidebar-border text-sidebar-foreground transition-all duration-300 z-50 overflow-hidden",
+          "bg-sidebar border-r border-sidebar-border text-sidebar-foreground shadow-xl lg:shadow-none transition-all duration-300 z-50 overflow-hidden",
           "lg:relative lg:translate-x-0",
           "fixed inset-y-0 left-0",
           open ? "translate-x-0 w-64" : "-translate-x-full w-0 lg:w-0 lg:border-r-0"

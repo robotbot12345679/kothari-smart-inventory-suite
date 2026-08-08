@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Filter, UserPlus, Users, Phone, Mail, FileDown, Trash } from "lucide-react";
+import { Search, Filter, UserPlus, Users, Phone, Mail, FileDown, FileUp, Trash } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -44,6 +44,7 @@ import { useCloudData } from "@/context/CloudDataContext";
 import { Label } from "@/components/ui/label";
 import { Customer } from "@/types/pos";
 import EditCustomerDialog from "@/components/customers/EditCustomerDialog";
+import ImportCustomersDialog from "@/components/customers/ImportCustomersDialog";
 import { useToast } from "@/components/ui/use-toast";
 
 const COUNTRY_CODES = [
@@ -68,6 +69,7 @@ const Customers = () => {
   const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
 
   const filteredCustomers = customers.filter(customer => {
@@ -171,15 +173,20 @@ const Customers = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
         <div className="flex items-center gap-2">
+          <Button className="gap-1" variant="outline" onClick={() => setIsImportOpen(true)}>
+            <FileUp className="h-4 w-4" />
+            Import
+          </Button>
           <Button 
             className="gap-1" 
             variant="outline"
             onClick={() => {
-              const csvHeaders = ['Name', 'Phone', 'Email', 'City', 'State', 'Birthday', 'Total Orders', 'Total Spent', 'Last Order Date', 'Status'];
+              const csvHeaders = ['Name', 'Phone', 'Email', 'Address', 'City', 'State', 'Birthday', 'Total Orders', 'Total Spent', 'Last Order Date', 'Status'];
               const csvData = customers.map(customer => ({
                 'Name': customer.name,
                 'Phone': customer.phone,
                 'Email': customer.email || '',
+                'Address': customer.address || '',
                 'City': customer.city || '',
                 'State': customer.state || '',
                 'Birthday': customer.birthday || '',
@@ -344,6 +351,10 @@ const Customers = () => {
         customer={selectedCustomer}
         onDelete={handleDeleteClick}
       />
+
+      <ImportCustomersDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
+
+
 
       <div className="bg-white rounded-lg shadow dark:bg-gray-800">
         <div className="p-4 border-b flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
