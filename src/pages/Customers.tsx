@@ -352,6 +352,10 @@ const Customers = () => {
         onDelete={handleDeleteClick}
       />
 
+      <ImportCustomersDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
+
+
+
       <div className="bg-white rounded-lg shadow dark:bg-gray-800">
         <div className="p-4 border-b flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="relative w-full md:w-96">
