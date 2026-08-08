@@ -69,6 +69,7 @@ const Customers = () => {
   const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
 
   const filteredCustomers = customers.filter(customer => {
