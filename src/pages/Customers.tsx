@@ -44,6 +44,7 @@ import { useCloudData } from "@/context/CloudDataContext";
 import { Label } from "@/components/ui/label";
 import { Customer } from "@/types/pos";
 import EditCustomerDialog from "@/components/customers/EditCustomerDialog";
+import ImportCustomersDialog from "@/components/customers/ImportCustomersDialog";
 import { useToast } from "@/components/ui/use-toast";
 
 const COUNTRY_CODES = [
