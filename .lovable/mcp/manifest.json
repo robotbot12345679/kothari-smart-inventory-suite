@@ -12,7 +12,7 @@
   "mcp": {
     "server": {
       "name": "kothari-smart-inventory-suite",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "title": "Kothari-smart-inventory-suite"
     },
     "tools": [
@@ -47,6 +47,192 @@
               "description": "Maximum rows to return (default 50)."
             }
           },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_product",
+        "title": "Get product",
+        "description": "Fetch a single product by id, SKU or barcode.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Product id."
+            },
+            "sku": {
+              "type": "string",
+              "description": "Product SKU."
+            },
+            "barcode": {
+              "type": "string",
+              "description": "Product barcode."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_product",
+        "title": "Create product",
+        "description": "Create a new inventory product for the signed-in user.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Product name."
+            },
+            "price": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Selling price."
+            },
+            "stock": {
+              "type": "number",
+              "description": "Opening stock quantity."
+            },
+            "minStock": {
+              "type": "number",
+              "description": "Low-stock threshold."
+            },
+            "category": {
+              "type": "string"
+            },
+            "sku": {
+              "type": "string"
+            },
+            "barcode": {
+              "type": "string"
+            },
+            "unit": {
+              "type": "string",
+              "description": "Unit such as pcs, kg, ltr."
+            },
+            "weight": {
+              "type": "number"
+            },
+            "description": {
+              "type": "string"
+            },
+            "expiryDate": {
+              "type": "string",
+              "description": "ISO date of expiry."
+            },
+            "priceIncludesGst": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_product",
+        "title": "Update product",
+        "description": "Update any field of an existing product (name, price, category, thresholds, expiry, active flag).",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "productId": {
+              "type": "string",
+              "description": "Product id."
+            },
+            "name": {
+              "type": "string"
+            },
+            "price": {
+              "type": "number",
+              "minimum": 0
+            },
+            "minStock": {
+              "type": "number"
+            },
+            "category": {
+              "type": "string"
+            },
+            "sku": {
+              "type": "string"
+            },
+            "barcode": {
+              "type": "string"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "weight": {
+              "type": "number"
+            },
+            "description": {
+              "type": "string"
+            },
+            "expiryDate": {
+              "type": "string"
+            },
+            "isActive": {
+              "type": "boolean"
+            },
+            "priceIncludesGst": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "productId"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_product",
+        "title": "Delete product",
+        "description": "Permanently delete a product, or deactivate it instead when `softDelete` is true.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "productId": {
+              "type": "string",
+              "description": "Product id."
+            },
+            "softDelete": {
+              "type": "boolean",
+              "description": "Mark inactive instead of deleting."
+            }
+          },
+          "required": [
+            "productId"
+          ],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
@@ -92,6 +278,205 @@
         "outputSchema": null
       },
       {
+        "name": "list_categories",
+        "title": "List categories",
+        "description": "List product categories for the signed-in user.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "activeOnly": {
+              "type": "boolean",
+              "description": "Only return active categories."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "manage_category",
+        "title": "Create, update or delete a category",
+        "description": "Create, update or delete a product category. Set `action` to 'create', 'update' or 'delete'.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "create",
+                "update",
+                "delete"
+              ]
+            },
+            "categoryId": {
+              "type": "string",
+              "description": "Required for update and delete."
+            },
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "isActive": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "action"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_customers",
+        "title": "List customers",
+        "description": "List or search customers of the signed-in user, including contact details and lifetime spend.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Case-insensitive match on customer name."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Maximum rows to return (default 25)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_customer",
+        "title": "Create customer",
+        "description": "Add a new customer record. Phone numbers default to the +91 country code when no code is given.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "phone": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            },
+            "address": {
+              "type": "string"
+            },
+            "city": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            },
+            "pincode": {
+              "type": "string"
+            },
+            "birthday": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_customer",
+        "title": "Update or delete customer",
+        "description": "Update a customer's details, or delete the customer when `deleteCustomer` is true.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "customerId": {
+              "type": "string"
+            },
+            "deleteCustomer": {
+              "type": "boolean"
+            },
+            "name": {
+              "type": "string"
+            },
+            "phone": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            },
+            "address": {
+              "type": "string"
+            },
+            "city": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            },
+            "pincode": {
+              "type": "string"
+            },
+            "birthday": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "description": "e.g. Active or Inactive."
+            }
+          },
+          "required": [
+            "customerId"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
         "name": "list_orders",
         "title": "List orders",
         "description": "List recent sales orders for the signed-in user, newest first, optionally filtered by status or date range.",
@@ -128,9 +513,218 @@
         "outputSchema": null
       },
       {
-        "name": "list_customers",
-        "title": "List customers",
-        "description": "List or search customers of the signed-in user, including contact details and lifetime spend.",
+        "name": "manage_order",
+        "title": "Update or delete an order",
+        "description": "Update an existing order's status, payment details, shipping address or tracking number, or delete it when `deleteOrder` is true.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string"
+            },
+            "deleteOrder": {
+              "type": "boolean"
+            },
+            "orderStatus": {
+              "type": "string"
+            },
+            "paymentStatus": {
+              "type": "string"
+            },
+            "paymentMethod": {
+              "type": "string"
+            },
+            "shippingAddress": {
+              "type": "string"
+            },
+            "trackingNumber": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "orderId"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_invoice",
+        "title": "Get GST invoice",
+        "description": "Build the full GST invoice payload for an order, including seller billing details from settings.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "description": "Order id."
+            }
+          },
+          "required": [
+            "orderId"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "pos_start_checkout",
+        "title": "Start POS checkout",
+        "description": "Price a POS cart before payment: validates products, checks stock availability and returns a quote with line items, subtotal, GST and total. Does not change any data.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "productId": {
+                    "type": "string",
+                    "description": "Product id."
+                  },
+                  "quantity": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "description": "Quantity to sell."
+                  },
+                  "price": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Override unit price."
+                  }
+                },
+                "required": [
+                  "productId",
+                  "quantity"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1
+            },
+            "gstRate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "GST percentage applied to the subtotal (default 0)."
+            },
+            "discount": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Flat discount amount on the subtotal."
+            }
+          },
+          "required": [
+            "items"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "pos_submit_payment",
+        "title": "Submit POS payment",
+        "description": "Complete a POS sale: creates the order with GST invoice details, decrements product stock and updates the customer's lifetime totals. Returns the created order and invoice summary.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "productId": {
+                    "type": "string"
+                  },
+                  "quantity": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "price": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "productId",
+                  "quantity"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1
+            },
+            "paymentMethod": {
+              "type": "string",
+              "description": "cash, card, upi, etc. Defaults to cash."
+            },
+            "gstRate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "GST percentage (default 0)."
+            },
+            "discount": {
+              "type": "number",
+              "minimum": 0
+            },
+            "customerId": {
+              "type": "string",
+              "description": "Existing customer id."
+            },
+            "customerName": {
+              "type": "string"
+            },
+            "customerPhone": {
+              "type": "string"
+            },
+            "customerEmail": {
+              "type": "string"
+            },
+            "orderStatus": {
+              "type": "string",
+              "description": "Defaults to 'completed'."
+            },
+            "paymentStatus": {
+              "type": "string",
+              "description": "Defaults to 'paid'."
+            }
+          },
+          "required": [
+            "items"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_suppliers",
+        "title": "List suppliers",
+        "description": "List suppliers with their bills, payments and outstanding balance.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -141,13 +735,150 @@
           "properties": {
             "search": {
               "type": "string",
-              "description": "Case-insensitive match on customer name."
+              "description": "Case-insensitive match on supplier name."
             },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200,
-              "description": "Maximum rows to return (default 25)."
+            "includeLedger": {
+              "type": "boolean",
+              "description": "Include the full bills and payments arrays (default true)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "manage_supplier",
+        "title": "Create, update or delete a supplier",
+        "description": "Create, update or delete a supplier record. Set `action` to 'create', 'update' or 'delete'.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "create",
+                "update",
+                "delete"
+              ]
+            },
+            "supplierId": {
+              "type": "string",
+              "description": "Required for update and delete."
+            },
+            "name": {
+              "type": "string"
+            },
+            "contactPerson": {
+              "type": "string"
+            },
+            "phone": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            },
+            "address": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "action"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "record_supplier_entry",
+        "title": "Record supplier bill or payment",
+        "description": "Append a purchase bill or a payment to a supplier's ledger and return the updated outstanding balance.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "supplierId": {
+              "type": "string"
+            },
+            "entryType": {
+              "type": "string",
+              "enum": [
+                "bill",
+                "payment"
+              ]
+            },
+            "amount": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "date": {
+              "type": "string",
+              "description": "ISO date, defaults to now."
+            },
+            "reference": {
+              "type": "string",
+              "description": "Bill number or payment reference."
+            },
+            "notes": {
+              "type": "string"
+            },
+            "paymentMode": {
+              "type": "string",
+              "description": "cash, upi, bank transfer (payments only)."
+            }
+          },
+          "required": [
+            "supplierId",
+            "entryType",
+            "amount"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "billing_settings",
+        "title": "Read or update billing settings",
+        "description": "Read the shop's billing/invoice template (shop name, address, GSTIN, footer), or update it when fields are supplied.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "shopName": {
+              "type": "string"
+            },
+            "address": {
+              "type": "string"
+            },
+            "phone": {
+              "type": "string"
+            },
+            "gstNumber": {
+              "type": "string"
+            },
+            "footerText": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "logoUrl": {
+              "type": "string"
             }
           },
           "additionalProperties": false,
@@ -174,6 +905,60 @@
             "toDate": {
               "type": "string",
               "description": "ISO date; defaults to now."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "reorder_recommendations",
+        "title": "Reorder recommendations & expiry risk",
+        "description": "Return the raw signals an AI assistant needs to recommend reorders: per-product sales velocity, days of cover, suggested reorder quantity, plus products expiring in the next 7 and 30 days.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lookbackDays": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365,
+              "description": "Sales history window, default 30 days."
+            },
+            "coverDays": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 180,
+              "description": "Days of stock cover to target, default 14."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "business_overview",
+        "title": "Business overview",
+        "description": "Dashboard-style snapshot: inventory valuation, stock alerts, order and revenue totals, supplier outstanding and top customers.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "days": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365,
+              "description": "Window for sales metrics, default 30 days."
             }
           },
           "additionalProperties": false,
