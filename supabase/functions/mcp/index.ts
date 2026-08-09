@@ -88,17 +88,182 @@ var list_products_default = defineTool({
   }
 });
 
-// src/lib/mcp/tools/update-product-stock.ts
+// src/lib/mcp/tools/get-product.ts
 import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z as z2 } from "npm:zod@^3.25.76";
-var update_product_stock_default = defineTool2({
+
+// src/lib/mcp/util.ts
+function ok(data, text) {
+  return {
+    content: [{ type: "text", text: text ?? JSON.stringify(data, null, 2) }],
+    structuredContent: data && typeof data === "object" ? data : { value: data }
+  };
+}
+function fail(message) {
+  return { content: [{ type: "text", text: message }], isError: true };
+}
+function session(ctx) {
+  if (!ctx.isAuthenticated()) return null;
+  const userId = ctx.getUserId();
+  if (!userId) return null;
+  return { supabase: supabaseForUser(ctx), userId };
+}
+var NOT_AUTHED = "Not authenticated. Connect this MCP server with your account first.";
+
+// src/lib/mcp/tools/get-product.ts
+var get_product_default = defineTool2({
+  name: "get_product",
+  title: "Get product",
+  description: "Fetch a single product by id, SKU or barcode.",
+  inputSchema: {
+    id: z2.string().optional().describe("Product id."),
+    sku: z2.string().optional().describe("Product SKU."),
+    barcode: z2.string().optional().describe("Product barcode.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ id, sku, barcode }, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    if (!id && !sku && !barcode) return fail("Provide id, sku or barcode.");
+    let q = s.supabase.from("products").select("*").limit(1);
+    if (id) q = q.eq("id", id);
+    else if (sku) q = q.eq("sku", sku);
+    else if (barcode) q = q.eq("barcode", barcode);
+    const { data, error } = await q.maybeSingle();
+    if (error) return fail(error.message);
+    if (!data) return fail("Product not found.");
+    return ok({ product: data });
+  }
+});
+
+// src/lib/mcp/tools/create-product.ts
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z3 } from "npm:zod@^3.25.76";
+var create_product_default = defineTool3({
+  name: "create_product",
+  title: "Create product",
+  description: "Create a new inventory product for the signed-in user.",
+  inputSchema: {
+    name: z3.string().trim().min(1).describe("Product name."),
+    price: z3.number().nonnegative().optional().describe("Selling price."),
+    stock: z3.number().optional().describe("Opening stock quantity."),
+    minStock: z3.number().optional().describe("Low-stock threshold."),
+    category: z3.string().optional(),
+    sku: z3.string().optional(),
+    barcode: z3.string().optional(),
+    unit: z3.string().optional().describe("Unit such as pcs, kg, ltr."),
+    weight: z3.number().optional(),
+    description: z3.string().optional(),
+    expiryDate: z3.string().optional().describe("ISO date of expiry."),
+    priceIncludesGst: z3.boolean().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    const { data, error } = await s.supabase.from("products").insert({
+      user_id: s.userId,
+      name: input.name,
+      price: input.price ?? 0,
+      stock: input.stock ?? 0,
+      min_stock: input.minStock ?? 0,
+      category: input.category ?? null,
+      sku: input.sku ?? null,
+      barcode: input.barcode ?? null,
+      unit: input.unit ?? "pcs",
+      weight: input.weight ?? 0,
+      description: input.description ?? null,
+      expiry_date: input.expiryDate ?? null,
+      price_includes_gst: input.priceIncludesGst ?? false
+    }).select().maybeSingle();
+    if (error) return fail(error.message);
+    return ok({ product: data });
+  }
+});
+
+// src/lib/mcp/tools/update-product.ts
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z4 } from "npm:zod@^3.25.76";
+var update_product_default = defineTool4({
+  name: "update_product",
+  title: "Update product",
+  description: "Update any field of an existing product (name, price, category, thresholds, expiry, active flag).",
+  inputSchema: {
+    productId: z4.string().describe("Product id."),
+    name: z4.string().optional(),
+    price: z4.number().nonnegative().optional(),
+    minStock: z4.number().optional(),
+    category: z4.string().optional(),
+    sku: z4.string().optional(),
+    barcode: z4.string().optional(),
+    unit: z4.string().optional(),
+    weight: z4.number().optional(),
+    description: z4.string().optional(),
+    expiryDate: z4.string().optional(),
+    isActive: z4.boolean().optional(),
+    priceIncludesGst: z4.boolean().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ productId, ...input }, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    const patch = { updated_at: (/* @__PURE__ */ new Date()).toISOString() };
+    if (input.name !== void 0) patch.name = input.name;
+    if (input.price !== void 0) patch.price = input.price;
+    if (input.minStock !== void 0) patch.min_stock = input.minStock;
+    if (input.category !== void 0) patch.category = input.category;
+    if (input.sku !== void 0) patch.sku = input.sku;
+    if (input.barcode !== void 0) patch.barcode = input.barcode;
+    if (input.unit !== void 0) patch.unit = input.unit;
+    if (input.weight !== void 0) patch.weight = input.weight;
+    if (input.description !== void 0) patch.description = input.description;
+    if (input.expiryDate !== void 0) patch.expiry_date = input.expiryDate;
+    if (input.isActive !== void 0) patch.is_active = input.isActive;
+    if (input.priceIncludesGst !== void 0) patch.price_includes_gst = input.priceIncludesGst;
+    const { data, error } = await s.supabase.from("products").update(patch).eq("id", productId).select().maybeSingle();
+    if (error) return fail(error.message);
+    if (!data) return fail(`No product found with id ${productId}`);
+    return ok({ product: data });
+  }
+});
+
+// src/lib/mcp/tools/delete-product.ts
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z5 } from "npm:zod@^3.25.76";
+var delete_product_default = defineTool5({
+  name: "delete_product",
+  title: "Delete product",
+  description: "Permanently delete a product, or deactivate it instead when `softDelete` is true.",
+  inputSchema: {
+    productId: z5.string().describe("Product id."),
+    softDelete: z5.boolean().optional().describe("Mark inactive instead of deleting.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ productId, softDelete }, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    if (softDelete) {
+      const { data, error: error2 } = await s.supabase.from("products").update({ is_active: false, updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", productId).select("id,name,is_active").maybeSingle();
+      if (error2) return fail(error2.message);
+      return ok({ product: data }, `Deactivated ${data?.name ?? productId}`);
+    }
+    const { error } = await s.supabase.from("products").delete().eq("id", productId);
+    if (error) return fail(error.message);
+    return ok({ deleted: productId }, `Deleted product ${productId}`);
+  }
+});
+
+// src/lib/mcp/tools/update-product-stock.ts
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z6 } from "npm:zod@^3.25.76";
+var update_product_stock_default = defineTool6({
   name: "update_product_stock",
   title: "Update product stock",
   description: "Set or adjust the stock quantity of one product owned by the signed-in user. Use `mode: 'adjust'` to add/subtract, `mode: 'set'` to overwrite.",
   inputSchema: {
-    productId: z2.string().describe("The product's id."),
-    quantity: z2.number().describe("Quantity to set, or the delta when adjusting (may be negative)."),
-    mode: z2.enum(["set", "adjust"]).optional().describe("Defaults to 'adjust'.")
+    productId: z6.string().describe("The product's id."),
+    quantity: z6.number().describe("Quantity to set, or the delta when adjusting (may be negative)."),
+    mode: z6.enum(["set", "adjust"]).optional().describe("Defaults to 'adjust'.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   handler: async ({ productId, quantity, mode }, ctx) => {
@@ -122,18 +287,201 @@ var update_product_stock_default = defineTool2({
   }
 });
 
+// src/lib/mcp/tools/list-categories.ts
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z7 } from "npm:zod@^3.25.76";
+var list_categories_default = defineTool7({
+  name: "list_categories",
+  title: "List categories",
+  description: "List product categories for the signed-in user.",
+  inputSchema: {
+    activeOnly: z7.boolean().optional().describe("Only return active categories.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ activeOnly }, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    let q = s.supabase.from("categories").select("*").order("name");
+    if (activeOnly) q = q.eq("is_active", true);
+    const { data, error } = await q;
+    if (error) return fail(error.message);
+    return ok({ count: data?.length ?? 0, categories: data ?? [] });
+  }
+});
+
+// src/lib/mcp/tools/manage-category.ts
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z8 } from "npm:zod@^3.25.76";
+var manage_category_default = defineTool8({
+  name: "manage_category",
+  title: "Create, update or delete a category",
+  description: "Create, update or delete a product category. Set `action` to 'create', 'update' or 'delete'.",
+  inputSchema: {
+    action: z8.enum(["create", "update", "delete"]),
+    categoryId: z8.string().optional().describe("Required for update and delete."),
+    name: z8.string().optional(),
+    description: z8.string().optional(),
+    isActive: z8.boolean().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ action, categoryId, name, description, isActive }, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    if (action === "create") {
+      if (!name) return fail("`name` is required to create a category.");
+      const { data: data2, error: error2 } = await s.supabase.from("categories").insert({ user_id: s.userId, name, description: description ?? null, is_active: isActive ?? true }).select().maybeSingle();
+      if (error2) return fail(error2.message);
+      return ok({ category: data2 });
+    }
+    if (!categoryId) return fail("`categoryId` is required.");
+    if (action === "delete") {
+      const { error: error2 } = await s.supabase.from("categories").delete().eq("id", categoryId);
+      if (error2) return fail(error2.message);
+      return ok({ deleted: categoryId }, `Deleted category ${categoryId}`);
+    }
+    const patch = { updated_at: (/* @__PURE__ */ new Date()).toISOString() };
+    if (name !== void 0) patch.name = name;
+    if (description !== void 0) patch.description = description;
+    if (isActive !== void 0) patch.is_active = isActive;
+    const { data, error } = await s.supabase.from("categories").update(patch).eq("id", categoryId).select().maybeSingle();
+    if (error) return fail(error.message);
+    return ok({ category: data });
+  }
+});
+
+// src/lib/mcp/tools/list-customers.ts
+import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z9 } from "npm:zod@^3.25.76";
+var list_customers_default = defineTool9({
+  name: "list_customers",
+  title: "List customers",
+  description: "List or search customers of the signed-in user, including contact details and lifetime spend.",
+  inputSchema: {
+    search: z9.string().optional().describe("Case-insensitive match on customer name."),
+    limit: z9.number().int().min(1).max(200).optional().describe("Maximum rows to return (default 25).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ search, limit }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const supabase = supabaseForUser(ctx);
+    let query = supabase.from("customers").select("id,name,phone,email,address,city,state,status,total_orders,total_spent,last_order_date").order("total_spent", { ascending: false }).limit(limit ?? 25);
+    if (search) query = query.ilike("name", `%${search}%`);
+    const { data, error } = await query;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
+      structuredContent: { count: data?.length ?? 0, customers: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/create-customer.ts
+import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z10 } from "npm:zod@^3.25.76";
+var create_customer_default = defineTool10({
+  name: "create_customer",
+  title: "Create customer",
+  description: "Add a new customer record. Phone numbers default to the +91 country code when no code is given.",
+  inputSchema: {
+    name: z10.string().trim().min(1),
+    phone: z10.string().optional(),
+    email: z10.string().optional(),
+    address: z10.string().optional(),
+    city: z10.string().optional(),
+    state: z10.string().optional(),
+    pincode: z10.string().optional(),
+    birthday: z10.string().optional(),
+    notes: z10.string().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    const phone = input.phone ? input.phone.trim().startsWith("+") ? input.phone.trim() : `+91${input.phone.replace(/\D/g, "")}` : null;
+    const { data, error } = await s.supabase.from("customers").insert({
+      user_id: s.userId,
+      name: input.name,
+      phone,
+      email: input.email ?? null,
+      address: input.address ?? null,
+      city: input.city ?? null,
+      state: input.state ?? null,
+      pincode: input.pincode ?? null,
+      birthday: input.birthday ?? null,
+      notes: input.notes ?? null
+    }).select().maybeSingle();
+    if (error) return fail(error.message);
+    return ok({ customer: data });
+  }
+});
+
+// src/lib/mcp/tools/update-customer.ts
+import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z11 } from "npm:zod@^3.25.76";
+var update_customer_default = defineTool11({
+  name: "update_customer",
+  title: "Update or delete customer",
+  description: "Update a customer's details, or delete the customer when `deleteCustomer` is true.",
+  inputSchema: {
+    customerId: z11.string(),
+    deleteCustomer: z11.boolean().optional(),
+    name: z11.string().optional(),
+    phone: z11.string().optional(),
+    email: z11.string().optional(),
+    address: z11.string().optional(),
+    city: z11.string().optional(),
+    state: z11.string().optional(),
+    pincode: z11.string().optional(),
+    birthday: z11.string().optional(),
+    notes: z11.string().optional(),
+    status: z11.string().optional().describe("e.g. Active or Inactive.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ customerId, deleteCustomer, ...input }, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    if (deleteCustomer) {
+      const { error: error2 } = await s.supabase.from("customers").delete().eq("id", customerId);
+      if (error2) return fail(error2.message);
+      return ok({ deleted: customerId }, `Deleted customer ${customerId}`);
+    }
+    const patch = { updated_at: (/* @__PURE__ */ new Date()).toISOString() };
+    for (const [key, column] of Object.entries({
+      name: "name",
+      phone: "phone",
+      email: "email",
+      address: "address",
+      city: "city",
+      state: "state",
+      pincode: "pincode",
+      birthday: "birthday",
+      notes: "notes",
+      status: "status"
+    })) {
+      const value = input[key];
+      if (value !== void 0) patch[column] = value;
+    }
+    const { data, error } = await s.supabase.from("customers").update(patch).eq("id", customerId).select().maybeSingle();
+    if (error) return fail(error.message);
+    if (!data) return fail(`No customer found with id ${customerId}`);
+    return ok({ customer: data });
+  }
+});
+
 // src/lib/mcp/tools/list-orders.ts
-import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z as z3 } from "npm:zod@^3.25.76";
-var list_orders_default = defineTool3({
+import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z12 } from "npm:zod@^3.25.76";
+var list_orders_default = defineTool12({
   name: "list_orders",
   title: "List orders",
   description: "List recent sales orders for the signed-in user, newest first, optionally filtered by status or date range.",
   inputSchema: {
-    status: z3.string().optional().describe("Filter by order_status, e.g. 'completed' or 'pending'."),
-    fromDate: z3.string().optional().describe("ISO date; only orders on or after this date."),
-    toDate: z3.string().optional().describe("ISO date; only orders on or before this date."),
-    limit: z3.number().int().min(1).max(200).optional().describe("Maximum rows to return (default 25).")
+    status: z12.string().optional().describe("Filter by order_status, e.g. 'completed' or 'pending'."),
+    fromDate: z12.string().optional().describe("ISO date; only orders on or after this date."),
+    toDate: z12.string().optional().describe("ISO date; only orders on or before this date."),
+    limit: z12.number().int().min(1).max(200).optional().describe("Maximum rows to return (default 25).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ status, fromDate, toDate, limit }, ctx) => {
@@ -154,44 +502,441 @@ var list_orders_default = defineTool3({
   }
 });
 
-// src/lib/mcp/tools/list-customers.ts
-import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z as z4 } from "npm:zod@^3.25.76";
-var list_customers_default = defineTool4({
-  name: "list_customers",
-  title: "List customers",
-  description: "List or search customers of the signed-in user, including contact details and lifetime spend.",
+// src/lib/mcp/tools/manage-order.ts
+import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z13 } from "npm:zod@^3.25.76";
+var manage_order_default = defineTool13({
+  name: "manage_order",
+  title: "Update or delete an order",
+  description: "Update an existing order's status, payment details, shipping address or tracking number, or delete it when `deleteOrder` is true.",
   inputSchema: {
-    search: z4.string().optional().describe("Case-insensitive match on customer name."),
-    limit: z4.number().int().min(1).max(200).optional().describe("Maximum rows to return (default 25).")
+    orderId: z13.string(),
+    deleteOrder: z13.boolean().optional(),
+    orderStatus: z13.string().optional(),
+    paymentStatus: z13.string().optional(),
+    paymentMethod: z13.string().optional(),
+    shippingAddress: z13.string().optional(),
+    trackingNumber: z13.string().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ orderId, deleteOrder, ...input }, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    if (deleteOrder) {
+      const { error: error2 } = await s.supabase.from("orders").delete().eq("id", orderId);
+      if (error2) return fail(error2.message);
+      return ok({ deleted: orderId }, `Deleted order ${orderId}`);
+    }
+    const patch = { updated_at: (/* @__PURE__ */ new Date()).toISOString() };
+    if (input.orderStatus !== void 0) {
+      patch.order_status = input.orderStatus;
+      patch.status = input.orderStatus;
+    }
+    if (input.paymentStatus !== void 0) patch.payment_status = input.paymentStatus;
+    if (input.paymentMethod !== void 0) patch.payment_method = input.paymentMethod;
+    if (input.shippingAddress !== void 0) patch.shipping_address = input.shippingAddress;
+    if (input.trackingNumber !== void 0) patch.tracking_number = input.trackingNumber;
+    const { data, error } = await s.supabase.from("orders").update(patch).eq("id", orderId).select().maybeSingle();
+    if (error) return fail(error.message);
+    if (!data) return fail(`No order found with id ${orderId}`);
+    return ok({ order: data });
+  }
+});
+
+// src/lib/mcp/tools/get-invoice.ts
+import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z14 } from "npm:zod@^3.25.76";
+var get_invoice_default = defineTool14({
+  name: "get_invoice",
+  title: "Get GST invoice",
+  description: "Build the full GST invoice payload for an order, including seller billing details from settings.",
+  inputSchema: { orderId: z14.string().describe("Order id.") },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ orderId }, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    const { data: order, error } = await s.supabase.from("orders").select("*").eq("id", orderId).maybeSingle();
+    if (error) return fail(error.message);
+    if (!order) return fail(`No order found with id ${orderId}`);
+    const { data: settings } = await s.supabase.from("settings").select("billing_template").maybeSingle();
+    return ok({
+      invoice: {
+        invoiceNumber: order.id,
+        date: order.order_date,
+        customer: {
+          id: order.customer_id,
+          name: order.customer_name,
+          phone: order.customer_phone,
+          email: order.customer_email,
+          shippingAddress: order.shipping_address
+        },
+        items: order.items,
+        subtotal: order.subtotal,
+        gst: order.gst,
+        total: order.total,
+        paymentMethod: order.payment_method,
+        paymentStatus: order.payment_status,
+        orderStatus: order.order_status,
+        seller: settings?.billing_template ?? null
+      }
+    });
+  }
+});
+
+// src/lib/mcp/tools/pos-start-checkout.ts
+import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z15 } from "npm:zod@^3.25.76";
+var pos_start_checkout_default = defineTool15({
+  name: "pos_start_checkout",
+  title: "Start POS checkout",
+  description: "Price a POS cart before payment: validates products, checks stock availability and returns a quote with line items, subtotal, GST and total. Does not change any data.",
+  inputSchema: {
+    items: z15.array(
+      z15.object({
+        productId: z15.string().describe("Product id."),
+        quantity: z15.number().positive().describe("Quantity to sell."),
+        price: z15.number().nonnegative().optional().describe("Override unit price.")
+      })
+    ).min(1),
+    gstRate: z15.number().min(0).max(100).optional().describe("GST percentage applied to the subtotal (default 0)."),
+    discount: z15.number().min(0).optional().describe("Flat discount amount on the subtotal.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ search, limit }, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    }
-    const supabase = supabaseForUser(ctx);
-    let query = supabase.from("customers").select("id,name,phone,email,address,city,state,status,total_orders,total_spent,last_order_date").order("total_spent", { ascending: false }).limit(limit ?? 25);
-    if (search) query = query.ilike("name", `%${search}%`);
-    const { data, error } = await query;
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
-      structuredContent: { count: data?.length ?? 0, customers: data ?? [] }
+  handler: async ({ items, gstRate, discount }, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    const ids = items.map((i) => i.productId);
+    const { data, error } = await s.supabase.from("products").select("id,name,price,stock,unit").in("id", ids);
+    if (error) return fail(error.message);
+    const byId = new Map((data ?? []).map((p) => [p.id, p]));
+    const missing = ids.filter((id) => !byId.has(id));
+    if (missing.length) return fail(`Unknown product ids: ${missing.join(", ")}`);
+    const lines = items.map((i) => {
+      const p = byId.get(i.productId);
+      const unitPrice = i.price ?? Number(p.price);
+      return {
+        productId: p.id,
+        name: p.name,
+        unit: p.unit,
+        quantity: i.quantity,
+        price: unitPrice,
+        lineTotal: Number((unitPrice * i.quantity).toFixed(2)),
+        availableStock: Number(p.stock),
+        insufficientStock: Number(p.stock) < i.quantity
+      };
+    });
+    const subtotal = Number(lines.reduce((t, l) => t + l.lineTotal, 0).toFixed(2));
+    const discounted = Math.max(0, subtotal - (discount ?? 0));
+    const gst = Number((discounted * ((gstRate ?? 0) / 100)).toFixed(2));
+    const quote = {
+      lines,
+      subtotal,
+      discount: discount ?? 0,
+      gstRate: gstRate ?? 0,
+      gst,
+      total: Number((discounted + gst).toFixed(2)),
+      stockWarnings: lines.filter((l) => l.insufficientStock).map((l) => `${l.name}: only ${l.availableStock} left`)
     };
+    return ok(quote);
+  }
+});
+
+// src/lib/mcp/tools/pos-submit-payment.ts
+import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z16 } from "npm:zod@^3.25.76";
+var pos_submit_payment_default = defineTool16({
+  name: "pos_submit_payment",
+  title: "Submit POS payment",
+  description: "Complete a POS sale: creates the order with GST invoice details, decrements product stock and updates the customer's lifetime totals. Returns the created order and invoice summary.",
+  inputSchema: {
+    items: z16.array(
+      z16.object({
+        productId: z16.string(),
+        quantity: z16.number().positive(),
+        price: z16.number().nonnegative().optional()
+      })
+    ).min(1),
+    paymentMethod: z16.string().optional().describe("cash, card, upi, etc. Defaults to cash."),
+    gstRate: z16.number().min(0).max(100).optional().describe("GST percentage (default 0)."),
+    discount: z16.number().min(0).optional(),
+    customerId: z16.string().optional().describe("Existing customer id."),
+    customerName: z16.string().optional(),
+    customerPhone: z16.string().optional(),
+    customerEmail: z16.string().optional(),
+    orderStatus: z16.string().optional().describe("Defaults to 'completed'."),
+    paymentStatus: z16.string().optional().describe("Defaults to 'paid'.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    const ids = input.items.map((i) => i.productId);
+    const { data: products, error: readError } = await s.supabase.from("products").select("id,name,price,stock,unit").in("id", ids);
+    if (readError) return fail(readError.message);
+    const byId = new Map((products ?? []).map((p) => [p.id, p]));
+    const missing = ids.filter((id) => !byId.has(id));
+    if (missing.length) return fail(`Unknown product ids: ${missing.join(", ")}`);
+    const short = input.items.filter((i) => Number(byId.get(i.productId).stock) < i.quantity);
+    if (short.length) {
+      return fail(
+        `Insufficient stock for: ${short.map((i) => `${byId.get(i.productId).name} (have ${byId.get(i.productId).stock}, need ${i.quantity})`).join("; ")}`
+      );
+    }
+    const orderItems = input.items.map((i) => {
+      const p = byId.get(i.productId);
+      const price = i.price ?? Number(p.price);
+      return { id: p.id, name: p.name, unit: p.unit, quantity: i.quantity, price, total: Number((price * i.quantity).toFixed(2)) };
+    });
+    const subtotal = Number(orderItems.reduce((t, l) => t + l.total, 0).toFixed(2));
+    const discounted = Math.max(0, subtotal - (input.discount ?? 0));
+    const gst = Number((discounted * ((input.gstRate ?? 0) / 100)).toFixed(2));
+    const total = Number((discounted + gst).toFixed(2));
+    const phone = input.customerPhone ? input.customerPhone.trim().startsWith("+") ? input.customerPhone.trim() : `+91${input.customerPhone.replace(/\D/g, "")}` : null;
+    const { data: order, error: orderError } = await s.supabase.from("orders").insert({
+      user_id: s.userId,
+      items: orderItems,
+      subtotal,
+      gst,
+      total,
+      payment_method: input.paymentMethod ?? "cash",
+      payment_status: input.paymentStatus ?? "paid",
+      order_status: input.orderStatus ?? "completed",
+      status: input.orderStatus ?? "completed",
+      customer_id: input.customerId ?? null,
+      customer_name: input.customerName ?? null,
+      customer_phone: phone,
+      customer_email: input.customerEmail ?? null,
+      order_date: (/* @__PURE__ */ new Date()).toISOString()
+    }).select().maybeSingle();
+    if (orderError) return fail(orderError.message);
+    const stockErrors = [];
+    for (const line of orderItems) {
+      const p = byId.get(line.id);
+      const { error } = await s.supabase.from("products").update({ stock: Number(p.stock) - line.quantity, updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", line.id);
+      if (error) stockErrors.push(`${line.name}: ${error.message}`);
+    }
+    if (input.customerId) {
+      const { data: customer } = await s.supabase.from("customers").select("total_orders,total_spent").eq("id", input.customerId).maybeSingle();
+      if (customer) {
+        await s.supabase.from("customers").update({
+          total_orders: Number(customer.total_orders ?? 0) + 1,
+          total_spent: Number(customer.total_spent ?? 0) + total,
+          last_order_date: (/* @__PURE__ */ new Date()).toISOString(),
+          updated_at: (/* @__PURE__ */ new Date()).toISOString()
+        }).eq("id", input.customerId);
+      }
+    }
+    const { data: settings } = await s.supabase.from("settings").select("billing_template").maybeSingle();
+    return ok({
+      order,
+      invoice: {
+        invoiceNumber: order?.id,
+        date: order?.order_date,
+        items: orderItems,
+        subtotal,
+        discount: input.discount ?? 0,
+        gstRate: input.gstRate ?? 0,
+        gst,
+        total,
+        paymentMethod: input.paymentMethod ?? "cash",
+        customer: { id: input.customerId ?? null, name: input.customerName ?? null, phone, email: input.customerEmail ?? null },
+        seller: settings?.billing_template ?? null
+      },
+      stockErrors
+    });
+  }
+});
+
+// src/lib/mcp/tools/list-suppliers.ts
+import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z17 } from "npm:zod@^3.25.76";
+var list_suppliers_default = defineTool17({
+  name: "list_suppliers",
+  title: "List suppliers",
+  description: "List suppliers with their bills, payments and outstanding balance.",
+  inputSchema: {
+    search: z17.string().optional().describe("Case-insensitive match on supplier name."),
+    includeLedger: z17.boolean().optional().describe("Include the full bills and payments arrays (default true).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ search, includeLedger }, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    let q = s.supabase.from("suppliers").select("*").order("name");
+    if (search) q = q.ilike("name", `%${search}%`);
+    const { data, error } = await q;
+    if (error) return fail(error.message);
+    const suppliers = (data ?? []).map((sup) => {
+      const bills = Array.isArray(sup.bills) ? sup.bills : [];
+      const payments = Array.isArray(sup.payments) ? sup.payments : [];
+      const billed = bills.reduce((t, b) => t + Number(b.amount ?? 0), 0);
+      const paid = payments.reduce((t, p) => t + Number(p.amount ?? 0), 0);
+      const base = {
+        id: sup.id,
+        name: sup.name,
+        contact_person: sup.contact_person,
+        phone: sup.phone,
+        email: sup.email,
+        address: sup.address,
+        totalBilled: Number(billed.toFixed(2)),
+        totalPaid: Number(paid.toFixed(2)),
+        outstanding: Number((billed - paid).toFixed(2))
+      };
+      return includeLedger === false ? base : { ...base, bills, payments };
+    });
+    return ok({ count: suppliers.length, suppliers });
+  }
+});
+
+// src/lib/mcp/tools/manage-supplier.ts
+import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z18 } from "npm:zod@^3.25.76";
+var manage_supplier_default = defineTool18({
+  name: "manage_supplier",
+  title: "Create, update or delete a supplier",
+  description: "Create, update or delete a supplier record. Set `action` to 'create', 'update' or 'delete'.",
+  inputSchema: {
+    action: z18.enum(["create", "update", "delete"]),
+    supplierId: z18.string().optional().describe("Required for update and delete."),
+    name: z18.string().optional(),
+    contactPerson: z18.string().optional(),
+    phone: z18.string().optional(),
+    email: z18.string().optional(),
+    address: z18.string().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ action, supplierId, ...input }, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    if (action === "create") {
+      if (!input.name) return fail("`name` is required to create a supplier.");
+      const { data: data2, error: error2 } = await s.supabase.from("suppliers").insert({
+        user_id: s.userId,
+        name: input.name,
+        contact_person: input.contactPerson ?? null,
+        phone: input.phone ?? null,
+        email: input.email ?? null,
+        address: input.address ?? null,
+        bills: [],
+        payments: []
+      }).select().maybeSingle();
+      if (error2) return fail(error2.message);
+      return ok({ supplier: data2 });
+    }
+    if (!supplierId) return fail("`supplierId` is required.");
+    if (action === "delete") {
+      const { error: error2 } = await s.supabase.from("suppliers").delete().eq("id", supplierId);
+      if (error2) return fail(error2.message);
+      return ok({ deleted: supplierId }, `Deleted supplier ${supplierId}`);
+    }
+    const patch = { updated_at: (/* @__PURE__ */ new Date()).toISOString() };
+    if (input.name !== void 0) patch.name = input.name;
+    if (input.contactPerson !== void 0) patch.contact_person = input.contactPerson;
+    if (input.phone !== void 0) patch.phone = input.phone;
+    if (input.email !== void 0) patch.email = input.email;
+    if (input.address !== void 0) patch.address = input.address;
+    const { data, error } = await s.supabase.from("suppliers").update(patch).eq("id", supplierId).select().maybeSingle();
+    if (error) return fail(error.message);
+    if (!data) return fail(`No supplier found with id ${supplierId}`);
+    return ok({ supplier: data });
+  }
+});
+
+// src/lib/mcp/tools/record-supplier-entry.ts
+import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z19 } from "npm:zod@^3.25.76";
+var record_supplier_entry_default = defineTool19({
+  name: "record_supplier_entry",
+  title: "Record supplier bill or payment",
+  description: "Append a purchase bill or a payment to a supplier's ledger and return the updated outstanding balance.",
+  inputSchema: {
+    supplierId: z19.string(),
+    entryType: z19.enum(["bill", "payment"]),
+    amount: z19.number().positive(),
+    date: z19.string().optional().describe("ISO date, defaults to now."),
+    reference: z19.string().optional().describe("Bill number or payment reference."),
+    notes: z19.string().optional(),
+    paymentMode: z19.string().optional().describe("cash, upi, bank transfer (payments only).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ supplierId, entryType, amount, date, reference, notes, paymentMode }, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    const { data: supplier, error: readError } = await s.supabase.from("suppliers").select("id,name,bills,payments").eq("id", supplierId).maybeSingle();
+    if (readError) return fail(readError.message);
+    if (!supplier) return fail(`No supplier found with id ${supplierId}`);
+    const bills = Array.isArray(supplier.bills) ? [...supplier.bills] : [];
+    const payments = Array.isArray(supplier.payments) ? [...supplier.payments] : [];
+    const entry = {
+      id: crypto.randomUUID(),
+      amount,
+      date: date ?? (/* @__PURE__ */ new Date()).toISOString(),
+      reference: reference ?? null,
+      notes: notes ?? null,
+      ...entryType === "payment" ? { paymentMode: paymentMode ?? "cash" } : {}
+    };
+    if (entryType === "bill") bills.push(entry);
+    else payments.push(entry);
+    const { error } = await s.supabase.from("suppliers").update({ bills, payments, updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", supplierId);
+    if (error) return fail(error.message);
+    const billed = bills.reduce((t, b) => t + Number(b.amount ?? 0), 0);
+    const paid = payments.reduce((t, p) => t + Number(p.amount ?? 0), 0);
+    return ok({
+      supplier: supplier.name,
+      entry,
+      totalBilled: Number(billed.toFixed(2)),
+      totalPaid: Number(paid.toFixed(2)),
+      outstanding: Number((billed - paid).toFixed(2))
+    });
+  }
+});
+
+// src/lib/mcp/tools/billing-settings.ts
+import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z20 } from "npm:zod@^3.25.76";
+var billing_settings_default = defineTool20({
+  name: "billing_settings",
+  title: "Read or update billing settings",
+  description: "Read the shop's billing/invoice template (shop name, address, GSTIN, footer), or update it when fields are supplied.",
+  inputSchema: {
+    shopName: z20.string().optional(),
+    address: z20.string().optional(),
+    phone: z20.string().optional(),
+    gstNumber: z20.string().optional(),
+    footerText: z20.array(z20.string()).optional(),
+    logoUrl: z20.string().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    const { data: existing, error } = await s.supabase.from("settings").select("*").maybeSingle();
+    if (error) return fail(error.message);
+    const template = existing?.billing_template ?? {};
+    const updates = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== void 0));
+    if (Object.keys(updates).length === 0) return ok({ billingTemplate: template });
+    const next = { ...template, ...updates };
+    if (existing) {
+      const { error: upErr } = await s.supabase.from("settings").update({ billing_template: next, updated_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", existing.id);
+      if (upErr) return fail(upErr.message);
+    } else {
+      const { error: insErr } = await s.supabase.from("settings").insert({ user_id: s.userId, billing_template: next });
+      if (insErr) return fail(insErr.message);
+    }
+    return ok({ billingTemplate: next });
   }
 });
 
 // src/lib/mcp/tools/sales-summary.ts
-import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z as z5 } from "npm:zod@^3.25.76";
-var sales_summary_default = defineTool5({
+import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z21 } from "npm:zod@^3.25.76";
+var sales_summary_default = defineTool21({
   name: "sales_summary",
   title: "Sales summary",
   description: "Summarise sales totals, order count and top-selling products for the signed-in user over a date range.",
   inputSchema: {
-    fromDate: z5.string().optional().describe("ISO date; defaults to 30 days ago."),
-    toDate: z5.string().optional().describe("ISO date; defaults to now.")
+    fromDate: z21.string().optional().describe("ISO date; defaults to 30 days ago."),
+    toDate: z21.string().optional().describe("ISO date; defaults to now.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ fromDate, toDate }, ctx) => {
@@ -234,23 +979,169 @@ var sales_summary_default = defineTool5({
   }
 });
 
+// src/lib/mcp/tools/reorder-recommendations.ts
+import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z22 } from "npm:zod@^3.25.76";
+var reorder_recommendations_default = defineTool22({
+  name: "reorder_recommendations",
+  title: "Reorder recommendations & expiry risk",
+  description: "Return the raw signals an AI assistant needs to recommend reorders: per-product sales velocity, days of cover, suggested reorder quantity, plus products expiring in the next 7 and 30 days.",
+  inputSchema: {
+    lookbackDays: z22.number().int().min(1).max(365).optional().describe("Sales history window, default 30 days."),
+    coverDays: z22.number().int().min(1).max(180).optional().describe("Days of stock cover to target, default 14.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ lookbackDays, coverDays }, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    const days = lookbackDays ?? 30;
+    const cover = coverDays ?? 14;
+    const from = new Date(Date.now() - days * 864e5).toISOString();
+    const [{ data: products, error: pErr }, { data: orders, error: oErr }] = await Promise.all([
+      s.supabase.from("products").select("id,name,sku,category,stock,min_stock,price,unit,expiry_date,is_active"),
+      s.supabase.from("orders").select("items,order_date").gte("order_date", from)
+    ]);
+    if (pErr) return fail(pErr.message);
+    if (oErr) return fail(oErr.message);
+    const sold = /* @__PURE__ */ new Map();
+    for (const order of orders ?? []) {
+      const items = Array.isArray(order.items) ? order.items : [];
+      for (const item of items) {
+        const key = String(item.id ?? item.name ?? "");
+        sold.set(key, (sold.get(key) ?? 0) + Number(item.quantity ?? 0));
+      }
+    }
+    const now = Date.now();
+    const rows = (products ?? []).map((p) => {
+      const qty = sold.get(p.id) ?? sold.get(p.name) ?? 0;
+      const perDay = qty / days;
+      const stock = Number(p.stock);
+      const daysOfCover = perDay > 0 ? Number((stock / perDay).toFixed(1)) : null;
+      const target = Math.ceil(perDay * cover);
+      const suggestedReorderQty = Math.max(0, Math.max(target, Number(p.min_stock)) - stock);
+      const expiryDays = p.expiry_date ? Math.ceil((new Date(p.expiry_date).getTime() - now) / 864e5) : null;
+      return {
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        category: p.category,
+        unit: p.unit,
+        price: Number(p.price),
+        stock,
+        minStock: Number(p.min_stock),
+        soldInWindow: qty,
+        dailyVelocity: Number(perDay.toFixed(3)),
+        daysOfCover,
+        suggestedReorderQty,
+        belowMinStock: stock <= Number(p.min_stock),
+        expiryDate: p.expiry_date,
+        daysToExpiry: expiryDays
+      };
+    });
+    const summary = {
+      lookbackDays: days,
+      targetCoverDays: cover,
+      reorderNow: rows.filter((r) => r.suggestedReorderQty > 0).sort((a, b) => b.suggestedReorderQty - a.suggestedReorderQty),
+      lowStock: rows.filter((r) => r.belowMinStock),
+      deadStock: rows.filter((r) => r.soldInWindow === 0 && r.stock > 0),
+      expiringIn7Days: rows.filter((r) => r.daysToExpiry !== null && r.daysToExpiry <= 7),
+      expiringIn30Days: rows.filter((r) => r.daysToExpiry !== null && r.daysToExpiry <= 30),
+      expired: rows.filter((r) => r.daysToExpiry !== null && r.daysToExpiry < 0)
+    };
+    return ok(summary);
+  }
+});
+
+// src/lib/mcp/tools/business-overview.ts
+import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z23 } from "npm:zod@^3.25.76";
+var business_overview_default = defineTool23({
+  name: "business_overview",
+  title: "Business overview",
+  description: "Dashboard-style snapshot: inventory valuation, stock alerts, order and revenue totals, supplier outstanding and top customers.",
+  inputSchema: {
+    days: z23.number().int().min(1).max(365).optional().describe("Window for sales metrics, default 30 days.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ days }, ctx) => {
+    const s = session(ctx);
+    if (!s) return fail(NOT_AUTHED);
+    const window = days ?? 30;
+    const from = new Date(Date.now() - window * 864e5).toISOString();
+    const [{ data: products, error: pErr }, { data: orders, error: oErr }, { data: customers }, { data: suppliers }] = await Promise.all([
+      s.supabase.from("products").select("id,name,stock,min_stock,price,expiry_date,is_active"),
+      s.supabase.from("orders").select("total,order_date,order_status,payment_status").gte("order_date", from),
+      s.supabase.from("customers").select("id,name,total_orders,total_spent").order("total_spent", { ascending: false }).limit(10),
+      s.supabase.from("suppliers").select("id,name,bills,payments")
+    ]);
+    if (pErr) return fail(pErr.message);
+    if (oErr) return fail(oErr.message);
+    const inventoryValue = (products ?? []).reduce((t, p) => t + Number(p.stock) * Number(p.price), 0);
+    const revenue = (orders ?? []).reduce((t, o) => t + Number(o.total ?? 0), 0);
+    const supplierOutstanding = (suppliers ?? []).map((sup) => {
+      const bills = Array.isArray(sup.bills) ? sup.bills : [];
+      const payments = Array.isArray(sup.payments) ? sup.payments : [];
+      const billed = bills.reduce((t, b) => t + Number(b.amount ?? 0), 0);
+      const paid = payments.reduce((t, p) => t + Number(p.amount ?? 0), 0);
+      return { id: sup.id, name: sup.name, outstanding: Number((billed - paid).toFixed(2)) };
+    });
+    return ok({
+      windowDays: window,
+      products: {
+        total: products?.length ?? 0,
+        active: (products ?? []).filter((p) => p.is_active).length,
+        outOfStock: (products ?? []).filter((p) => Number(p.stock) <= 0).length,
+        lowStock: (products ?? []).filter((p) => Number(p.stock) > 0 && Number(p.stock) <= Number(p.min_stock)).length,
+        inventoryValue: Number(inventoryValue.toFixed(2))
+      },
+      sales: {
+        orderCount: orders?.length ?? 0,
+        revenue: Number(revenue.toFixed(2)),
+        averageOrderValue: orders?.length ? Number((revenue / orders.length).toFixed(2)) : 0,
+        pendingPayments: (orders ?? []).filter((o) => o.payment_status !== "paid").length
+      },
+      topCustomers: customers ?? [],
+      supplierOutstanding: supplierOutstanding.sort((a, b) => b.outstanding - a.outstanding),
+      totalSupplierOutstanding: Number(supplierOutstanding.reduce((t, x) => t + x.outstanding, 0).toFixed(2))
+    });
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "dlzfgzyrmttfoimevnxb";
 var mcp_default = defineMcp({
   name: "kothari-smart-inventory-suite",
   title: "Kothari-smart-inventory-suite",
-  version: "0.1.0",
-  instructions: "Tools for the Kothari smart inventory suite: inspect products and stock levels, adjust stock, review orders and customers, and summarise sales. All data is scoped to the signed-in user's account.",
+  version: "0.2.0",
+  instructions: "Full control of the Kothari smart inventory suite: products and categories (read/write), stock adjustments, customers, orders, POS checkout and payment with GST invoices, suppliers with bills and payments, billing settings, sales analytics, reorder recommendations and expiry-risk alerts. All data is scoped to the signed-in user's account.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
   }),
   tools: [
     list_products_default,
+    get_product_default,
+    create_product_default,
+    update_product_default,
+    delete_product_default,
     update_product_stock_default,
-    list_orders_default,
+    list_categories_default,
+    manage_category_default,
     list_customers_default,
-    sales_summary_default
+    create_customer_default,
+    update_customer_default,
+    list_orders_default,
+    manage_order_default,
+    get_invoice_default,
+    pos_start_checkout_default,
+    pos_submit_payment_default,
+    list_suppliers_default,
+    manage_supplier_default,
+    record_supplier_entry_default,
+    billing_settings_default,
+    sales_summary_default,
+    reorder_recommendations_default,
+    business_overview_default
   ]
 });
 
