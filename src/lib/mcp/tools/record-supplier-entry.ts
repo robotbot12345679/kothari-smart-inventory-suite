@@ -43,8 +43,8 @@ export default defineTool({
       .update({ bills, payments, updated_at: new Date().toISOString() })
       .eq("id", supplierId);
     if (error) return fail(error.message);
-    const billed = bills.reduce((t, b) => t + Number((b as { amount?: number }).amount ?? 0), 0);
-    const paid = payments.reduce((t, p) => t + Number((p as { amount?: number }).amount ?? 0), 0);
+    const billed = bills.reduce<number>((t, b) => t + Number((b as { amount?: number }).amount ?? 0), 0);
+    const paid = payments.reduce<number>((t, p) => t + Number((p as { amount?: number }).amount ?? 0), 0);
     return ok({
       supplier: supplier.name,
       entry,
