@@ -13,8 +13,13 @@ import {
   Database,
   FileDown,
   AlertTriangle,
-  LogOut
+  LogOut,
+  UserPlus,
+  Building2
 } from "lucide-react";
+import AccessLevels from "@/components/admin/AccessLevels";
+import UserManagement from "@/components/admin/UserManagement";
+import Organization from "@/pages/Organization";
 import {
   Dialog,
   DialogContent,
@@ -372,7 +377,7 @@ CATEGORIES: ${categories.length} categories
     }
   };
 
-  return (
+  const dataTab = (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -509,6 +514,69 @@ CATEGORIES: ${categories.length} categories
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+
+  const adminTabs = [
+    { key: "data", label: "Data & Backup", icon: Database },
+    { key: "access", label: "Access Levels", icon: Shield },
+    { key: "users", label: "Users & Credentials", icon: UserPlus },
+    { key: "organization", label: "Organization", icon: Building2 },
+  ] as const;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex bg-background">
+      <aside className="hidden w-64 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground md:flex">
+        <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-4">
+          <Shield className="h-5 w-5 text-primary" />
+          <span className="font-semibold">Admin Console</span>
+        </div>
+        <nav className="flex-1 space-y-1 p-3">
+          {adminTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
+                activeTab === tab.key ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground" : ""
+              }`}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+        <div className="border-t border-sidebar-border p-3">
+          <Button variant="outline" className="w-full" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Exit admin
+          </Button>
+        </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-center gap-2 overflow-x-auto border-b p-2 md:hidden">
+          {adminTabs.map((tab) => (
+            <Button
+              key={tab.key}
+              size="sm"
+              variant={activeTab === tab.key ? "default" : "ghost"}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              <tab.icon className="mr-1.5 h-4 w-4" />
+              {tab.label}
+            </Button>
+          ))}
+          <Button size="sm" variant="outline" onClick={() => navigate("/dashboard")}>
+            Exit
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+          {activeTab === "data" && dataTab}
+          {activeTab === "access" && <AccessLevels />}
+          {activeTab === "users" && <UserManagement />}
+          {activeTab === "organization" && <Organization />}
+        </div>
+      </div>
     </div>
   );
 };
