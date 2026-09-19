@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { useTheme } from "@/components/theme-provider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useCloudData } from "@/context/CloudDataContext";
+import { usePermissions } from "@/context/PermissionsContext";
 
 interface TopNavProps {
   onMenuToggle: () => void;
@@ -26,6 +27,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
   const { setTheme } = useTheme();
   const navigate = useNavigate();
   const { products, orders, customers } = useCloudData();
+  const { can, profile } = usePermissions();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -297,25 +299,33 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Admin Panel</DropdownMenuLabel>
+              <DropdownMenuLabel>{profile?.display_name ?? "My account"}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/products')}>
-                <Package className="mr-2 h-4 w-4" />
-                Manage Products
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/customers')}>
-                <Users className="mr-2 h-4 w-4" />
-                Manage Customers
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/analytics')}>
-                <BarChart3 className="mr-2 h-4 w-4" />
-                View Analytics
-              </DropdownMenuItem>
+              {can("products.view") && (
+                <DropdownMenuItem onClick={() => navigate('/products')}>
+                  <Package className="mr-2 h-4 w-4" />
+                  Manage Products
+                </DropdownMenuItem>
+              )}
+              {can("customers.view") && (
+                <DropdownMenuItem onClick={() => navigate('/customers')}>
+                  <Users className="mr-2 h-4 w-4" />
+                  Manage Customers
+                </DropdownMenuItem>
+              )}
+              {can("analytics.view") && (
+                <DropdownMenuItem onClick={() => navigate('/analytics')}>
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  View Analytics
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/admin')}>
-                <Shield className="mr-2 h-4 w-4" />
-                Admin Page
-              </DropdownMenuItem>
+              {can("admin.access") && (
+                <DropdownMenuItem onClick={() => navigate('/admin')}>
+                  <Shield className="mr-2 h-4 w-4" />
+                  Admin Page
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
