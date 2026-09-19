@@ -17,6 +17,8 @@ import {
   Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/context/PermissionsContext";
+import { ROUTE_PERMISSIONS } from "@/lib/permissions";
 
 interface SidebarProps {
   open: boolean;
@@ -64,8 +66,9 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
 
 const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   const location = useLocation();
+  const { can } = usePermissions();
 
-  const sidebarItems = [
+  const allItems = [
     { icon: Home, label: "Dashboard", path: "/dashboard" },
     { icon: Package, label: "Products", path: "/products" },
     { icon: ClipboardList, label: "Orders", path: "/orders" },
@@ -76,8 +79,14 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
     { icon: Box, label: "Inventory", path: "/inventory" },
     { icon: Building2, label: "Suppliers", path: "/suppliers" },
     { icon: FileText, label: "Bills", path: "/bills" },
+    { icon: Building2, label: "Organization", path: "/organization" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
+
+  const sidebarItems = allItems.filter((item) => {
+    const required = ROUTE_PERMISSIONS[item.path];
+    return !required || can(required);
+  });
 
   return (
     <>
