@@ -15,16 +15,26 @@ import Inventory from './pages/Inventory';
 import BillsReport from './pages/BillsReport';
 import SupplierManagement from './pages/SupplierManagement';
 import ProductComparison from './pages/ProductComparison';
+import Organization from './pages/Organization';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import OAuthConsent from './pages/OAuthConsent';
 
 import { CloudDataProvider, useCloudData } from './context/CloudDataContext';
+import { PermissionsProvider, usePermissions } from './context/PermissionsContext';
+import ForcePasswordChange from './components/auth/ForcePasswordChange';
+import RequirePermission from './components/auth/RequirePermission';
+import { ROUTE_PERMISSIONS } from './lib/permissions';
 import { Toaster } from './components/ui/toaster';
+
+const Guard = ({ path, children }: { path: string; children: React.ReactNode }) => (
+  <RequirePermission permission={ROUTE_PERMISSIONS[path] ?? null}>{children}</RequirePermission>
+);
 
 const AuthGate = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useCloudData();
+  const { profile, loading: permsLoading } = usePermissions();
 
   if (loading) {
     return (
@@ -41,6 +51,10 @@ const AuthGate = ({ children }: { children: React.ReactNode }) => {
     return <Login />;
   }
 
+  if (!permsLoading && profile?.must_change_password) {
+    return <ForcePasswordChange />;
+  }
+
   return <>{children}</>;
 };
 
@@ -50,24 +64,35 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route
+          path="/admin"
+          element={
+            <Guard path="/admin">
+              <Admin />
+            </Guard>
+          }
+        />
+        <Route
           path="/*"
           element={
             <MainLayout>
               <Routes>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/orders" element={<Orders />} />
-                <Route path="/customers" element={<Customers />} />
-                <Route path="/reports" element={<Reports />} />
+                <Route path="/dashboard" element={<Guard path="/dashboard"><Dashboard /></Guard>} />
+                <Route path="/products" element={<Guard path="/products"><Products /></Guard>} />
+                <Route path="/orders" element={<Guard path="/orders"><Orders /></Guard>} />
+                <Route path="/customers" element={<Guard path="/customers"><Customers /></Guard>} />
+                <Route path="/reports" element={<Guard path="/reports"><Reports /></Guard>} />
                 <Route path="/settings" element={<Settings />} />
-                <Route path="/pos" element={<Pos />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/shipping" element={<Shipping />} />
-                <Route path="/inventory" element={<Inventory />} />
-                <Route path="/bills" element={<BillsReport />} />
-                <Route path="/suppliers" element={<SupplierManagement />} />
-                <Route path="/product-comparison" element={<ProductComparison />} />
-                <Route path="/admin" element={<Admin />} />
+                <Route path="/pos" element={<Guard path="/pos"><Pos /></Guard>} />
+                <Route path="/analytics" element={<Guard path="/analytics"><Analytics /></Guard>} />
+                <Route path="/shipping" element={<Guard path="/shipping"><Shipping /></Guard>} />
+                <Route path="/inventory" element={<Guard path="/inventory"><Inventory /></Guard>} />
+                <Route path="/bills" element={<Guard path="/bills"><BillsReport /></Guard>} />
+                <Route path="/suppliers" element={<Guard path="/suppliers"><SupplierManagement /></Guard>} />
+                <Route
+                  path="/product-comparison"
+                  element={<Guard path="/product-comparison"><ProductComparison /></Guard>}
+                />
+                <Route path="/organization" element={<Guard path="/organization"><Organization /></Guard>} />
               </Routes>
             </MainLayout>
           }
@@ -81,15 +106,16 @@ const App = () => {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <CloudDataProvider>
-        <Router>
-          <Routes>
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
-            <Route path="/*" element={<AppRoutes />} />
-
-          </Routes>
-          <Toaster />
-        </Router>
+        <PermissionsProvider>
+          <Router>
+            <Routes>
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+              <Route path="/*" element={<AppRoutes />} />
+            </Routes>
+            <Toaster />
+          </Router>
+        </PermissionsProvider>
       </CloudDataProvider>
     </ThemeProvider>
   );
