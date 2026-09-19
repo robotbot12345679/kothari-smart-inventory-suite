@@ -58,6 +58,7 @@ const Admin = () => {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [destructPassword, setDestructPassword] = useState("");
   const [importing, setImporting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"data" | "access" | "users" | "organization">("data");
 
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
