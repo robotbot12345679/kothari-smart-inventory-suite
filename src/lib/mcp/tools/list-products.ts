@@ -11,7 +11,7 @@ export default defineTool({
     search: z.string().optional().describe("Case-insensitive match on product name."),
     category: z.string().optional().describe("Filter by product category."),
     lowStockOnly: z.boolean().optional().describe("Only return products at or below their minimum stock level."),
-    limit: z.number().int().min(1).max(200).optional().describe("Maximum rows to return (default 50)."),
+    limit: z.number().int().min(1).max(10000).optional().describe("Maximum rows to return (default 1000)."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ search, category, lowStockOnly, limit }, ctx) => {
@@ -23,7 +23,7 @@ export default defineTool({
       .from("products")
       .select("id,name,sku,barcode,category,price,stock,min_stock,unit,is_active,expiry_date")
       .order("name", { ascending: true })
-      .limit(limit ?? 50);
+      .limit(limit ?? 1000);
 
     if (search) query = query.ilike("name", `%${search}%`);
     if (category) query = query.eq("category", category);

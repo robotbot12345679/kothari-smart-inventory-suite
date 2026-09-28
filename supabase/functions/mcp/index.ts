@@ -67,7 +67,7 @@ var list_products_default = defineTool({
     search: z.string().optional().describe("Case-insensitive match on product name."),
     category: z.string().optional().describe("Filter by product category."),
     lowStockOnly: z.boolean().optional().describe("Only return products at or below their minimum stock level."),
-    limit: z.number().int().min(1).max(200).optional().describe("Maximum rows to return (default 50).")
+    limit: z.number().int().min(1).max(1e4).optional().describe("Maximum rows to return (default 1000).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ search, category, lowStockOnly, limit }, ctx) => {
@@ -75,7 +75,7 @@ var list_products_default = defineTool({
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     const supabase = supabaseForUser(ctx);
-    let query = supabase.from("products").select("id,name,sku,barcode,category,price,stock,min_stock,unit,is_active,expiry_date").order("name", { ascending: true }).limit(limit ?? 50);
+    let query = supabase.from("products").select("id,name,sku,barcode,category,price,stock,min_stock,unit,is_active,expiry_date").order("name", { ascending: true }).limit(limit ?? 1e3);
     if (search) query = query.ilike("name", `%${search}%`);
     if (category) query = query.eq("category", category);
     const { data, error } = await query;
@@ -358,7 +358,7 @@ var list_customers_default = defineTool9({
   description: "List or search customers of the signed-in user, including contact details and lifetime spend.",
   inputSchema: {
     search: z9.string().optional().describe("Case-insensitive match on customer name."),
-    limit: z9.number().int().min(1).max(200).optional().describe("Maximum rows to return (default 25).")
+    limit: z9.number().int().min(1).max(1e4).optional().describe("Maximum rows to return (default 1000).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ search, limit }, ctx) => {
@@ -366,7 +366,7 @@ var list_customers_default = defineTool9({
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     const supabase = supabaseForUser(ctx);
-    let query = supabase.from("customers").select("id,name,phone,email,address,city,state,status,total_orders,total_spent,last_order_date").order("total_spent", { ascending: false }).limit(limit ?? 25);
+    let query = supabase.from("customers").select("id,name,phone,email,address,city,state,status,total_orders,total_spent,last_order_date").order("total_spent", { ascending: false }).limit(limit ?? 1e3);
     if (search) query = query.ilike("name", `%${search}%`);
     const { data, error } = await query;
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
@@ -481,7 +481,7 @@ var list_orders_default = defineTool12({
     status: z12.string().optional().describe("Filter by order_status, e.g. 'completed' or 'pending'."),
     fromDate: z12.string().optional().describe("ISO date; only orders on or after this date."),
     toDate: z12.string().optional().describe("ISO date; only orders on or before this date."),
-    limit: z12.number().int().min(1).max(200).optional().describe("Maximum rows to return (default 25).")
+    limit: z12.number().int().min(1).max(1e4).optional().describe("Maximum rows to return (default 1000).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ status, fromDate, toDate, limit }, ctx) => {
@@ -489,7 +489,7 @@ var list_orders_default = defineTool12({
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     const supabase = supabaseForUser(ctx);
-    let query = supabase.from("orders").select("id,order_date,customer_name,customer_phone,items,subtotal,gst,total,payment_method,payment_status,order_status").order("order_date", { ascending: false }).limit(limit ?? 25);
+    let query = supabase.from("orders").select("id,order_date,customer_name,customer_phone,items,subtotal,gst,total,payment_method,payment_status,order_status").order("order_date", { ascending: false }).limit(limit ?? 1e3);
     if (status) query = query.eq("order_status", status);
     if (fromDate) query = query.gte("order_date", fromDate);
     if (toDate) query = query.lte("order_date", toDate);

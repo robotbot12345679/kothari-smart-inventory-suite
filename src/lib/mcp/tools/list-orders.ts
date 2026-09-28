@@ -10,7 +10,7 @@ export default defineTool({
     status: z.string().optional().describe("Filter by order_status, e.g. 'completed' or 'pending'."),
     fromDate: z.string().optional().describe("ISO date; only orders on or after this date."),
     toDate: z.string().optional().describe("ISO date; only orders on or before this date."),
-    limit: z.number().int().min(1).max(200).optional().describe("Maximum rows to return (default 25)."),
+    limit: z.number().int().min(1).max(10000).optional().describe("Maximum rows to return (default 1000)."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ status, fromDate, toDate, limit }, ctx) => {
@@ -22,7 +22,7 @@ export default defineTool({
       .from("orders")
       .select("id,order_date,customer_name,customer_phone,items,subtotal,gst,total,payment_method,payment_status,order_status")
       .order("order_date", { ascending: false })
-      .limit(limit ?? 25);
+      .limit(limit ?? 1000);
 
     if (status) query = query.eq("order_status", status);
     if (fromDate) query = query.gte("order_date", fromDate);
