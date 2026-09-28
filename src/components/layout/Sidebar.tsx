@@ -12,9 +12,18 @@ import {
   Settings,
   Truck,
   Box,
-  FileText,
   X,
-  Building2,
+  LayoutDashboard,
+  PackageSearch,
+  ReceiptText,
+  UsersRound,
+  Store,
+  LineChart,
+  Warehouse,
+  Factory,
+  FileSpreadsheet,
+  Network,
+  SlidersHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/context/PermissionsContext";
@@ -69,18 +78,18 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   const { can } = usePermissions();
 
   const allItems = [
-    { icon: Home, label: "Dashboard", path: "/dashboard" },
-    { icon: Package, label: "Products", path: "/products" },
-    { icon: ClipboardList, label: "Orders", path: "/orders" },
-    { icon: Users, label: "Customers", path: "/customers" },
-    { icon: ShoppingCart, label: "Point of Sale", path: "/pos" },
-    { icon: BarChart, label: "Analytics", path: "/analytics" },
+    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+    { icon: PackageSearch, label: "Products", path: "/products" },
+    { icon: ReceiptText, label: "Orders", path: "/orders" },
+    { icon: UsersRound, label: "Customers", path: "/customers" },
+    { icon: Store, label: "Point of Sale", path: "/pos" },
+    { icon: LineChart, label: "Analytics", path: "/analytics" },
     { icon: Truck, label: "Shipping", path: "/shipping" },
-    { icon: Box, label: "Inventory", path: "/inventory" },
-    { icon: Building2, label: "Suppliers", path: "/suppliers" },
-    { icon: FileText, label: "Bills", path: "/bills" },
-    { icon: Building2, label: "Organization", path: "/organization" },
-    { icon: Settings, label: "Settings", path: "/settings" },
+    { icon: Warehouse, label: "Inventory", path: "/inventory" },
+    { icon: Factory, label: "Suppliers", path: "/suppliers" },
+    { icon: FileSpreadsheet, label: "Bills", path: "/bills" },
+    { icon: Network, label: "Organization", path: "/organization" },
+    { icon: SlidersHorizontal, label: "Settings", path: "/settings" },
   ];
 
   const sidebarItems = allItems.filter((item) => {
@@ -102,7 +111,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
       <div
         className={cn(
           "bg-sidebar border-r border-sidebar-border text-sidebar-foreground shadow-xl lg:shadow-none transition-all duration-300 z-50 overflow-hidden",
-          "lg:relative lg:translate-x-0",
+          "lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:translate-x-0 lg:self-start",
           "fixed inset-y-0 left-0",
           open ? "translate-x-0 w-64" : "-translate-x-full w-0 lg:w-0 lg:border-r-0"
         )}
@@ -125,7 +134,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
           </button>
         </div>
 
-        <div className="overflow-y-auto h-[calc(100vh-4rem)]">
+        <div className="overflow-y-auto h-[calc(100%-4rem)]">
           <nav className="p-3">
             <ul className="space-y-1">
               {sidebarItems.map((item) => (
