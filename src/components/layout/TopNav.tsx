@@ -31,6 +31,9 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [seenIds, setSeenIds] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("seenNotificationIds") || "[]"); } catch { return []; }
+  });
 
   const notifications = useMemo(() => {
     const items: { id: string; type: string; title: string; message: string; time: string; path: string }[] = [];
@@ -223,17 +226,20 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
             </PopoverContent>
           </Popover>
 
-          <Popover>
+          <Popover
+            onOpenChange={(open) => {
+              if (open) {
+                const ids = notifications.map((n) => String(n.id));
+                setSeenIds(ids);
+                localStorage.setItem("seenNotificationIds", JSON.stringify(ids));
+              }
+            }}
+          >
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Notifications" className="relative">
                 <Bell className="h-5 w-5" />
-                {notifications.length > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]"
-                  >
-                    {notifications.length}
-                  </Badge>
+                {notifications.some((n) => !seenIds.includes(String(n.id))) && (
+                  <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background" />
                 )}
               </Button>
             </PopoverTrigger>
