@@ -1,3 +1,4 @@
+import { DataTablePagination, usePagination } from "@/components/ui/data-table-pagination";
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -323,6 +324,8 @@ ${template.shopName}`;
 
   const totalSales = filteredOrders.reduce((sum, order) => sum + order.total, 0);
 
+  const pager = usePagination(filteredOrders);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -462,7 +465,7 @@ ${template.shopName}`;
             </TableHeader>
             <TableBody>
               {filteredOrders.length > 0 ? (
-                filteredOrders.map((order) => {
+                pager.pageItems.map((order) => {
                   const orderDate = new Date(order.order_date);
                   const orderRef = (order as any).tracking_number || order.id;
                   const source = typeof orderRef === 'string' && orderRef.startsWith("ORD") ? "POS" : "Order";
@@ -571,6 +574,7 @@ ${template.shopName}`;
               )}
             </TableBody>
           </Table>
+<DataTablePagination {...pager} />
         </div>
         
         <div className="p-4 border-t flex items-center justify-between">
