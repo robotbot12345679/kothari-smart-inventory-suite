@@ -281,7 +281,7 @@ const Customers = () => {
                 placeholder="Enter customer name"
                 className="mt-1 border-2 border-muted focus:border-primary"
                 value={newCustomer.name || ''}
-                onChange={e => setNewCustomer(prev => ({ ...prev, name: e.target.value }))}
+                onChange={e => { setDuplicateOf(null); } ; onChangeX(prev => ({ ...prev, name: e.target.value }))}
                 required
               />
             </div>
