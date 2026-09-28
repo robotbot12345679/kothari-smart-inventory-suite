@@ -1,3 +1,4 @@
+import { DataTablePagination, usePagination } from "@/components/ui/data-table-pagination";
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,8 @@ const Inventory = () => {
   const handleAddProduct = () => {
     navigate("/products");
   };
+
+  const pager = usePagination(filteredProducts);
 
   return (
     <div className="space-y-6">
@@ -212,7 +215,7 @@ const Inventory = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => {
+              {pager.pageItems.map((product) => {
                 const stockStatus = product.stock === 0 ? "Out of Stock" : 
                                    product.stock <= (product.min_stock || 10) ? "Low Stock" : 
                                    "In Stock";
@@ -248,6 +251,7 @@ const Inventory = () => {
             </TableBody>
           </Table>
         </div>
+<DataTablePagination {...pager} />
         
         <div className="p-4 border-t flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
