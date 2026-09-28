@@ -1,3 +1,4 @@
+import { DataTablePagination, usePagination } from "@/components/ui/data-table-pagination";
 import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -59,6 +60,8 @@ const Organization = () => {
         m.roleName.toLowerCase().includes(q)
     );
   }, [members, query]);
+
+  const pager = usePagination(filtered);
 
   return (
     <div className="space-y-6">
@@ -132,7 +135,7 @@ const Organization = () => {
                     </TableCell>
                   </TableRow>
                 )}
-                {filtered.map((m) => (
+                {pager.pageItems.map((m) => (
                   <TableRow key={m.id}>
                     <TableCell className="font-medium">{m.display_name ?? "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{m.email ?? "—"}</TableCell>
@@ -159,6 +162,7 @@ const Organization = () => {
               </TableBody>
             </Table>
           </div>
+<DataTablePagination {...pager} />
         </CardContent>
       </Card>
     </div>

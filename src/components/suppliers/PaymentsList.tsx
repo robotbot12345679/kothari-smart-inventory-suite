@@ -1,3 +1,4 @@
+import { DataTablePagination, usePagination } from "@/components/ui/data-table-pagination";
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +34,7 @@ const PaymentsList: React.FC<PaymentsListProps> = ({ payments, onDelete }) => {
     setPendingDelete(null);
   };
 
+  const pager = usePagination(payments);
   if (payments.length === 0) {
     return (
       <Card>
@@ -74,7 +76,7 @@ const PaymentsList: React.FC<PaymentsListProps> = ({ payments, onDelete }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {payments.map((payment) => (
+            {pager.pageItems.map((payment) => (
               <TableRow key={payment.id}>
                 <TableCell>
                   <div className="flex items-center gap-1">
@@ -122,6 +124,7 @@ const PaymentsList: React.FC<PaymentsListProps> = ({ payments, onDelete }) => {
             ))}
           </TableBody>
         </Table>
+<DataTablePagination {...pager} />
       </CardContent>
       <ConfirmDialog
         open={pendingDelete !== null}

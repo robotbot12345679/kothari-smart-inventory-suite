@@ -3,7 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Filter, UserPlus, Users, Phone, Mail, FileDown, FileUp, Trash } from "lucide-react";
+import { Search, Filter, UserPlus, Users, Phone, Mail, FileDown, FileUp, Trash, Pencil, AlertTriangle } from "lucide-react";
+import { DataTablePagination, usePagination } from "@/components/ui/data-table-pagination";
+import { RowActionsDropdown } from "@/components/ui/row-actions-dropdown";
+import { getInitials as cleanInitials } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -70,6 +73,7 @@ const Customers = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [duplicateOf, setDuplicateOf] = useState<Customer | null>(null);
 
 
   const filteredCustomers = customers.filter(customer => {
@@ -83,6 +87,8 @@ const Customers = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const pager = usePagination(filteredCustomers);
+
   const activeCustomers = customers.filter(c => c.status === 'Active').length;
   const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
   const averageOrderValue = orders.length > 0 
@@ -92,8 +98,18 @@ const Customers = () => {
     ? totalRevenue / customers.length
     : 0;
 
-  const handleAddCustomer = async () => {
+  const handleAddCustomer = async (force = false) => {
     if (newCustomer.name && newCustomer.phone) {
+      if (!force) {
+        const digits = (v: string) => (v || "").replace(/\D/g, "").slice(-10);
+        const fullPhone = countryCode === '+91' ? newCustomer.phone : `${countryCode}${newCustomer.phone}`;
+        const match = customers.find(c =>
+          c.name.trim().toLowerCase() === newCustomer.name!.trim().toLowerCase() &&
+          digits(c.phone) === digits(fullPhone)
+        );
+        if (match) { setDuplicateOf(match); return; }
+      }
+      setDuplicateOf(null);
       try {
         await addCustomer({
           name: newCustomer.name,
@@ -154,13 +170,7 @@ const Customers = () => {
     }
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase();
-  };
+  const getInitials = (name: string) => cleanInitials(name);
 
   const getStatusColor = (status: string) => {
     return status === 'Active' 
@@ -271,7 +281,7 @@ const Customers = () => {
                 placeholder="Enter customer name"
                 className="mt-1 border-2 border-muted focus:border-primary"
                 value={newCustomer.name || ''}
-                onChange={e => setNewCustomer(prev => ({ ...prev, name: e.target.value }))}
+                onChange={e => { setDuplicateOf(null); setNewCustomer(prev => ({ ...prev, name: e.target.value })); }}
                 required
               />
             </div>
@@ -296,6 +306,7 @@ const Customers = () => {
                   value={newCustomer.phone || ''}
                   onChange={e => {
                     const value = e.target.value.replace(/\D/g, '');
+                    setDuplicateOf(null);
                     setNewCustomer(prev => ({ ...prev, phone: value }));
                   }}
                   required
@@ -336,11 +347,24 @@ const Customers = () => {
               />
             </div>
           </div>
+          {duplicateOf && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm flex gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium">This customer already exists</p>
+                <p className="text-muted-foreground">{duplicateOf.name} · {duplicateOf.phone}. Do you still want to add this one?</p>
+              </div>
+            </div>
+          )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddCustomerOpen(false)}>
+            <Button variant="outline" onClick={() => { setDuplicateOf(null); setIsAddCustomerOpen(false); }}>
               Cancel
             </Button>
-            <Button onClick={handleAddCustomer}>Add Customer</Button>
+            {duplicateOf ? (
+              <Button variant="destructive" onClick={() => handleAddCustomer(true)}>Add Anyway</Button>
+            ) : (
+              <Button onClick={() => handleAddCustomer()}>Add Customer</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -400,7 +424,7 @@ const Customers = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCustomers.map((customer) => (
+              {pager.pageItems.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -445,22 +469,11 @@ const Customers = () => {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleEditCustomer(customer)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteClick(customer)}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
+                    <div className="flex justify-end">
+                      <RowActionsDropdown actions={[
+                        { label: "Edit", icon: Pencil, onClick: () => handleEditCustomer(customer) },
+                        { label: "Delete", icon: Trash, destructive: true, separatorBefore: true, onClick: () => handleDeleteClick(customer) },
+                      ]} />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -468,6 +481,7 @@ const Customers = () => {
             </TableBody>
           </Table>
         </div>
+        <DataTablePagination {...pager} />
         
         <div className="p-4 border-t flex items-center justify-between">
           <p className="text-sm text-muted-foreground">

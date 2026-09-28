@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/context/PermissionsContext";
 import { DEFAULT_USER_PASSWORD } from "@/lib/permissions";
 import { KeyRound, Mail, Trash2, UserPlus } from "lucide-react";
+import { RowActionsDropdown } from "@/components/ui/row-actions-dropdown";
+import { DataTablePagination, usePagination } from "@/components/ui/data-table-pagination";
 
 interface Row {
   id: string;
@@ -26,6 +28,7 @@ const UserManagement = () => {
   const { roles, organization, refresh } = usePermissions();
   const { toast } = useToast();
   const [rows, setRows] = useState<Row[]>([]);
+  const pager = usePagination(rows);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [roleId, setRoleId] = useState("");
@@ -235,7 +238,7 @@ const UserManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((row) => {
+                {pager.pageItems.map((row) => {
                   const isOwner = row.id === organization?.owner_id;
                   return (
                     <TableRow key={row.id}>
@@ -273,32 +276,14 @@ const UserManagement = () => {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={busy || isOwner}
-                            onClick={() => sendCredentials(row)}
-                          >
-                            <Mail className="mr-2 h-3.5 w-3.5" /> Send credentials
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            disabled={busy || isOwner}
-                            onClick={() => resetPassword(row)}
-                          >
-                            <KeyRound className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            disabled={busy || isOwner}
-                            onClick={() => setDeleteTarget(row)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                        <div className="flex justify-end">
+                          {isOwner ? <span className="text-xs text-muted-foreground">—</span> : (
+                            <RowActionsDropdown actions={[
+                              { label: "Send credentials", icon: Mail, disabled: busy, onClick: () => sendCredentials(row) },
+                              { label: "Regenerate password", icon: KeyRound, disabled: busy, onClick: () => resetPassword(row) },
+                              { label: "Delete user", icon: Trash2, destructive: true, separatorBefore: true, disabled: busy, onClick: () => setDeleteTarget(row) },
+                            ]} />
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -307,6 +292,7 @@ const UserManagement = () => {
               </TableBody>
             </Table>
           </div>
+          <DataTablePagination {...pager} />
         </CardContent>
       </Card>
 

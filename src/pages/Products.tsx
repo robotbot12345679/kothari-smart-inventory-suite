@@ -1,3 +1,4 @@
+import { DataTablePagination, usePagination } from "@/components/ui/data-table-pagination";
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -212,6 +213,8 @@ const Products = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const pager = usePagination(filteredProducts);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -303,7 +306,7 @@ const Products = () => {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 overflow-y-auto max-h-[calc(100vh-250px)]">
-          {filteredProducts.map((product) => (
+          {pager.pageItems.map((product) => (
             <ProductCard
               key={product.id}
               product={product}
@@ -316,6 +319,7 @@ const Products = () => {
           ))}
         </div>
       )}
+<DataTablePagination {...pager} />
 
       <AddProductDialog 
         open={isAddProductOpen} 
