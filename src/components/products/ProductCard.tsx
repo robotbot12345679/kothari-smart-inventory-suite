@@ -1,12 +1,12 @@
 
 import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Edit, Trash2, Package } from "lucide-react";
 import type { Product } from "@/types/pos";
 import UpdateStockDialog from "../inventory/UpdateStockDialog";
 import { getImageUrl } from "@/utils/imageUtils";
+import { RowActionsDropdown } from "@/components/ui/row-actions-dropdown";
 
 interface ProductCardProps {
   product: Product;
@@ -115,24 +115,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete, is
         <div className="shrink-0 [&_button]:h-7 [&_button]:px-2 [&_button]:text-xs">
           <UpdateStockDialog product={product} />
         </div>
-        <div className="flex flex-nowrap gap-1 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 px-2 text-xs shrink-0"
-            onClick={() => onEdit(product)}
-          >
-            <Edit className="h-3 w-3 mr-1" /> Edit
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 px-2 text-xs text-destructive hover:text-destructive shrink-0"
-            onClick={() => onDelete(product)}
-          >
-            <Trash2 className="h-3 w-3 mr-1" /> Delete
-          </Button>
-        </div>
+        <RowActionsDropdown actions={[
+          { label: "Edit", icon: Edit, onClick: () => onEdit(product) },
+          { label: "Delete", icon: Trash2, onClick: () => onDelete(product), destructive: true },
+        ]} />
       </CardFooter>
     </Card>
   );

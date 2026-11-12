@@ -18,6 +18,7 @@ import { useTheme } from "@/components/theme-provider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useCloudData } from "@/context/CloudDataContext";
 import { usePermissions } from "@/context/PermissionsContext";
+import { getInitials } from "@/lib/utils";
 
 interface TopNavProps {
   onMenuToggle: () => void;
@@ -299,7 +300,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuToggle }) => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-2 text-sm font-normal">
                 <Avatar className="h-7 w-7">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">AD</AvatarFallback>
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">{getInitials(profile?.display_name ?? "Admin")}</AvatarFallback>
                 </Avatar>
                 <span className="hidden sm:inline">Admin</span>
               </Button>
