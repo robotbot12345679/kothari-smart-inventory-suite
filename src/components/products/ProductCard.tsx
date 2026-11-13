@@ -2,11 +2,11 @@
 import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Edit, Trash2, Package } from "lucide-react";
+import { Edit, Trash2, Package, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { Product } from "@/types/pos";
 import UpdateStockDialog from "../inventory/UpdateStockDialog";
 import { getImageUrl } from "@/utils/imageUtils";
-import { RowActionsDropdown } from "@/components/ui/row-actions-dropdown";
 
 interface ProductCardProps {
   product: Product;
@@ -99,7 +99,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete, is
         )}
       </div>
 
-      <CardContent className="pt-2 p-3 flex-grow">
+      <CardContent className="pt-2 p-3">
         <h3 className="font-bold text-base truncate text-gray-800">{product.name}</h3>
         <p className="text-xs text-gray-500 truncate">{product.weight}{product.unit} • SKU: {product.sku}</p>
         {product.barcode && (
@@ -111,14 +111,24 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete, is
         </div>
       </CardContent>
 
-      <CardFooter className="flex flex-nowrap items-center justify-between gap-1 pt-0 p-3 mt-auto">
-        <div className="shrink-0 [&_button]:h-7 [&_button]:px-2 [&_button]:text-xs">
-          <UpdateStockDialog product={product} />
-        </div>
-        <RowActionsDropdown actions={[
-          { label: "Edit", icon: Edit, onClick: () => onEdit(product) },
-          { label: "Delete", icon: Trash2, onClick: () => onDelete(product), destructive: true },
-        ]} />
+      <CardFooter className="flex flex-nowrap items-center justify-start gap-1 pt-0 p-3">
+        <UpdateStockDialog product={product}>
+          <Button variant="outline" size="sm" className="h-9 px-3 text-xs">
+            <Plus className="mr-1 h-4 w-4" /> Add Stock
+          </Button>
+        </UpdateStockDialog>
+        <Button variant="outline" size="sm" className="h-9 px-3 text-xs" onClick={() => onEdit(product)}>
+          <Edit className="mr-1 h-4 w-4" /> Edit
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-9 w-9 text-destructive hover:text-destructive"
+          aria-label={`Delete ${product.name}`}
+          onClick={() => onDelete(product)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </CardFooter>
     </Card>
   );
