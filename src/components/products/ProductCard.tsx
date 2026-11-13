@@ -111,19 +111,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete, is
         </div>
       </CardContent>
 
-      <CardFooter className="flex flex-nowrap items-center justify-start gap-1 pt-0 p-3">
+      <CardFooter className="flex flex-nowrap items-center justify-start gap-1 pt-0 pb-3 pl-3 pr-1">
         <UpdateStockDialog product={product}>
-          <Button variant="outline" size="sm" className="h-9 px-3 text-xs">
+          <Button variant="outline" size="sm" className="h-9 w-[132px] shrink-0 px-3 text-xs">
             <Plus className="mr-1 h-4 w-4" /> Add Stock
           </Button>
         </UpdateStockDialog>
-        <Button variant="outline" size="sm" className="h-9 px-3 text-xs" onClick={() => onEdit(product)}>
+        <Button variant="outline" size="sm" className="h-9 w-[84px] shrink-0 px-3 text-xs" onClick={() => onEdit(product)}>
           <Edit className="mr-1 h-4 w-4" /> Edit
         </Button>
         <Button
           variant="outline"
           size="icon"
-          className="h-9 w-9 text-destructive hover:text-destructive"
+          className="h-9 w-11 shrink-0 text-destructive hover:text-destructive"
           aria-label={`Delete ${product.name}`}
           onClick={() => onDelete(product)}
         >
