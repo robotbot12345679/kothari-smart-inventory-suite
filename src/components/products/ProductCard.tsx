@@ -111,13 +111,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete, is
         </div>
       </CardContent>
 
-      <CardFooter className="flex flex-nowrap items-center justify-start gap-1 pt-0 pb-3 pl-3 pr-1">
+      <CardFooter className="flex w-full flex-nowrap items-center gap-1 p-3 pt-0">
         <UpdateStockDialog product={product}>
-          <Button variant="outline" size="sm" className="h-9 w-[132px] shrink-0 px-3 text-xs">
+          <Button variant="outline" size="sm" className="h-9 min-w-0 flex-[1.6] basis-[132px] px-2 text-xs whitespace-nowrap">
             <Plus className="mr-1 h-4 w-4" /> Add Stock
           </Button>
         </UpdateStockDialog>
-        <Button variant="outline" size="sm" className="h-9 w-[84px] shrink-0 px-3 text-xs" onClick={() => onEdit(product)}>
+        <Button variant="outline" size="sm" className="h-9 min-w-0 flex-1 basis-[84px] px-2 text-xs whitespace-nowrap" onClick={() => onEdit(product)}>
           <Edit className="mr-1 h-4 w-4" /> Edit
         </Button>
         <Button
