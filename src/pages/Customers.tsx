@@ -46,6 +46,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useCloudData } from "@/context/CloudDataContext";
 import { Label } from "@/components/ui/label";
 import { Customer } from "@/types/pos";
+import { normalizeCustomerStatus } from "@/lib/customer-status";
 import EditCustomerDialog from "@/components/customers/EditCustomerDialog";
 import ImportCustomersDialog from "@/components/customers/ImportCustomersDialog";
 import { useToast } from "@/components/ui/use-toast";
@@ -82,14 +83,14 @@ const Customers = () => {
       (customer.email && customer.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
       customer.phone.includes(searchQuery);
     
-    const matchesStatus = statusFilter === "all" || customer.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || normalizeCustomerStatus(customer.status) === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
 
   const pager = usePagination(filteredCustomers);
 
-  const activeCustomers = customers.filter(c => c.status === 'Active').length;
+  const activeCustomers = customers.filter(c => normalizeCustomerStatus(c.status) === 'Active').length;
   const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
   const averageOrderValue = orders.length > 0 
     ? totalRevenue / orders.length 
@@ -173,7 +174,7 @@ const Customers = () => {
   const getInitials = (name: string) => cleanInitials(name);
 
   const getStatusColor = (status: string) => {
-    return status === 'Active' 
+    return normalizeCustomerStatus(status) === 'Active'
       ? "bg-green-100 text-green-800 hover:bg-green-100"
       : "bg-gray-100 text-gray-800 hover:bg-gray-100";
   };
@@ -465,7 +466,7 @@ const Customers = () => {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={getStatusColor(customer.status)}>
-                      {customer.status}
+                      {normalizeCustomerStatus(customer.status)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
